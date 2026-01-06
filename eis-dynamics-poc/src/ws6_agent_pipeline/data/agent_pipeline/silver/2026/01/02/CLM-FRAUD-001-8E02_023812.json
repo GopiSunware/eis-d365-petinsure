@@ -1,0 +1,92 @@
+{
+  "claim_id": "CLM-FRAUD-001-8E02",
+  "bronze_reference": {
+    "claim_id": "CLM-FRAUD-001-8E02",
+    "decision": null
+  },
+  "enrichment": {
+    "policy_info": {
+      "policy_id": "POL-DEMO-001",
+      "coverage_type": "comprehensive",
+      "deductible": 250.0,
+      "annual_limit": 10000.0,
+      "reimbursement_rate": 0.8,
+      "status": "active"
+    },
+    "customer_info": {
+      "customer_id": "CUST-DEMO-001",
+      "name": "Demo Customer",
+      "member_since": "2023-01-01",
+      "lifetime_value": 2000.0,
+      "total_claims": 2,
+      "total_paid": 2627.232069275082,
+      "risk_tier": "standard",
+      "churn_risk": 0.11551893052283997
+    },
+    "pet_info": {
+      "pet_id": "PET-034",
+      "name": "Unknown Pet",
+      "species": "dog",
+      "breed": "Mixed",
+      "age_years": 4,
+      "weight_lbs": 45,
+      "known_conditions": []
+    },
+    "provider_info": {
+      "provider_id": "PROV-5288",
+      "name": "Sunny Valley Vet Clinic",
+      "type": "veterinary_clinic",
+      "is_in_network": false,
+      "avg_claim_amount": 1044.9161635709734,
+      "claims_processed": 88,
+      "fraud_rate": 0.041315284369235775,
+      "rating": 4.75550886091075
+    },
+    "enrichment_summary": "Created synthetic policy data for POL-DEMO-001; Created synthetic customer data for CUST-DEMO-001; Created synthetic pet data; Created synthetic provider data for Sunny Valley Vet Clinic"
+  },
+  "normalized": {
+    "normalized_diagnosis": {
+      "original_code": "S83.5",
+      "icd10_code": "S83.5",
+      "category": "general",
+      "subcategory": "unclassified",
+      "description": "CCL rupture - claimed as sudden injury"
+    },
+    "claim_category": "general",
+    "claim_subcategory": "unclassified",
+    "derived_values": {
+      "claim_amount_normalized": 1600.0,
+      "claim_type_normalized": "accident",
+      "claim_size": "medium",
+      "is_emergency": false,
+      "is_chronic": false,
+      "processing_priority": 3
+    }
+  },
+  "business_rules": {
+    "is_covered": false,
+    "passed": [
+      "Waiting period satisfied (732 days >= 14 required)",
+      "Within annual limit ($1,600.00 <= $10,000.00 remaining)",
+      "Applied deductible of $250.00",
+      "Calculated reimbursement: $1,080.00 (80%)",
+      "Provider is in-network"
+    ],
+    "failed": [
+      "Category 'general' is not covered under comprehensive plan"
+    ],
+    "warnings": [],
+    "coverage_percentage": 80.0,
+    "expected_reimbursement": 1080.0
+  },
+  "agent": {
+    "reasoning": "## Silver Layer Enrichment Analysis for CLM-FRAUD-001-8E02\n\n### \ud83d\udd0d **Enrichment Summary**\nSuccessfully enriched claim with comprehensive data from all related entities. Key findings reveal significant concerns requiring attention.\n\n### \ud83d\udcca **Key Enrichment Data**\n- **Policy**: POL-DEMO-001 (Comprehensive, $250 deductible, 80% reimbursement)\n- **Customer**: Demo Customer (Standard risk, 2 years tenure, $2,000 LTV)\n- **Pet**: Rocky (4-year-old mixed breed dog, 45 lbs)\n- **Provider**: Sunny Valley Vet Clinic (4.1% fraud rate, 88 claims processed)\n\n### \u26a0\ufe0f **Critical Concerns Identified**\n\n1. **COVERAGE DENIAL**: Claim categorized as 'general' which is NOT covered under comprehensive plan\n2. **PRE-EXISTING CONDITION CONFLICT**: Treatment notes mention \"documented pre-existing hip dysplasia\" but pet profile shows no known conditions\n3. **PROVIDER NETWORK DISCREPANCY**: Bronze data shows in-network (true) but enrichment shows out-of-network (false)\n4. **FRAUD INDICATORS**: CCL rupture claimed as \"sudden injury\" but often related to pre-existing joint conditions\n\n### \ud83d\udcb0 **Financial Analysis**\n- Claim Amount: $1,600.00 (40% above customer's average of $1,139.51)\n- Expected Reimbursement: $1,080.00 (if covered)\n- **ACTUAL STATUS**: DENIED due to coverage exclusion\n\n### \ud83c\udfaf **Quality Scores**\n- Enrichment Completeness: 100%\n- Data Confidence: 71% (reduced due to data inconsistencies)\n- Overall Silver Score: 83%\n\n### \ud83d\udccb **Recommendations**\n1. **IMMEDIATE**: Investigate pre-existing condition documentation discrepancy\n2. **VERIFY**: Provider network status - conflicting information\n3. **REVIEW**: Diagnosis categorization - may need reclassification for coverage\n4. **ESCALATE**: Potential fraud case due to pre-existing condition concealment",
+    "agent_name": "silver_agent",
+    "agent_version": "1.0.0"
+  },
+  "metadata": {
+    "processed_at": "2026-01-02T02:38:12.063489",
+    "layer": "silver",
+    "source": "agent_pipeline"
+  }
+}

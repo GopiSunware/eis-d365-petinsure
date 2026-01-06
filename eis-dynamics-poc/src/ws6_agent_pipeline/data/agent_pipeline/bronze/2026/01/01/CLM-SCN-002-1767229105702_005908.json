@@ -1,0 +1,55 @@
+{
+  "claim_id": "CLM-SCN-002-1767229105702",
+  "raw_data": {
+    "claim_id": "CLM-SCN-002-1767229105702",
+    "policy_id": "POL-DEMO-001",
+    "customer_id": "CUST-DEMO-001",
+    "pet_id": "PET-DEMO-003",
+    "claim_type": "accident",
+    "claim_amount": 5935.0,
+    "diagnosis_code": "S83.5",
+    "diagnosis_description": "Complete cranial cruciate ligament rupture, left stifle",
+    "treatment_date": "2024-12-15",
+    "submission_date": "2026-01-01",
+    "provider_name": "Advanced Veterinary Surgical Center",
+    "treatment_notes": "TPLO (Tibial Plateau Leveling Osteotomy) surgery performed. Pre-surgical workup, anesthesia, 2-night hospitalization, post-op care.",
+    "_cleaned_at": "2026-01-01T00:58:47.834231",
+    "_changes_count": 2
+  },
+  "validation": {
+    "is_valid": true,
+    "errors": [],
+    "warnings": [],
+    "fields_checked": 12,
+    "missing_required": [],
+    "missing_optional": []
+  },
+  "quality": {
+    "completeness_score": 1.0,
+    "accuracy_score": 1.0,
+    "consistency_score": 1.0,
+    "overall_score": 1.0,
+    "issues": [],
+    "recommendations": [
+      "Data quality is excellent"
+    ]
+  },
+  "anomalies": {
+    "is_anomalous": false,
+    "anomalies": [],
+    "risk_indicators": [],
+    "anomaly_score": 0.0
+  },
+  "agent": {
+    "reasoning": "CRITICAL ISSUE IDENTIFIED: Submission date (2026-01-01) is 13+ months in the future compared to treatment date (2024-12-15). This is logically impossible and indicates a serious data integrity issue. While all automated validation tools passed and data quality scores are perfect, this temporal inconsistency violates basic business logic and requires immediate human review. The claim amount ($5,935) and treatment (TPLO surgery for cruciate ligament rupture) appear medically appropriate, but the date discrepancy is a blocking issue that could indicate system errors or potential fraud.",
+    "decision": "QUARANTINE",
+    "confidence": 0.95,
+    "agent_name": "bronze_agent",
+    "agent_version": "1.0.0"
+  },
+  "metadata": {
+    "processed_at": "2026-01-01T00:59:08.534204",
+    "layer": "bronze",
+    "source": "agent_pipeline"
+  }
+}

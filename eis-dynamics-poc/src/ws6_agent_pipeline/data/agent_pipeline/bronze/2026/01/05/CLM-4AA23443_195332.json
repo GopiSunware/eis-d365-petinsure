@@ -1,0 +1,79 @@
+{
+  "claim_id": "CLM-4AA23443",
+  "raw_data": {
+    "claim_id": "CLM-4AA23443",
+    "claim_number": "CLM-20260105-0D8C60",
+    "scenario_id": "DOCGEN-UPLOAD",
+    "customer_id": "DEMO-002",
+    "customer_name": "Demo One",
+    "pet_id": "PET-DEMO-003",
+    "pet_name": "Max",
+    "policy_id": "POL-DEMO-003",
+    "claim_type": "illness",
+    "claim_category": "Z23 - Immunization encounter",
+    "diagnosis_code": "",
+    "diagnosis": "Z23 - Immunization encounter",
+    "service_date": "2026-01-05",
+    "treatment_notes": "This wellness claim appears legitimate for routine vaccination services with appropriate diagnosis code Z23 (immunization encounter). However, several factors warrant standard review: 1) Multiple existing claims with unknown details make pattern analysis difficult, 2) Provider information is missing, 3) The claim amount of $95 is reasonable for FVRCP vaccination and exam but requires verification, 4) Service date matches claim submission date suggesting prompt filing. The clinical details (annual vaccination, normal exam, stable weight) are consistent with routine preventive care.",
+    "line_items": [],
+    "claim_amount": 95.0,
+    "provider_id": "",
+    "provider_name": "Unknown",
+    "is_in_network": true,
+    "is_emergency": false,
+    "ingestion_timestamp": "2026-01-05T19:52:41.882493",
+    "source": "customer_portal",
+    "raw_status": "ingested",
+    "layer": "bronze",
+    "_ingestion_timestamp": "2026-01-05T19:52:41.883454",
+    "_source": "api",
+    "_entity_id": "CLM-4AA23443",
+    "_cleaned_at": "2026-01-05T19:53:01.633517",
+    "_changes_count": 1
+  },
+  "validation": {
+    "is_valid": true,
+    "errors": [],
+    "warnings": [
+      "Optional field missing: diagnosis_description",
+      "Optional field missing: treatment_date",
+      "Optional field missing: submission_date"
+    ],
+    "fields_checked": 27,
+    "missing_required": [],
+    "missing_optional": [
+      "diagnosis_description",
+      "treatment_date",
+      "submission_date"
+    ]
+  },
+  "quality": {
+    "completeness_score": 0.6363636363636364,
+    "accuracy_score": 1.0,
+    "consistency_score": 1.0,
+    "overall_score": 0.8545454545454545,
+    "issues": [],
+    "recommendations": [
+      "Improve data completeness by adding missing optional fields",
+      "Data quality is acceptable for processing"
+    ]
+  },
+  "anomalies": {
+    "is_anomalous": false,
+    "anomalies": [],
+    "risk_indicators": [],
+    "anomaly_score": 0.0
+  },
+  "agent": {
+    "reasoning": "QUARANTINE DECISION: While the claim passes basic schema validation and shows no statistical anomalies, several critical data quality issues require manual review before processing: 1) POLICY VERIFICATION FAILED - Unable to verify policy POL-DEMO-003 exists and is active (404 error), 2) PROVIDER MISSING - Provider information is incomplete with only \"Unknown\" as provider name and empty provider_id, 3) DIAGNOSIS CODE VALIDATION FAILED - Unable to validate Z23 diagnosis code (404 error), 4) MISSING CRITICAL FIELDS - Empty diagnosis_code field despite having diagnosis description, 5) CLAIM TYPE MISMATCH - Categorized as \"Illness\" but appears to be wellness/vaccination (Z23 immunization encounter). The claim amount of $95 is reasonable for vaccination services, and the treatment notes suggest legitimate preventive care. However, the inability to verify policy status, provider legitimacy, and diagnosis code validity creates significant risk. The claim should be quarantined for manual review to resolve these verification issues before proceeding to Silver layer processing.",
+    "decision": "QUARANTINE",
+    "confidence": 0.75,
+    "agent_name": "bronze_agent",
+    "agent_version": "1.0.0"
+  },
+  "metadata": {
+    "processed_at": "2026-01-05T19:53:32.103792",
+    "layer": "bronze",
+    "source": "agent_pipeline"
+  }
+}

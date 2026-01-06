@@ -1,0 +1,96 @@
+{
+  "claim_id": "CLM-2F6CEC97",
+  "raw_data": {
+    "claim_id": "CLM-2F6CEC97",
+    "claim_number": "CLM-20260105-FDB86C",
+    "scenario_id": "SCN-023",
+    "customer_id": "DEMO-001",
+    "customer_name": "Demo User",
+    "pet_id": "PET-DEMO-001",
+    "pet_name": "Buddy",
+    "policy_id": "POL-DEMO-001",
+    "claim_type": "accident",
+    "claim_category": "Laceration",
+    "diagnosis_code": "S01.9",
+    "diagnosis": "Superficial laceration - left forelimb",
+    "service_date": "2026-01-05",
+    "treatment_notes": "Small cut on leg from running in yard. Wound cleaned, no sutures required. Bandaged and sent home with antibiotics.",
+    "line_items": [
+      {
+        "description": "Office examination",
+        "amount": 55
+      },
+      {
+        "description": "Wound cleaning and flush",
+        "amount": 35
+      },
+      {
+        "description": "Bandaging",
+        "amount": 25
+      },
+      {
+        "description": "Clavamox antibiotic (7 days)",
+        "amount": 40
+      }
+    ],
+    "claim_amount": 155.0,
+    "provider_id": "PROV-0005",
+    "provider_name": "Companion Animal Hospital",
+    "is_in_network": true,
+    "is_emergency": false,
+    "ingestion_timestamp": "2026-01-05T20:34:14.191734",
+    "source": "customer_portal",
+    "raw_status": "ingested",
+    "layer": "bronze",
+    "_ingestion_timestamp": "2026-01-05T20:34:14.192270",
+    "_source": "api",
+    "_entity_id": "CLM-2F6CEC97",
+    "_cleaned_at": "2026-01-05T20:35:40.809919",
+    "_changes_count": 1
+  },
+  "validation": {
+    "is_valid": true,
+    "errors": [],
+    "warnings": [
+      "Optional field missing: diagnosis_description",
+      "Optional field missing: treatment_date",
+      "Optional field missing: submission_date"
+    ],
+    "fields_checked": 27,
+    "missing_required": [],
+    "missing_optional": [
+      "diagnosis_description",
+      "treatment_date",
+      "submission_date"
+    ]
+  },
+  "quality": {
+    "completeness_score": 0.7272727272727273,
+    "accuracy_score": 1.0,
+    "consistency_score": 1.0,
+    "overall_score": 0.8909090909090909,
+    "issues": [],
+    "recommendations": [
+      "Improve data completeness by adding missing optional fields",
+      "Data quality is acceptable for processing"
+    ]
+  },
+  "anomalies": {
+    "is_anomalous": false,
+    "anomalies": [],
+    "risk_indicators": [],
+    "anomaly_score": 0.0
+  },
+  "agent": {
+    "reasoning": "Comprehensive analysis shows this is a high-quality claim with all required fields present and valid. Schema validation passed completely, no anomalies detected, minimal data cleaning required (only claim_type normalization), and excellent quality scores (89.1% overall). The claim represents a straightforward accident case with appropriate treatment and reasonable costs. Line items sum correctly to total claim amount. Treatment notes are detailed and consistent with diagnosis. No red flags or suspicious patterns identified. External validation services unavailable but internal data validation is solid.",
+    "decision": "ACCEPT",
+    "confidence": 0.95,
+    "agent_name": "bronze_agent",
+    "agent_version": "1.0.0"
+  },
+  "metadata": {
+    "processed_at": "2026-01-05T20:36:17.810960",
+    "layer": "bronze",
+    "source": "agent_pipeline"
+  }
+}

@@ -1,0 +1,44 @@
+flowchart TB
+    subgraph INPUT["Pet Claim: CLM-PET-2024-001"]
+        CLAIM[Golden Retriever - Max<br/>CCL Tear Surgery $4,500<br/>4th claim in 12 months<br/>Different vet clinics each time]
+    end
+
+    CLAIM --> RULE & AI
+
+    subgraph RULE["Traditional Rules Engine"]
+        R1[✓ Amount < $5,000 limit]
+        R2[✓ Policy Active]
+        R3[✓ Accident Coverage OK]
+        R4[✓ Past Waiting Period]
+        R5[✓ No Exact Duplicates]
+    end
+
+    subgraph AI["EIS-Dynamics AI Pipeline"]
+        A1[Analyze Pet Medical History]
+        A2[Detect Pattern: 4 Claims/Year]
+        A3[CCL = Breed-Prone Condition]
+        A4[Flag: Different Providers]
+        A5[Cross-Reference Claim Timing]
+    end
+
+    RULE --> APPROVE
+    AI --> REVIEW
+
+    subgraph APPROVE["APPROVED ✓"]
+        AP1[Processing: 0.5ms]
+        AP2[Fraud Score: N/A]
+        AP3[Payout: $3,600]
+    end
+
+    subgraph REVIEW["MANUAL REVIEW ⚠"]
+        RV1[Processing: 45s]
+        RV2[Fraud Score: 0.72]
+        RV3[Flags: breed_prone,<br/>claim_frequency,<br/>provider_rotation]
+        RV4[Reasoning: 4 items]
+    end
+
+    style INPUT fill:#fff2cc
+    style RULE fill:#3b82f6,color:#fff
+    style AI fill:#7c3aed,color:#fff
+    style APPROVE fill:#22c55e,color:#fff
+    style REVIEW fill:#f59e0b

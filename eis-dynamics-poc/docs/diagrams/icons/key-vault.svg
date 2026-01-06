@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
+  <rect x="16" y="8" width="32" height="48" rx="4" fill="#0078D4" stroke="#005A9E" stroke-width="2"/>
+  <circle cx="32" cy="24" r="8" fill="#50E6FF"/>
+  <rect x="28" y="32" width="8" height="16" fill="#50E6FF"/>
+  <text x="32" y="62" font-family="Arial" font-size="6" fill="#0078D4" text-anchor="middle">Key Vault</text>
+</svg>

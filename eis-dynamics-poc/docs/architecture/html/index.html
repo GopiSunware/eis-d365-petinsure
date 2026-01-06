@@ -1,0 +1,442 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EIS-Dynamics POC - Architecture Documentation</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --primary: #2563eb;
+            --primary-dark: #1d4ed8;
+            --secondary: #7c3aed;
+            --accent: #06b6d4;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+            --dark: #1e293b;
+            --light: #f8fafc;
+            --gray: #64748b;
+            --border: #e2e8f0;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+            min-height: 100vh;
+            color: #fff;
+        }
+
+        .hero {
+            padding: 80px 20px 60px;
+            text-align: center;
+            background: linear-gradient(135deg, rgba(37, 99, 235, 0.2) 0%, rgba(124, 58, 237, 0.2) 100%);
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+
+        .hero-badge {
+            display: inline-block;
+            padding: 8px 16px;
+            background: rgba(6, 182, 212, 0.2);
+            border: 1px solid rgba(6, 182, 212, 0.4);
+            border-radius: 20px;
+            font-size: 14px;
+            color: var(--accent);
+            margin-bottom: 20px;
+        }
+
+        .hero h1 {
+            font-size: 48px;
+            font-weight: 700;
+            margin-bottom: 16px;
+            background: linear-gradient(135deg, #fff 0%, #94a3b8 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .hero p {
+            font-size: 20px;
+            color: #94a3b8;
+            max-width: 600px;
+            margin: 0 auto 30px;
+        }
+
+        .hero-stats {
+            display: flex;
+            justify-content: center;
+            gap: 40px;
+            flex-wrap: wrap;
+        }
+
+        .stat {
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 36px;
+            font-weight: 700;
+            color: var(--accent);
+        }
+
+        .stat-label {
+            font-size: 14px;
+            color: #64748b;
+            margin-top: 4px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 60px 20px;
+        }
+
+        .section-title {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+
+        .section-title h2 {
+            font-size: 32px;
+            font-weight: 600;
+            margin-bottom: 12px;
+        }
+
+        .section-title p {
+            color: #94a3b8;
+            font-size: 16px;
+        }
+
+        .cards-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 24px;
+        }
+
+        .card {
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 16px;
+            padding: 32px;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            color: inherit;
+            display: block;
+        }
+
+        .card:hover {
+            transform: translateY(-4px);
+            background: rgba(255,255,255,0.08);
+            border-color: var(--primary);
+            box-shadow: 0 20px 40px rgba(0,0,0,0.3);
+        }
+
+        .card-icon {
+            width: 56px;
+            height: 56px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            margin-bottom: 20px;
+        }
+
+        .card-icon.blue { background: rgba(37, 99, 235, 0.2); color: var(--primary); }
+        .card-icon.purple { background: rgba(124, 58, 237, 0.2); color: var(--secondary); }
+        .card-icon.cyan { background: rgba(6, 182, 212, 0.2); color: var(--accent); }
+        .card-icon.green { background: rgba(16, 185, 129, 0.2); color: var(--success); }
+
+        .card h3 {
+            font-size: 20px;
+            font-weight: 600;
+            margin-bottom: 12px;
+        }
+
+        .card p {
+            color: #94a3b8;
+            font-size: 14px;
+            line-height: 1.6;
+            margin-bottom: 20px;
+        }
+
+        .card-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            color: var(--primary);
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        .card-link i {
+            transition: transform 0.2s ease;
+        }
+
+        .card:hover .card-link i {
+            transform: translateX(4px);
+        }
+
+        .tech-stack {
+            background: rgba(255,255,255,0.03);
+            border-radius: 16px;
+            padding: 40px;
+            margin-top: 60px;
+        }
+
+        .tech-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 24px;
+            margin-top: 30px;
+        }
+
+        .tech-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 16px;
+            background: rgba(255,255,255,0.05);
+            border-radius: 8px;
+        }
+
+        .tech-item i {
+            font-size: 24px;
+            width: 40px;
+            text-align: center;
+        }
+
+        .tech-item span {
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        .live-urls {
+            margin-top: 60px;
+            text-align: center;
+        }
+
+        .url-cards {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            flex-wrap: wrap;
+            margin-top: 30px;
+        }
+
+        .url-card {
+            background: linear-gradient(135deg, rgba(16, 185, 129, 0.1) 0%, rgba(6, 182, 212, 0.1) 100%);
+            border: 1px solid rgba(16, 185, 129, 0.3);
+            border-radius: 12px;
+            padding: 20px 30px;
+            text-decoration: none;
+            color: inherit;
+            transition: all 0.3s ease;
+        }
+
+        .url-card:hover {
+            transform: scale(1.02);
+            border-color: var(--success);
+        }
+
+        .url-card .status {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 12px;
+            color: var(--success);
+            margin-bottom: 8px;
+        }
+
+        .url-card .status::before {
+            content: '';
+            width: 8px;
+            height: 8px;
+            background: var(--success);
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .url-card h4 {
+            font-size: 16px;
+            margin-bottom: 4px;
+        }
+
+        .url-card code {
+            font-size: 12px;
+            color: #94a3b8;
+        }
+
+        footer {
+            text-align: center;
+            padding: 40px 20px;
+            border-top: 1px solid rgba(255,255,255,0.1);
+            color: #64748b;
+            font-size: 14px;
+        }
+
+        @media (max-width: 768px) {
+            .hero h1 { font-size: 32px; }
+            .hero p { font-size: 16px; }
+            .stat-value { font-size: 28px; }
+            .hero-stats { gap: 24px; }
+        }
+    </style>
+</head>
+<body>
+    <section class="hero">
+        <div class="hero-badge">
+            <i class="fas fa-shield-dog"></i> Pet Insurance Platform
+        </div>
+        <h1>EIS-Dynamics POC</h1>
+        <p>AI-Powered Claims Processing Platform integrating EIS Suite with Microsoft Dynamics 365</p>
+        <div class="hero-stats">
+            <div class="stat">
+                <div class="stat-value">9</div>
+                <div class="stat-label">Microservices</div>
+            </div>
+            <div class="stat">
+                <div class="stat-value">60+</div>
+                <div class="stat-label">API Endpoints</div>
+            </div>
+            <div class="stat">
+                <div class="stat-value">44</div>
+                <div class="stat-label">LLM Tools</div>
+            </div>
+            <div class="stat">
+                <div class="stat-value">4</div>
+                <div class="stat-label">AI Agents</div>
+            </div>
+        </div>
+    </section>
+
+    <div class="container">
+        <div class="section-title">
+            <h2>Architecture Documentation</h2>
+            <p>Comprehensive technical documentation for the EIS-Dynamics POC platform</p>
+        </div>
+
+        <div class="cards-grid">
+            <a href="overview.html" class="card">
+                <div class="card-icon blue">
+                    <i class="fas fa-sitemap"></i>
+                </div>
+                <h3>System Overview</h3>
+                <p>High-level architecture diagram showing all microservices, frontends, and data stores with their connections.</p>
+                <span class="card-link">
+                    Explore Overview <i class="fas fa-arrow-right"></i>
+                </span>
+            </a>
+
+            <a href="data-flow.html" class="card">
+                <div class="card-icon purple">
+                    <i class="fas fa-stream"></i>
+                </div>
+                <h3>Data Flow</h3>
+                <p>How data moves through the system including the LangGraph agent pipeline and medallion architecture.</p>
+                <span class="card-link">
+                    View Data Flow <i class="fas fa-arrow-right"></i>
+                </span>
+            </a>
+
+            <a href="infrastructure.html" class="card">
+                <div class="card-icon cyan">
+                    <i class="fas fa-cloud"></i>
+                </div>
+                <h3>Infrastructure</h3>
+                <p>Multi-cloud deployment on AWS AppRunner and Azure services with Terraform IaC modules.</p>
+                <span class="card-link">
+                    View Infrastructure <i class="fas fa-arrow-right"></i>
+                </span>
+            </a>
+
+            <a href="security.html" class="card">
+                <div class="card-icon green">
+                    <i class="fas fa-shield-alt"></i>
+                </div>
+                <h3>Security</h3>
+                <p>Authentication flows, RBAC, secrets management, and the maker-checker approval workflow.</p>
+                <span class="card-link">
+                    View Security <i class="fas fa-arrow-right"></i>
+                </span>
+            </a>
+        </div>
+
+        <div class="tech-stack">
+            <div class="section-title">
+                <h2>Technology Stack</h2>
+                <p>Built with modern, enterprise-grade technologies</p>
+            </div>
+            <div class="tech-grid">
+                <div class="tech-item">
+                    <i class="fab fa-python" style="color: #3776AB;"></i>
+                    <span>FastAPI + Python 3.11</span>
+                </div>
+                <div class="tech-item">
+                    <i class="fab fa-react" style="color: #61DAFB;"></i>
+                    <span>Next.js 14 + React 18</span>
+                </div>
+                <div class="tech-item">
+                    <i class="fas fa-brain" style="color: #10b981;"></i>
+                    <span>LangGraph Agents</span>
+                </div>
+                <div class="tech-item">
+                    <i class="fas fa-robot" style="color: #7c3aed;"></i>
+                    <span>Claude / GPT-4o</span>
+                </div>
+                <div class="tech-item">
+                    <i class="fab fa-aws" style="color: #FF9900;"></i>
+                    <span>AWS AppRunner</span>
+                </div>
+                <div class="tech-item">
+                    <i class="fab fa-microsoft" style="color: #00A4EF;"></i>
+                    <span>Azure + D365</span>
+                </div>
+                <div class="tech-item">
+                    <i class="fas fa-database" style="color: #06b6d4;"></i>
+                    <span>Cosmos DB</span>
+                </div>
+                <div class="tech-item">
+                    <i class="fas fa-code" style="color: #f59e0b;"></i>
+                    <span>Terraform IaC</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="live-urls">
+            <div class="section-title">
+                <h2>Live Deployments</h2>
+                <p>Production services running on AWS AppRunner</p>
+            </div>
+            <div class="url-cards">
+                <a href="https://p7qrmgi9sp.us-east-1.awsapprunner.com/docs" target="_blank" class="url-card">
+                    <div class="status">LIVE</div>
+                    <h4>Claims Data API</h4>
+                    <code>p7qrmgi9sp.us-east-1.awsapprunner.com</code>
+                </a>
+                <a href="https://bn9ymuxtwp.us-east-1.awsapprunner.com/docs" target="_blank" class="url-card">
+                    <div class="status">LIVE</div>
+                    <h4>Agent Pipeline</h4>
+                    <code>bn9ymuxtwp.us-east-1.awsapprunner.com</code>
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <footer>
+        <p>EIS-Dynamics POC &copy; 2025 | Architecture Documentation</p>
+    </footer>
+</body>
+</html>

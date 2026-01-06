@@ -1,0 +1,53 @@
+version: '3.8'
+
+services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    ports:
+      - "${BACKEND_PORT:-3001}:${BACKEND_PORT:-3001}"
+    environment:
+      - BACKEND_PORT=${BACKEND_PORT:-3001}
+      - FRONTEND_PORT=${FRONTEND_PORT:-3000}
+      - DEBUG=${DEBUG:-False}
+      - DEV_MODE=${DEV_MODE:-False}
+      - JWT_SECRET_KEY=${JWT_SECRET_KEY:-change-in-production}
+      - CORS_ORIGINS=${CORS_ORIGINS:-}
+      - COSMOS_DB_ENDPOINT=${COSMOS_DB_ENDPOINT:-}
+      - COSMOS_DB_KEY=${COSMOS_DB_KEY:-}
+      - COSMOS_DB_DATABASE=${COSMOS_DB_DATABASE:-admin-portal}
+      - AZURE_SUBSCRIPTION_ID=${AZURE_SUBSCRIPTION_ID:-}
+      - AZURE_RESOURCE_GROUP_FILTER=${AZURE_RESOURCE_GROUP_FILTER:-}
+      - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID:-}
+      - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY:-}
+      - AWS_REGION=${AWS_REGION:-us-east-1}
+      - AWS_SERVICE_FILTER=${AWS_SERVICE_FILTER:-}
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:${BACKEND_PORT:-3001}/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    ports:
+      - "${FRONTEND_PORT:-3000}:${FRONTEND_PORT:-3000}"
+    environment:
+      - PORT=${FRONTEND_PORT:-3000}
+      - NEXT_PUBLIC_API_URL=http://backend:${BACKEND_PORT:-3001}
+    depends_on:
+      - backend
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:${FRONTEND_PORT:-3000}"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
+networks:
+  default:
+    name: admin-portal-network

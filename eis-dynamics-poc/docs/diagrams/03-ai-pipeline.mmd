@@ -1,0 +1,57 @@
+flowchart TD
+    START([Pet Claim FNOL<br/>Vet Invoice + Description]) --> ROUTER
+
+    ROUTER{Router Agent<br/>Analyze Complexity}
+    ROUTER -->|fast_track| AUTO[Simple Claims]
+    ROUTER -->|standard| STANDARD[Normal Processing]
+    ROUTER -->|enhanced| COMPLEX[Complex Review]
+
+    AUTO & STANDARD & COMPLEX --> BRONZE
+
+    subgraph BRONZE["Bronze Agent - Validate"]
+        BV[Validate Required Fields]
+        BC[Check Policy Status]
+        BW[Verify Waiting Period]
+        BD[Normalize Amounts]
+        BV --> BC --> BW --> BD
+    end
+
+    BRONZE --> SILVER
+
+    subgraph SILVER["Silver Agent - Enrich"]
+        SC[Get Pet Owner 360]
+        SP[Get Policy Details]
+        SM[Get Pet Medical History]
+        SV[Verify Vet Provider]
+        SC --> SP --> SM --> SV
+    end
+
+    SILVER --> GOLD
+
+    subgraph GOLD["Gold Agent - Decide"]
+        GF[Calculate Fraud Score]
+        GP[Check Pre-existing Conditions]
+        GC[Check Coverage Eligibility]
+        GR[Calculate Reimbursement]
+        GD[Generate Decision + Reasoning]
+        GF --> GP --> GC --> GR --> GD
+    end
+
+    GOLD --> OUTPUT
+
+    subgraph OUTPUT["Final Output"]
+        DEC[Decision<br/>APPROVED | DENIED | REVIEW]
+        CONF[Confidence Score<br/>0.0 - 1.0]
+        REASON[Reasoning Chain]
+        PAY[Recommended Payout]
+    end
+
+    OUTPUT --> WS[WebSocket Event<br/>pipeline.completed]
+
+    style START fill:#06b6d4,color:#fff
+    style ROUTER fill:#2563eb,color:#fff
+    style BRONZE fill:#cd7f32,color:#fff
+    style SILVER fill:#c0c0c0
+    style GOLD fill:#ffd700
+    style OUTPUT fill:#10b981,color:#fff
+    style WS fill:#7c3aed,color:#fff

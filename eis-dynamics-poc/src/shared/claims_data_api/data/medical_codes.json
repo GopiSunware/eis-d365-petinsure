@@ -1,0 +1,202 @@
+[
+  {
+    "code": "Z00.0",
+    "description": "General health exam",
+    "category": "preventive",
+    "is_chronic": false,
+    "typical_treatment_cost_min": 50,
+    "typical_treatment_cost_max": 150,
+    "typical_treatment_duration_days": 21,
+    "related_codes": []
+  },
+  {
+    "code": "Z23",
+    "description": "Vaccination encounter",
+    "category": "preventive",
+    "is_chronic": false,
+    "typical_treatment_cost_min": 75,
+    "typical_treatment_cost_max": 200,
+    "typical_treatment_duration_days": 11,
+    "related_codes": []
+  },
+  {
+    "code": "K08.3",
+    "description": "Dental disorder",
+    "category": "dental",
+    "is_chronic": false,
+    "typical_treatment_cost_min": 200,
+    "typical_treatment_cost_max": 800,
+    "typical_treatment_duration_days": 5,
+    "related_codes": []
+  },
+  {
+    "code": "R68.89",
+    "description": "Other general symptoms",
+    "category": "diagnostic",
+    "is_chronic": false,
+    "typical_treatment_cost_min": 100,
+    "typical_treatment_cost_max": 500,
+    "typical_treatment_duration_days": 11,
+    "related_codes": []
+  },
+  {
+    "code": "Z01.89",
+    "description": "Diagnostic exam",
+    "category": "diagnostic",
+    "is_chronic": false,
+    "typical_treatment_cost_min": 80,
+    "typical_treatment_cost_max": 400,
+    "typical_treatment_duration_days": 6,
+    "related_codes": []
+  },
+  {
+    "code": "Z01.812",
+    "description": "Laboratory examination",
+    "category": "diagnostic",
+    "is_chronic": false,
+    "typical_treatment_cost_min": 50,
+    "typical_treatment_cost_max": 250,
+    "typical_treatment_duration_days": 28,
+    "related_codes": []
+  },
+  {
+    "code": "L50.0",
+    "description": "Allergic urticaria",
+    "category": "illness",
+    "is_chronic": true,
+    "typical_treatment_cost_min": 100,
+    "typical_treatment_cost_max": 500,
+    "typical_treatment_duration_days": 1,
+    "related_codes": []
+  },
+  {
+    "code": "L30.9",
+    "description": "Dermatitis unspecified",
+    "category": "illness",
+    "is_chronic": true,
+    "typical_treatment_cost_min": 150,
+    "typical_treatment_cost_max": 600,
+    "typical_treatment_duration_days": 15,
+    "related_codes": []
+  },
+  {
+    "code": "H60.9",
+    "description": "Otitis externa",
+    "category": "illness",
+    "is_chronic": false,
+    "typical_treatment_cost_min": 100,
+    "typical_treatment_cost_max": 300,
+    "typical_treatment_duration_days": 20,
+    "related_codes": []
+  },
+  {
+    "code": "K59.9",
+    "description": "Functional intestinal disorder",
+    "category": "illness",
+    "is_chronic": false,
+    "typical_treatment_cost_min": 200,
+    "typical_treatment_cost_max": 800,
+    "typical_treatment_duration_days": 6,
+    "related_codes": []
+  },
+  {
+    "code": "N39.0",
+    "description": "Urinary tract infection",
+    "category": "illness",
+    "is_chronic": false,
+    "typical_treatment_cost_min": 150,
+    "typical_treatment_cost_max": 450,
+    "typical_treatment_duration_days": 14,
+    "related_codes": []
+  },
+  {
+    "code": "S83.5",
+    "description": "Cruciate ligament injury",
+    "category": "surgery",
+    "is_chronic": false,
+    "typical_treatment_cost_min": 3000,
+    "typical_treatment_cost_max": 6000,
+    "typical_treatment_duration_days": 17,
+    "related_codes": []
+  },
+  {
+    "code": "T18.9",
+    "description": "Foreign body",
+    "category": "emergency",
+    "is_chronic": false,
+    "typical_treatment_cost_min": 1500,
+    "typical_treatment_cost_max": 5000,
+    "typical_treatment_duration_days": 4,
+    "related_codes": []
+  },
+  {
+    "code": "S82.9",
+    "description": "Fracture",
+    "category": "emergency",
+    "is_chronic": false,
+    "typical_treatment_cost_min": 1000,
+    "typical_treatment_cost_max": 4000,
+    "typical_treatment_duration_days": 9,
+    "related_codes": []
+  },
+  {
+    "code": "T65.8",
+    "description": "Toxic effect",
+    "category": "emergency",
+    "is_chronic": false,
+    "typical_treatment_cost_min": 500,
+    "typical_treatment_cost_max": 3000,
+    "typical_treatment_duration_days": 1,
+    "related_codes": []
+  },
+  {
+    "code": "E11.9",
+    "description": "Type 2 diabetes",
+    "category": "chronic",
+    "is_chronic": true,
+    "typical_treatment_cost_min": 500,
+    "typical_treatment_cost_max": 2000,
+    "typical_treatment_duration_days": 21,
+    "related_codes": []
+  },
+  {
+    "code": "M16.9",
+    "description": "Hip osteoarthritis",
+    "category": "chronic",
+    "is_chronic": true,
+    "typical_treatment_cost_min": 800,
+    "typical_treatment_cost_max": 3000,
+    "typical_treatment_duration_days": 30,
+    "related_codes": []
+  },
+  {
+    "code": "G95.89",
+    "description": "IVDD - Intervertebral Disc Disease",
+    "category": "emergency",
+    "is_chronic": true,
+    "typical_treatment_cost_min": 4000,
+    "typical_treatment_cost_max": 10000,
+    "typical_treatment_duration_days": 7,
+    "related_codes": []
+  },
+  {
+    "code": "R01.1",
+    "description": "Heart murmur",
+    "category": "chronic",
+    "is_chronic": true,
+    "typical_treatment_cost_min": 200,
+    "typical_treatment_cost_max": 1000,
+    "typical_treatment_duration_days": 29,
+    "related_codes": []
+  },
+  {
+    "code": "M19.90",
+    "description": "Osteoarthritis",
+    "category": "chronic",
+    "is_chronic": true,
+    "typical_treatment_cost_min": 300,
+    "typical_treatment_cost_max": 1500,
+    "typical_treatment_duration_days": 23,
+    "related_codes": []
+  }
+]

@@ -1,0 +1,121 @@
+{
+  "patterns": [
+    {
+      "id": "FRAUD-001",
+      "pattern_type": "chronic_condition_gaming",
+      "name": "Chronic Condition Gaming",
+      "customer_id": "CUST-023",
+      "pet_id": "PET-034",
+      "pet_name": "Rocky",
+      "description": "Customer files multiple 'accident' claims for a pet with documented pre-existing hip dysplasia",
+      "claim_data": {
+        "diagnosis_code": "S83.5",
+        "diagnosis": "CCL rupture - claimed as sudden injury",
+        "claim_amount": 1600.00,
+        "service_date": "2024-12-15",
+        "provider_id": "PROV-011"
+      },
+      "indicators": [
+        "Anatomical focus (hip/leg) across all claims",
+        "Different providers for each claim",
+        "All claims under $2000 threshold",
+        "Pre-existing condition documented (hip dysplasia)"
+      ],
+      "why_rules_miss": "Each claim passes individual thresholds, no cross-claim analysis",
+      "why_ai_catches": "Pattern recognition across claim history + pre-existing condition awareness",
+      "ai_indicators": [
+        {"type": "pre_existing_related", "severity": "high", "score_impact": 25},
+        {"type": "anatomical_concentration", "severity": "medium", "score_impact": 15}
+      ],
+      "expected_rule_result": "APPROVED",
+      "expected_ai_result": "FLAGGED"
+    },
+    {
+      "id": "FRAUD-002",
+      "pattern_type": "provider_collusion",
+      "name": "Provider Collusion",
+      "customer_id": "CUST-067",
+      "pet_id": "PET-100",
+      "pet_name": "Shadow",
+      "provider_id": "PROV-045",
+      "description": "Customer exclusively uses one out-of-network provider with claims near annual limits",
+      "claim_data": {
+        "diagnosis_code": "K59.9",
+        "diagnosis": "Gastrointestinal disorder - unspecified",
+        "claim_amount": 4800.00,
+        "service_date": "2024-12-10",
+        "provider_id": "PROV-045"
+      },
+      "indicators": [
+        "100% claims with same out-of-network provider",
+        "Claims consistently $200-300 below annual limit",
+        "Vague treatment descriptions",
+        "Provider has 15% customer concentration",
+        "Round claim amounts"
+      ],
+      "why_rules_miss": "Each claim is below limits, provider fraud rate below threshold",
+      "why_ai_catches": "Multi-variable correlation: provider loyalty + limit optimization + concentration",
+      "ai_indicators": [
+        {"type": "exclusive_provider", "severity": "medium", "score_impact": 15},
+        {"type": "high_out_of_network", "severity": "medium", "score_impact": 10},
+        {"type": "provider_concentration", "severity": "high", "score_impact": 20},
+        {"type": "round_amount", "severity": "low", "score_impact": 5}
+      ],
+      "expected_rule_result": "APPROVED",
+      "expected_ai_result": "FLAGGED"
+    },
+    {
+      "id": "FRAUD-003",
+      "pattern_type": "staged_timing",
+      "name": "Staged Timing",
+      "customer_id": "CUST-089",
+      "pet_id": "PET-133",
+      "pet_name": "Pierre",
+      "breed": "French Bulldog",
+      "description": "New customer files expensive IVDD claim 2 days after waiting period for high-risk breed",
+      "claim_data": {
+        "diagnosis_code": "G95.89",
+        "diagnosis": "IVDD - Intervertebral Disc Disease",
+        "claim_amount": 9200.00,
+        "service_date": "2024-12-17",
+        "policy_effective_date": "2024-12-01",
+        "days_since_policy": 17,
+        "waiting_period_days": 14,
+        "provider_id": "PROV-025"
+      },
+      "indicators": [
+        "Claim filed day 17 (2 days after 14-day waiting period)",
+        "French Bulldog has 10x higher IVDD risk",
+        "Pre-policy vet records 'unavailable'",
+        "Documentation suspiciously complete for emergency",
+        "Statistical anomaly: <0.3% probability"
+      ],
+      "why_rules_miss": "Waiting period technically satisfied, documentation complete",
+      "why_ai_catches": "Statistical anomaly + breed risk + missing records pattern",
+      "ai_indicators": [
+        {"type": "timing_anomaly", "severity": "high", "score_impact": 25},
+        {"type": "breed_specific_timing", "severity": "critical", "score_impact": 30}
+      ],
+      "expected_rule_result": "APPROVED",
+      "expected_ai_result": "FLAGGED"
+    }
+  ],
+  "summary": {
+    "total_fraud_patterns": 3,
+    "total_fraud_claims": 9,
+    "total_fraud_amount": 31750.0,
+    "fraud_customers": 3,
+    "detection_method": "AI-based contextual analysis",
+    "pattern_types": {
+      "chronic_condition_gaming": 1,
+      "provider_collusion": 1,
+      "staged_timing": 1
+    }
+  },
+  "demo_comparison": {
+    "description": "These scenarios demonstrate where AI agents outperform rule-based systems",
+    "rules_would_approve": 3,
+    "ai_would_flag": 3,
+    "saved_fraud_amount": 15600.0
+  }
+}

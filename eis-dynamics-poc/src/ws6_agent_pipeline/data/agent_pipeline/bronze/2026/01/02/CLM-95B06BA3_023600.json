@@ -1,0 +1,83 @@
+{
+  "claim_id": "CLM-95B06BA3",
+  "raw_data": {
+    "claim_id": "CLM-95B06BA3",
+    "claim_number": "CLM-20260102-425D10",
+    "policy_id": "POL-034",
+    "pet_id": "PET-034",
+    "customer_id": "CUST-023",
+    "provider_id": "PROV-011",
+    "claim_type": "accident",
+    "claim_category": "Orthopedic",
+    "service_date": "2024-12-15",
+    "submitted_date": "2026-01-02",
+    "claim_amount": 1600.0,
+    "deductible_applied": 0.0,
+    "covered_amount": 0.0,
+    "paid_amount": 0.0,
+    "status": "Submitted",
+    "denial_reason": null,
+    "processing_days": 0,
+    "diagnosis_code": "S83.5",
+    "treatment_notes": "CCL rupture claimed as accident",
+    "invoice_number": null,
+    "is_emergency": false,
+    "is_recurring": false,
+    "created_at": "2026-01-02T02:34:58.213145",
+    "updated_at": "2026-01-02T02:34:58.213149",
+    "_ingestion_timestamp": "2026-01-02T02:34:58.213185",
+    "_source": "api",
+    "_entity_id": "CLM-95B06BA3",
+    "_cleaned_at": "2026-01-02T02:35:32.890580",
+    "_changes_count": 1
+  },
+  "validation": {
+    "is_valid": true,
+    "errors": [],
+    "warnings": [
+      "Optional field missing: diagnosis_description",
+      "Optional field missing: treatment_date",
+      "Optional field missing: submission_date",
+      "Optional field missing: provider_name"
+    ],
+    "fields_checked": 27,
+    "missing_required": [],
+    "missing_optional": [
+      "diagnosis_description",
+      "treatment_date",
+      "submission_date",
+      "provider_name"
+    ]
+  },
+  "quality": {
+    "completeness_score": 0.6363636363636364,
+    "accuracy_score": 1.0,
+    "consistency_score": 1.0,
+    "overall_score": 0.8545454545454545,
+    "issues": [],
+    "recommendations": [
+      "Improve data completeness by adding missing optional fields",
+      "Data quality is acceptable for processing"
+    ]
+  },
+  "anomalies": {
+    "is_anomalous": false,
+    "anomalies": [],
+    "risk_indicators": [
+      "Suspiciously round claim amount: $1,600.00"
+    ],
+    "anomaly_score": 0.1
+  },
+  "agent": {
+    "reasoning": "QUARANTINE DECISION: While the claim passes basic schema validation and has good data quality (85.5% overall score), several critical issues require human review: 1) Extreme submission delay of 13 months between service (Dec 2024) and submission (Jan 2026), 2) Claim amount ($1,600) is significantly below typical costs for cruciate ligament surgery ($3,000-$6,000), suggesting potential incomplete billing or fraud, 3) Policy expired before submission date, though service occurred during active period. The combination of timing anomalies and cost discrepancies warrants manual investigation before processing.",
+    "decision": "QUARANTINE",
+    "confidence": 0.85,
+    "agent_name": "bronze_agent",
+    "agent_version": "1.0.0"
+  },
+  "metadata": {
+    "processed_at": "2026-01-02T02:36:00.856948",
+    "layer": "bronze",
+    "source": "agent_pipeline"
+  }
+}

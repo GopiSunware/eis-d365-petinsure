@@ -1,0 +1,135 @@
+"""
+Configuration settings template.
+Copy this to your project and customize.
+"""
+
+from functools import lru_cache
+from pathlib import Path
+from typing import Literal, Optional
+
+from pydantic import Field
+from pydantic_settings import BaseSettings, SettingsConfigDict
+
+
+def find_env_file() -> Path:
+    """Find .env file by searching up directory tree."""
+    current = Path(__file__).resolve().parent
+    for _ in range(10):
+        env_path = current / ".env"
+        if env_path.exists():
+            return env_path
+        parent = current.parent
+        if parent == current:
+            break
+        current = parent
+    return Path(".env")
+
+
+class Settings(BaseSettings):
+    """Application settings loaded from environment variables."""
+
+    model_config = SettingsConfigDict(
+        env_file=find_env_file(),
+        env_file_encoding="utf-8",
+        extra="ignore",
+    )
+
+    # ===========================================
+    # ENVIRONMENT
+    # ===========================================
+    ENVIRONMENT: Literal["dev", "staging", "production"] = "dev"
+    DEBUG: bool = False
+    LOG_LEVEL: str = "INFO"
+
+    # ===========================================
+    # SERVICE CONFIGURATION
+    # ===========================================
+    SERVICE_NAME: str = "my-service"
+    SERVICE_VERSION: str = "1.0.0"
+    HOST: str = "0.0.0.0"
+    PORT: int = 8000
+
+    # ===========================================
+    # STORAGE (local | azure | s3)
+    # ===========================================
+    STORAGE_TYPE: Literal["local", "azure", "s3"] = "local"
+    STORAGE_PATH: str = "./data"
+
+    # Azure Storage
+    AZURE_STORAGE_ACCOUNT: str = ""
+    AZURE_STORAGE_KEY: str = ""
+    AZURE_STORAGE_CONNECTION_STRING: str = ""
+    AZURE_STORAGE_CONTAINER: str = "raw"
+
+    # AWS S3
+    AWS_S3_BUCKET: str = ""
+    AWS_REGION: str = "us-east-1"
+
+    # ===========================================
+    # AI PROVIDERS
+    # ===========================================
+    AI_PROVIDER: Literal["claude", "openai"] = "claude"
+    ANTHROPIC_API_KEY: str = Field(default="", repr=False)
+    OPENAI_API_KEY: str = Field(default="", repr=False)
+
+    # Model settings
+    CLAUDE_MODEL: str = "claude-sonnet-4-20250514"
+    OPENAI_MODEL: str = "gpt-4o"
+
+    # ===========================================
+    # SERVICE URLS (change per environment)
+    # ===========================================
+    API_BASE_URL: str = "http://localhost:8000"
+    EXTERNAL_SERVICE_URL: str = ""
+
+    # ===========================================
+    # SECRETS MANAGEMENT
+    # ===========================================
+    # Azure Key Vault (production)
+    KEY_VAULT_URI: str = ""
+
+    # AWS Secrets Manager (production)
+    AWS_SECRET_NAME: str = ""
+
+    # ===========================================
+    # CORS
+    # ===========================================
+    CORS_ORIGINS: list[str] = Field(default_factory=lambda: [
+        "http://localhost:3000",
+        "http://localhost:8080",
+    ])
+
+    # ===========================================
+    # COMPUTED PROPERTIES
+    # ===========================================
+    @property
+    def is_production(self) -> bool:
+        return self.ENVIRONMENT == "production"
+
+    @property
+    def is_development(self) -> bool:
+        return self.ENVIRONMENT == "dev"
+
+    @property
+    def ai_api_key(self) -> str:
+        """Get the appropriate API key based on provider."""
+        if self.AI_PROVIDER == "claude":
+            return self.ANTHROPIC_API_KEY
+        return self.OPENAI_API_KEY
+
+    @property
+    def ai_model(self) -> str:
+        """Get the appropriate model based on provider."""
+        if self.AI_PROVIDER == "claude":
+            return self.CLAUDE_MODEL
+        return self.OPENAI_MODEL
+
+
+@lru_cache()
+def get_settings() -> Settings:
+    """Get cached settings instance."""
+    return Settings()
+
+
+# Convenience instance
+settings = get_settings()

@@ -1,0 +1,59 @@
+{
+  "mcpServers": {
+    "github": {
+      "type": "http",
+      "url": "https://api.githubcopilot.com/mcp/",
+      "description": "GitHub integration for PRs, issues, and code"
+    }
+  },
+  "_templates": {
+    "_comment": "Templates below - copy to mcpServers and configure",
+    "sentry-template": {
+      "type": "http",
+      "url": "https://mcp.sentry.dev/mcp",
+      "description": "Error monitoring - requires OAuth authentication"
+    },
+    "postgres-template": {
+      "type": "stdio",
+      "command": "npx",
+      "args": ["-y", "@bytebase/dbhub"],
+      "env": {
+        "DATABASE_URL": "${DB_URL:-postgresql://localhost/dbname}"
+      },
+      "description": "PostgreSQL database access"
+    },
+    "mongodb-template": {
+      "type": "stdio",
+      "command": "npx",
+      "args": ["-y", "@anthropic-sdk/mcp-server-mongodb"],
+      "env": {
+        "MONGODB_URI": "${MONGODB_URI:-mongodb://localhost:27017}"
+      },
+      "description": "MongoDB database access"
+    },
+    "slack-template": {
+      "type": "http",
+      "url": "https://mcp.slack.com/api",
+      "headers": {
+        "Authorization": "Bearer ${SLACK_TOKEN}"
+      },
+      "description": "Slack integration - requires bot token"
+    },
+    "linear-template": {
+      "type": "http",
+      "url": "https://mcp.linear.app/api",
+      "headers": {
+        "Authorization": "Bearer ${LINEAR_API_KEY}"
+      },
+      "description": "Linear issue tracking"
+    },
+    "notion-template": {
+      "type": "http",
+      "url": "https://mcp.notion.so/api",
+      "headers": {
+        "Authorization": "Bearer ${NOTION_API_KEY}"
+      },
+      "description": "Notion documents and databases"
+    }
+  }
+}

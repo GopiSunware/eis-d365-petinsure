@@ -1,0 +1,112 @@
+{
+  "claim_id": "CLM-QUICK-96ABFD",
+  "bronze_reference": {
+    "claim_id": "CLM-QUICK-96ABFD",
+    "decision": null
+  },
+  "enrichment": {
+    "policy_info": {
+      "policy_id": "POL-DEMO-001",
+      "coverage_type": "comprehensive",
+      "deductible": 250.0,
+      "annual_limit": 10000.0,
+      "reimbursement_rate": 0.8,
+      "status": "active"
+    },
+    "customer_info": {
+      "customer_id": "CUST-DEMO-001",
+      "name": "Demo Customer",
+      "member_since": "2023-01-01",
+      "lifetime_value": 2000.0,
+      "total_claims": 2,
+      "total_paid": 2751.584881158884,
+      "risk_tier": "standard",
+      "churn_risk": 0.17267760272442373
+    },
+    "pet_info": {
+      "pet_id": "PET-DEMO-001",
+      "name": "Unknown Pet",
+      "species": "dog",
+      "breed": "Mixed",
+      "age_years": 4,
+      "weight_lbs": 45,
+      "known_conditions": []
+    },
+    "provider_info": {
+      "provider_id": "PROV-7749",
+      "name": "Companion Animal Hospital",
+      "type": "veterinary_clinic",
+      "is_in_network": true,
+      "avg_claim_amount": 893.2282602108132,
+      "claims_processed": 28,
+      "fraud_rate": 0.035721849810098315,
+      "rating": 3.5994774800886207
+    },
+    "enrichment_summary": "Created synthetic policy data for POL-DEMO-001; Created synthetic customer data for CUST-DEMO-001; Created synthetic pet data; Created synthetic provider data for Companion Animal Hospital",
+    "customer_claim_history": {
+      "customer_id": "CUST-DEMO-001",
+      "claims": [
+        {
+          "claim_id": "CLM-HIST-0001",
+          "claim_date": "2025-06-05",
+          "claim_type": "accident",
+          "claim_amount": 1757.81,
+          "status": "paid",
+          "paid_amount": 65.39
+        }
+      ],
+      "summary": {
+        "total_claims": 1,
+        "total_amount": 1757.81,
+        "total_paid": 65.39,
+        "avg_claim_amount": 1757.81,
+        "claim_frequency": 0.08333333333333333
+      }
+    }
+  },
+  "normalized": {
+    "normalized_diagnosis": {
+      "original_code": "Z00.0",
+      "icd10_code": "Z00.0",
+      "category": "general",
+      "subcategory": "unclassified",
+      "description": "Annual wellness exam with vaccinations"
+    },
+    "claim_category": "general",
+    "claim_subcategory": "unclassified",
+    "derived_values": {
+      "claim_amount_normalized": 520.0,
+      "claim_type_normalized": "wellness",
+      "claim_size": "medium",
+      "is_emergency": false,
+      "is_chronic": false,
+      "processing_priority": 3
+    }
+  },
+  "business_rules": {
+    "is_covered": false,
+    "passed": [
+      "Waiting period satisfied (729 days >= 14 required)",
+      "Within annual limit ($520.00 <= $10,000.00 remaining)",
+      "Applied deductible of $250.00",
+      "Calculated reimbursement: $216.00 (80%)",
+      "Provider is in-network"
+    ],
+    "failed": [
+      "Category 'general' is not covered under comprehensive plan"
+    ],
+    "warnings": [],
+    "coverage_percentage": 80.0,
+    "expected_reimbursement": 216.0
+  },
+  "agent": {
+    "reasoning": "## Silver Layer Enrichment Analysis for CLM-QUICK-96ABFD\n\n### Enrichment Summary\nSuccessfully enriched wellness claim with comprehensive policy, customer, pet, and provider data. Key findings:\n\n**Policy Context**: Comprehensive coverage with $250 deductible, 80% reimbursement rate, and $10,000 annual limit.\n\n**Customer Profile**: Standard risk tier customer (CUST-DEMO-001) with 2-year membership, moderate lifetime value ($2,000), and low claim frequency. Previous claim history shows one accident claim with significant underpayment ($65.39 paid on $1,757.81 claim).\n\n**Pet Information**: 4-year-old mixed breed dog (45 lbs) with no known pre-existing conditions.\n\n**Provider Assessment**: In-network Companion Animal Hospital with moderate rating (3.6/5), low fraud rate (3.6%), and average claim amount of $893.\n\n### Critical Coverage Issue Identified\n**MAJOR CONCERN**: This wellness claim is NOT COVERED under the comprehensive policy. The diagnosis category 'general' is excluded from coverage, despite the claim appearing to be routine preventive care.\n\n### Business Rules Validation\n- \u2705 Waiting period satisfied (729 days)\n- \u2705 Within annual limits\n- \u2705 In-network provider\n- \u274c **COVERAGE DENIED**: Category not covered under plan\n\n### Quality Assessment\n- Enrichment completeness: 100%\n- Data confidence: 71% (synthetic data impacts confidence)\n- Overall silver score: 83%\n\n### Recommendations\n1. **DENY CLAIM**: Not covered under current policy terms\n2. **Customer Communication**: Explain wellness exclusion and suggest wellness add-on\n3. **Review Policy**: Customer may need wellness rider for preventive care coverage",
+    "agent_name": "silver_agent",
+    "agent_version": "1.0.0"
+  },
+  "metadata": {
+    "processed_at": "2025-12-30T19:46:34.151901",
+    "layer": "silver",
+    "source": "agent_pipeline"
+  }
+}

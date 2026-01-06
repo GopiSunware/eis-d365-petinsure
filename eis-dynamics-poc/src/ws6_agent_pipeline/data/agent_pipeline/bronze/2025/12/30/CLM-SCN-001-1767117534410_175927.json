@@ -1,0 +1,54 @@
+{
+  "claim_id": "CLM-SCN-001-1767117534410",
+  "raw_data": {
+    "claim_id": "CLM-SCN-001-1767117534410",
+    "policy_id": "POL-DEMO-001",
+    "customer_id": "CUST-DEMO-001",
+    "pet_id": "PET-DEMO-001",
+    "claim_type": "accident",
+    "claim_amount": 1355.0,
+    "diagnosis_code": "T65.8",
+    "diagnosis_description": "Theobromine toxicity from chocolate ingestion",
+    "treatment_date": "2024-12-20",
+    "submission_date": "2025-12-30",
+    "provider_name": "24/7 Emergency Animal Hospital",
+    "_cleaned_at": "2025-12-30T17:59:07.079244",
+    "_changes_count": 2
+  },
+  "validation": {
+    "is_valid": true,
+    "errors": [],
+    "warnings": [],
+    "fields_checked": 11,
+    "missing_required": [],
+    "missing_optional": []
+  },
+  "quality": {
+    "completeness_score": 1.0,
+    "accuracy_score": 1.0,
+    "consistency_score": 1.0,
+    "overall_score": 1.0,
+    "issues": [],
+    "recommendations": [
+      "Data quality is excellent"
+    ]
+  },
+  "anomalies": {
+    "is_anomalous": false,
+    "anomalies": [],
+    "risk_indicators": [],
+    "anomaly_score": 0.0
+  },
+  "agent": {
+    "reasoning": "This claim passes all validation checks with excellent data quality. Schema validation confirmed all required fields are present and properly typed. No anomalies were detected - the claim amount ($1,355) is reasonable for emergency veterinary treatment, the diagnosis code T65.8 appropriately matches theobromine toxicity, and the timeline is logical. Data cleaning made only minor normalizations (claim_type standardization and amount conversion to float). Quality assessment shows perfect scores across completeness, accuracy, and consistency metrics. The claim represents a legitimate emergency treatment scenario with complete, accurate documentation.",
+    "decision": "ACCEPT",
+    "confidence": 0.95,
+    "agent_name": "bronze_agent",
+    "agent_version": "1.0.0"
+  },
+  "metadata": {
+    "processed_at": "2025-12-30T17:59:27.852512",
+    "layer": "bronze",
+    "source": "agent_pipeline"
+  }
+}

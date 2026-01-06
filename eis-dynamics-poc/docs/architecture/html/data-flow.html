@@ -1,0 +1,610 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Data Flow - EIS-Dynamics POC</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --primary: #2563eb;
+            --secondary: #7c3aed;
+            --accent: #06b6d4;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+            --bronze: #cd7f32;
+            --silver: #c0c0c0;
+            --gold: #ffd700;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Inter', sans-serif; background: #0f172a; color: #e2e8f0; line-height: 1.6; }
+
+        nav {
+            position: fixed; top: 0; left: 0; right: 0;
+            background: rgba(15, 23, 42, 0.95);
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+            padding: 16px 24px; z-index: 100;
+            display: flex; justify-content: space-between; align-items: center;
+        }
+        nav a { color: #94a3b8; text-decoration: none; font-size: 14px; transition: color 0.2s; }
+        nav a:hover { color: #fff; }
+        .nav-links { display: flex; gap: 24px; }
+        .nav-links a.active { color: var(--primary); }
+
+        .container { max-width: 1400px; margin: 0 auto; padding: 100px 24px 60px; }
+
+        .page-header { text-align: center; margin-bottom: 60px; }
+        .page-header h1 {
+            font-size: 40px; font-weight: 700; margin-bottom: 16px;
+            background: linear-gradient(135deg, #fff 0%, #94a3b8 100%);
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+        }
+        .page-header p { color: #94a3b8; font-size: 18px; max-width: 700px; margin: 0 auto; }
+
+        .section { margin-bottom: 60px; }
+        .section-title {
+            font-size: 24px; font-weight: 600; margin-bottom: 24px;
+            display: flex; align-items: center; gap: 12px;
+        }
+        .section-title i { color: var(--primary); }
+
+        .card {
+            background: rgba(255,255,255,0.03);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 16px; padding: 32px; margin-bottom: 24px;
+        }
+
+        /* Flow Diagram */
+        .flow-diagram { display: flex; flex-direction: column; gap: 24px; }
+        .flow-layer {
+            background: rgba(255,255,255,0.02);
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 12px; padding: 24px;
+        }
+        .flow-layer-title {
+            font-size: 14px; font-weight: 600; text-transform: uppercase;
+            letter-spacing: 1px; color: var(--primary); margin-bottom: 16px;
+            display: flex; align-items: center; gap: 8px;
+        }
+        .flow-boxes { display: flex; flex-wrap: wrap; gap: 16px; justify-content: center; }
+        .flow-box {
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 8px; padding: 16px 24px;
+            text-align: center; min-width: 120px;
+        }
+        .flow-box.highlight { background: rgba(37, 99, 235, 0.15); border-color: var(--primary); }
+        .flow-box h4 { font-size: 14px; margin-bottom: 4px; }
+        .flow-box p { font-size: 11px; color: #64748b; }
+        .flow-box .port { font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--accent); }
+        .arrow-down-flow { text-align: center; color: #64748b; font-size: 20px; padding: 8px 0; }
+
+        /* Agent Pipeline Stages */
+        .pipeline-stages { display: flex; flex-direction: column; gap: 24px; }
+        .stage-card { border-radius: 16px; padding: 28px; border: 1px solid rgba(255,255,255,0.1); }
+        .stage-card.router { background: linear-gradient(135deg, rgba(37, 99, 235, 0.15) 0%, rgba(37, 99, 235, 0.05) 100%); border-color: rgba(37, 99, 235, 0.3); }
+        .stage-card.bronze { background: linear-gradient(135deg, rgba(205, 127, 50, 0.15) 0%, rgba(205, 127, 50, 0.05) 100%); border-color: rgba(205, 127, 50, 0.3); }
+        .stage-card.silver { background: linear-gradient(135deg, rgba(192, 192, 192, 0.15) 0%, rgba(192, 192, 192, 0.05) 100%); border-color: rgba(192, 192, 192, 0.3); }
+        .stage-card.gold { background: linear-gradient(135deg, rgba(255, 215, 0, 0.15) 0%, rgba(255, 215, 0, 0.05) 100%); border-color: rgba(255, 215, 0, 0.3); }
+
+        .stage-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 12px; }
+        .stage-title { font-size: 20px; font-weight: 600; display: flex; align-items: center; gap: 12px; }
+        .stage-title.router { color: var(--primary); }
+        .stage-title.bronze { color: var(--bronze); }
+        .stage-title.silver { color: var(--silver); }
+        .stage-title.gold { color: var(--gold); }
+
+        .stage-badge { font-size: 12px; padding: 6px 12px; border-radius: 20px; font-weight: 500; }
+        .stage-badge.router { background: rgba(37, 99, 235, 0.2); color: var(--primary); }
+        .stage-badge.bronze { background: rgba(205, 127, 50, 0.2); color: var(--bronze); }
+        .stage-badge.silver { background: rgba(192, 192, 192, 0.2); color: var(--silver); }
+        .stage-badge.gold { background: rgba(255, 215, 0, 0.2); color: var(--gold); }
+
+        .stage-content { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px; }
+        .stage-section h5 { font-size: 13px; font-weight: 600; margin-bottom: 10px; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.5px; }
+        .stage-section p { font-size: 14px; color: #e2e8f0; margin-bottom: 8px; }
+        .stage-section ul { list-style: none; font-size: 13px; }
+        .stage-section li { padding: 4px 0; color: #94a3b8; display: flex; align-items: center; gap: 8px; }
+        .stage-section li::before { content: ''; width: 6px; height: 6px; background: var(--success); border-radius: 50%; }
+
+        .tools-grid { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
+        .tool-badge {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 11px; padding: 4px 10px;
+            background: rgba(0,0,0,0.3); border-radius: 4px;
+            color: var(--accent);
+        }
+
+        .data-output {
+            background: rgba(0,0,0,0.4);
+            border-radius: 8px; padding: 12px 16px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 11px; color: #64748b; margin-top: 12px;
+        }
+
+        /* Entity Mapping */
+        .mapping-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(350px, 1fr)); gap: 24px; }
+        .mapping-card {
+            background: rgba(255,255,255,0.03);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 12px; padding: 24px;
+        }
+        .mapping-card h4 {
+            font-size: 16px; margin-bottom: 16px;
+            display: flex; align-items: center; gap: 10px; color: var(--accent);
+        }
+        .mapping-row {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 8px 0; border-bottom: 1px solid rgba(255,255,255,0.05);
+            font-size: 13px;
+        }
+        .mapping-row:last-child { border-bottom: none; }
+        .mapping-source { color: #e2e8f0; }
+        .mapping-arrow { color: #64748b; }
+        .mapping-target { color: var(--accent); font-family: 'JetBrains Mono', monospace; font-size: 12px; }
+
+        /* WebSocket Events */
+        .events-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; }
+        .event-card {
+            background: rgba(255,255,255,0.03);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 10px; padding: 16px;
+        }
+        .event-name {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 13px; color: var(--warning); margin-bottom: 6px;
+        }
+        .event-desc { font-size: 12px; color: #94a3b8; }
+
+        /* Code Block */
+        .code-block {
+            background: rgba(0,0,0,0.5);
+            border-radius: 8px; padding: 20px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 12px; overflow-x: auto;
+        }
+        .code-block pre { margin: 0; white-space: pre-wrap; }
+        .code-key { color: var(--accent); }
+        .code-string { color: var(--success); }
+        .code-number { color: var(--warning); }
+        .code-comment { color: #64748b; }
+
+        /* Sequence Diagram */
+        .sequence-diagram {
+            background: rgba(0,0,0,0.2);
+            border-radius: 12px; padding: 24px;
+        }
+        .sequence-title { font-size: 14px; font-weight: 600; margin-bottom: 20px; color: var(--warning); }
+        .sequence-step {
+            display: flex; align-items: flex-start; gap: 16px;
+            padding: 12px 0; border-left: 2px solid rgba(255,255,255,0.1);
+            padding-left: 20px; margin-left: 10px;
+        }
+        .sequence-step:last-child { border-left: 2px solid transparent; }
+        .step-number {
+            width: 24px; height: 24px;
+            background: var(--primary); border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 12px; font-weight: 600; flex-shrink: 0;
+            margin-left: -31px;
+        }
+        .step-content { flex: 1; }
+        .step-action { font-size: 14px; font-weight: 500; margin-bottom: 4px; }
+        .step-detail { font-size: 12px; color: #94a3b8; }
+
+        /* Tables */
+        table { width: 100%; border-collapse: collapse; }
+        th, td { padding: 12px 16px; text-align: left; border-bottom: 1px solid rgba(255,255,255,0.1); }
+        th { background: rgba(37, 99, 235, 0.1); font-weight: 600; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px; color: var(--primary); }
+        td { font-size: 14px; }
+        tr:hover td { background: rgba(255,255,255,0.02); }
+
+        @media (max-width: 768px) {
+            .flow-boxes { flex-direction: column; align-items: center; }
+            .stage-content { grid-template-columns: 1fr; }
+            .mapping-grid { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+    <nav>
+        <a href="index.html"><i class="fas fa-home"></i> EIS-Dynamics POC</a>
+        <div class="nav-links">
+            <a href="overview.html">Overview</a>
+            <a href="data-flow.html" class="active">Data Flow</a>
+            <a href="infrastructure.html">Infrastructure</a>
+            <a href="security.html">Security</a>
+        </div>
+    </nav>
+
+    <div class="container">
+        <div class="page-header">
+            <h1>Data Flow Architecture</h1>
+            <p>How data flows through the EIS-Dynamics POC for pet insurance, including the AI agent pipeline processing, synchronization patterns, and data transformations</p>
+        </div>
+
+        <!-- High-Level Data Flow -->
+        <div class="section">
+            <h2 class="section-title"><i class="fas fa-stream"></i> High-Level Data Flow</h2>
+            <div class="card">
+                <div class="flow-diagram">
+                    <div class="flow-layer">
+                        <div class="flow-layer-title"><i class="fas fa-desktop"></i> Presentation Layer</div>
+                        <div class="flow-boxes">
+                            <div class="flow-box">
+                                <h4>WS4: Agent Portal</h4>
+                                <p class="port">:8080</p>
+                                <p>Claims Processing UI</p>
+                            </div>
+                            <div class="flow-box">
+                                <h4>WS8: Admin Portal</h4>
+                                <p class="port">:8081</p>
+                                <p>Configuration UI</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="arrow-down-flow"><i class="fas fa-arrow-down"></i> HTTP/REST</div>
+
+                    <div class="flow-layer">
+                        <div class="flow-layer-title"><i class="fas fa-database"></i> Unified Gateway</div>
+                        <div class="flow-boxes">
+                            <div class="flow-box highlight" style="min-width: 300px;">
+                                <h4>Claims Data API</h4>
+                                <p class="port">:8000</p>
+                                <p>60+ Endpoints | 44 LLM Tools</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="arrow-down-flow"><i class="fas fa-arrow-down"></i></div>
+
+                    <div class="flow-layer">
+                        <div class="flow-layer-title"><i class="fas fa-cogs"></i> Microservices</div>
+                        <div class="flow-boxes">
+                            <div class="flow-box"><h4>WS2: AI Claims</h4><p class="port">:8001</p><p>FNOL, Fraud</p></div>
+                            <div class="flow-box"><h4>WS3: Integration</h4><p class="port">:8002</p><p>EIS, D365</p></div>
+                            <div class="flow-box"><h4>WS5: Rating</h4><p class="port">:8003</p><p>Quotes, Premiums</p></div>
+                            <div class="flow-box"><h4>WS8: Admin API</h4><p class="port">:8008</p><p>Config, Costs</p></div>
+                        </div>
+                    </div>
+
+                    <div class="arrow-down-flow"><i class="fas fa-arrow-down"></i></div>
+
+                    <div class="flow-layer">
+                        <div class="flow-layer-title"><i class="fas fa-brain"></i> AI Processing Layer</div>
+                        <div class="flow-boxes">
+                            <div class="flow-box highlight"><h4>WS6: Agent Pipeline</h4><p class="port">:8006</p><p>LangGraph Medallion</p></div>
+                            <div class="flow-box"><h4>WS7: DocGen</h4><p class="port">:8007</p><p>Doc Processing</p></div>
+                        </div>
+                    </div>
+
+                    <div class="arrow-down-flow"><i class="fas fa-arrow-down"></i></div>
+
+                    <div class="flow-layer">
+                        <div class="flow-layer-title"><i class="fas fa-hdd"></i> Data Layer</div>
+                        <div class="flow-boxes">
+                            <div class="flow-box"><h4>Local Storage</h4><p>CSV/JSONL</p></div>
+                            <div class="flow-box"><h4>Dataverse</h4><p>D365 CRM</p></div>
+                            <div class="flow-box"><h4>Azure Storage</h4><p>Blob/Cosmos</p></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- LangGraph Agent Pipeline Detail -->
+        <div class="section">
+            <h2 class="section-title"><i class="fas fa-robot"></i> LangGraph Agent Pipeline Flow</h2>
+            <div class="pipeline-stages">
+                <!-- Router Agent -->
+                <div class="stage-card router">
+                    <div class="stage-header">
+                        <div class="stage-title router"><i class="fas fa-route"></i> Router Agent</div>
+                        <span class="stage-badge router">ENTRY POINT</span>
+                    </div>
+                    <div class="stage-content">
+                        <div class="stage-section"><h5>Input</h5><p>Raw claim data (JSON)</p></div>
+                        <div class="stage-section"><h5>Action</h5><p>Analyze complexity, determine routing path</p></div>
+                        <div class="stage-section">
+                            <h5>Output</h5>
+                            <div class="tools-grid">
+                                <span class="tool-badge">fast_track</span>
+                                <span class="tool-badge">standard</span>
+                                <span class="tool-badge">enhanced</span>
+                            </div>
+                        </div>
+                        <div class="stage-section">
+                            <h5>Tools Used</h5>
+                            <div class="tools-grid">
+                                <span class="tool-badge">claim_analysis</span>
+                                <span class="tool-badge">policy_lookup</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="arrow-down-flow"><i class="fas fa-arrow-down"></i> Routing Decision</div>
+
+                <!-- Bronze Agent -->
+                <div class="stage-card bronze">
+                    <div class="stage-header">
+                        <div class="stage-title bronze"><i class="fas fa-check-circle"></i> Bronze Agent</div>
+                        <span class="stage-badge bronze">DATA VALIDATION</span>
+                    </div>
+                    <div class="stage-content">
+                        <div class="stage-section"><h5>Input</h5><p>Raw claim + routing decision</p></div>
+                        <div class="stage-section"><h5>Action</h5><p>Validate fields, cleanse data, assess quality</p></div>
+                        <div class="stage-section">
+                            <h5>Output</h5>
+                            <p>Validated claim + quality score</p>
+                            <div class="data-output">./data/agent_pipeline/bronze/{run_id}.json</div>
+                        </div>
+                        <div class="stage-section">
+                            <h5>Tools Used (via Claims Data API)</h5>
+                            <div class="tools-grid">
+                                <span class="tool-badge">validate_claim_data</span>
+                                <span class="tool-badge">check_required_fields</span>
+                                <span class="tool-badge">normalize_amounts</span>
+                                <span class="tool-badge">validate_dates</span>
+                                <span class="tool-badge">check_diagnosis_codes</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="arrow-down-flow"><i class="fas fa-arrow-down"></i> Validated Claim</div>
+
+                <!-- Silver Agent -->
+                <div class="stage-card silver">
+                    <div class="stage-header">
+                        <div class="stage-title silver"><i class="fas fa-expand-arrows-alt"></i> Silver Agent</div>
+                        <span class="stage-badge silver">DATA ENRICHMENT</span>
+                    </div>
+                    <div class="stage-content">
+                        <div class="stage-section"><h5>Input</h5><p>Validated claim</p></div>
+                        <div class="stage-section"><h5>Action</h5><p>Enrich with policy, customer, provider context</p></div>
+                        <div class="stage-section">
+                            <h5>Output</h5>
+                            <p>Enriched claim with full context</p>
+                            <div class="data-output">./data/agent_pipeline/silver/{run_id}.json</div>
+                        </div>
+                        <div class="stage-section">
+                            <h5>Tools Used (via Claims Data API)</h5>
+                            <div class="tools-grid">
+                                <span class="tool-badge">get_policy_details</span>
+                                <span class="tool-badge">get_customer_profile</span>
+                                <span class="tool-badge">get_pet_medical_history</span>
+                                <span class="tool-badge">verify_provider</span>
+                                <span class="tool-badge">check_coverage_eligibility</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="arrow-down-flow"><i class="fas fa-arrow-down"></i> Enriched Claim</div>
+
+                <!-- Gold Agent -->
+                <div class="stage-card gold">
+                    <div class="stage-header">
+                        <div class="stage-title gold"><i class="fas fa-star"></i> Gold Agent</div>
+                        <span class="stage-badge gold">DECISION & INSIGHTS</span>
+                    </div>
+                    <div class="stage-content">
+                        <div class="stage-section"><h5>Input</h5><p>Enriched claim with full context</p></div>
+                        <div class="stage-section"><h5>Action</h5><p>Risk scoring, fraud detection, final recommendation</p></div>
+                        <div class="stage-section">
+                            <h5>Output</h5>
+                            <p>Decision + reasoning + insights</p>
+                            <div class="data-output">./data/agent_pipeline/gold/{run_id}.json</div>
+                        </div>
+                        <div class="stage-section">
+                            <h5>Tools Used (via Claims Data API)</h5>
+                            <div class="tools-grid">
+                                <span class="tool-badge">calculate_risk_score</span>
+                                <span class="tool-badge">check_fraud_patterns</span>
+                                <span class="tool-badge">check_pre_existing</span>
+                                <span class="tool-badge">calculate_payout</span>
+                                <span class="tool-badge">generate_recommendation</span>
+                                <span class="tool-badge">create_audit_trail</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Gold Agent Output Example -->
+            <div class="card" style="margin-top: 32px;">
+                <h3 style="margin-bottom: 20px; display: flex; align-items: center; gap: 10px;">
+                    <i class="fas fa-file-code" style="color: var(--gold);"></i> Gold Agent Final Output
+                </h3>
+                <div class="code-block">
+<pre>{
+  <span class="code-key">"decision"</span>: <span class="code-string">"APPROVED"</span> | <span class="code-string">"DENIED"</span> | <span class="code-string">"REVIEW"</span>,
+  <span class="code-key">"risk_level"</span>: <span class="code-string">"LOW"</span> | <span class="code-string">"MEDIUM"</span> | <span class="code-string">"HIGH"</span> | <span class="code-string">"CRITICAL"</span>,
+  <span class="code-key">"confidence"</span>: <span class="code-number">0.0 - 1.0</span>,
+  <span class="code-key">"reasoning"</span>: [
+    <span class="code-string">"Policy coverage verified - accident type eligible"</span>,
+    <span class="code-string">"No pre-existing condition indicators found"</span>,
+    <span class="code-string">"Vet provider is in-network and verified"</span>
+  ],
+  <span class="code-key">"insights"</span>: [
+    <span class="code-string">"Golden Retrievers have 15% higher CCL injury rate"</span>,
+    <span class="code-string">"Customer has 3-year claim-free history"</span>
+  ],
+  <span class="code-key">"recommended_payout"</span>: <span class="code-number">3600.00</span>,
+  <span class="code-key">"flags"</span>: [<span class="code-string">"breed_prone_condition"</span>]
+}</pre>
+                </div>
+            </div>
+        </div>
+
+        <!-- WebSocket Events -->
+        <div class="section">
+            <h2 class="section-title"><i class="fas fa-broadcast-tower"></i> Real-Time WebSocket Events</h2>
+            <div class="card">
+                <p style="color: #94a3b8; margin-bottom: 24px;">Events emitted during pipeline processing via <code style="color: var(--accent);">/ws/events</code></p>
+                <div class="events-grid">
+                    <div class="event-card"><div class="event-name">pipeline.started</div><div class="event-desc">Processing begins</div></div>
+                    <div class="event-card"><div class="event-name">router.completed</div><div class="event-desc">Routing decision made</div></div>
+                    <div class="event-card"><div class="event-name">bronze.started</div><div class="event-desc">Validation layer begins</div></div>
+                    <div class="event-card"><div class="event-name">bronze.completed</div><div class="event-desc">Validation complete</div></div>
+                    <div class="event-card"><div class="event-name">silver.started</div><div class="event-desc">Enrichment layer begins</div></div>
+                    <div class="event-card"><div class="event-name">silver.completed</div><div class="event-desc">Enrichment complete</div></div>
+                    <div class="event-card"><div class="event-name">gold.started</div><div class="event-desc">Decision layer begins</div></div>
+                    <div class="event-card"><div class="event-name">gold.completed</div><div class="event-desc">Decision made</div></div>
+                    <div class="event-card"><div class="event-name">pipeline.completed</div><div class="event-desc">Final results ready</div></div>
+                    <div class="event-card"><div class="event-name" style="color: var(--danger);">pipeline.error</div><div class="event-desc">Processing failed</div></div>
+                </div>
+                <div style="margin-top: 24px; padding: 16px; background: rgba(255,255,255,0.03); border-radius: 8px;">
+                    <p style="font-size: 13px; color: #94a3b8;"><strong>Configuration:</strong> Heartbeat: 30 seconds | Max Connections: 100</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Pet Claim FNOL Flow -->
+        <div class="section">
+            <h2 class="section-title"><i class="fas fa-file-medical"></i> Pet Claim FNOL Processing Flow</h2>
+            <div class="card">
+                <div class="sequence-diagram">
+                    <div class="sequence-title"><i class="fas fa-project-diagram"></i> FNOL Sequence</div>
+                    <div class="sequence-step"><span class="step-number">1</span><div class="step-content"><div class="step-action">Submit Pet Claim</div><div class="step-detail">Agent Portal sends vet invoice + description to AI Claims Service</div></div></div>
+                    <div class="sequence-step"><span class="step-number">2</span><div class="step-content"><div class="step-action">OCR Vet Invoice</div><div class="step-detail">Azure Document Intelligence extracts text from invoice</div></div></div>
+                    <div class="sequence-step"><span class="step-number">3</span><div class="step-content"><div class="step-action">Extract Pet Condition</div><div class="step-detail">Send to Claude/GPT-4o for structured extraction</div></div></div>
+                    <div class="sequence-step"><span class="step-number">4</span><div class="step-content"><div class="step-action">AI Analysis</div><div class="step-detail">Analyze pet symptoms, diagnosis, check for pre-existing conditions</div></div></div>
+                    <div class="sequence-step"><span class="step-number">5</span><div class="step-content"><div class="step-action">Return Structured Data</div><div class="step-detail">Pet: Max (Golden Retriever), Condition: CCL tear, Type: Accident, Est. Cost: $4,500</div></div></div>
+                    <div class="sequence-step"><span class="step-number">6</span><div class="step-content"><div class="step-action">Check for Fraud</div><div class="step-detail">Validate waiting period, check duplicate claims, verify vet clinic history</div></div></div>
+                    <div class="sequence-step"><span class="step-number">7</span><div class="step-content"><div class="step-action">Calculate Fraud Score</div><div class="step-detail">Return risk assessment (0.0 - 1.0)</div></div></div>
+                    <div class="sequence-step"><span class="step-number">8</span><div class="step-content"><div class="step-action">Create Pet Claim in Dataverse</div><div class="step-detail">Sync claim record to D365 CRM</div></div></div>
+                    <div class="sequence-step"><span class="step-number">9</span><div class="step-content"><div class="step-action">Return Claim with Triage</div><div class="step-detail">Send triage recommendation back to Agent Portal</div></div></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Entity Mapping -->
+        <div class="section">
+            <h2 class="section-title"><i class="fas fa-exchange-alt"></i> EIS to Dataverse Entity Mapping</h2>
+            <div class="mapping-grid">
+                <div class="mapping-card">
+                    <h4><i class="fas fa-file-contract"></i> Pet Policy Mapping</h4>
+                    <div class="mapping-row"><span class="mapping-source">policy_id</span><span class="mapping-arrow">→</span><span class="mapping-target">eis_eissourceid</span></div>
+                    <div class="mapping-row"><span class="mapping-source">policy_number</span><span class="mapping-arrow">→</span><span class="mapping-target">eis_policynumber</span></div>
+                    <div class="mapping-row"><span class="mapping-source">effective_date</span><span class="mapping-arrow">→</span><span class="mapping-target">eis_effectivedate</span></div>
+                    <div class="mapping-row"><span class="mapping-source">status</span><span class="mapping-arrow">→</span><span class="mapping-target">eis_status (OptionSet)</span></div>
+                    <div class="mapping-row"><span class="mapping-source">plan_type</span><span class="mapping-arrow">→</span><span class="mapping-target">eis_plantype (OptionSet)</span></div>
+                    <div class="mapping-row"><span class="mapping-source">total_premium</span><span class="mapping-arrow">→</span><span class="mapping-target">eis_totalpremium (Currency)</span></div>
+                    <div class="mapping-row"><span class="mapping-source">annual_limit</span><span class="mapping-arrow">→</span><span class="mapping-target">eis_annuallimit (Currency)</span></div>
+                </div>
+                <div class="mapping-card">
+                    <h4><i class="fas fa-dog"></i> Pet Mapping</h4>
+                    <div class="mapping-row"><span class="mapping-source">pet_id</span><span class="mapping-arrow">→</span><span class="mapping-target">eis_eissourceid</span></div>
+                    <div class="mapping-row"><span class="mapping-source">name</span><span class="mapping-arrow">→</span><span class="mapping-target">eis_petname</span></div>
+                    <div class="mapping-row"><span class="mapping-source">species</span><span class="mapping-arrow">→</span><span class="mapping-target">eis_species (OptionSet)</span></div>
+                    <div class="mapping-row"><span class="mapping-source">breed</span><span class="mapping-arrow">→</span><span class="mapping-target">eis_breed</span></div>
+                    <div class="mapping-row"><span class="mapping-source">date_of_birth</span><span class="mapping-arrow">→</span><span class="mapping-target">eis_dateofbirth</span></div>
+                    <div class="mapping-row"><span class="mapping-source">microchip_id</span><span class="mapping-arrow">→</span><span class="mapping-target">eis_microchipid</span></div>
+                    <div class="mapping-row"><span class="mapping-source">pre_existing</span><span class="mapping-arrow">→</span><span class="mapping-target">eis_preexistingconditions</span></div>
+                </div>
+                <div class="mapping-card">
+                    <h4><i class="fas fa-file-medical"></i> Pet Claim Mapping</h4>
+                    <div class="mapping-row"><span class="mapping-source">claim_id</span><span class="mapping-arrow">→</span><span class="mapping-target">eis_eissourceid</span></div>
+                    <div class="mapping-row"><span class="mapping-source">claim_number</span><span class="mapping-arrow">→</span><span class="mapping-target">eis_claimnumber</span></div>
+                    <div class="mapping-row"><span class="mapping-source">status</span><span class="mapping-arrow">→</span><span class="mapping-target">eis_status (OptionSet)</span></div>
+                    <div class="mapping-row"><span class="mapping-source">condition_type</span><span class="mapping-arrow">→</span><span class="mapping-target">eis_conditiontype (OptionSet)</span></div>
+                    <div class="mapping-row"><span class="mapping-source">amount_billed</span><span class="mapping-arrow">→</span><span class="mapping-target">eis_amountbilled (Currency)</span></div>
+                    <div class="mapping-row"><span class="mapping-source">fraud_score</span><span class="mapping-arrow">→</span><span class="mapping-target">eis_fraudscore (Decimal)</span></div>
+                    <div class="mapping-row"><span class="mapping-source">ai_recommendation</span><span class="mapping-arrow">→</span><span class="mapping-target">eis_airecommendation</span></div>
+                </div>
+                <div class="mapping-card">
+                    <h4><i class="fas fa-user"></i> Pet Owner Mapping</h4>
+                    <div class="mapping-row"><span class="mapping-source">customer_id</span><span class="mapping-arrow">→</span><span class="mapping-target">eis_eissourceid</span></div>
+                    <div class="mapping-row"><span class="mapping-source">first_name</span><span class="mapping-arrow">→</span><span class="mapping-target">eis_firstname</span></div>
+                    <div class="mapping-row"><span class="mapping-source">last_name</span><span class="mapping-arrow">→</span><span class="mapping-target">eis_lastname</span></div>
+                    <div class="mapping-row"><span class="mapping-source">email</span><span class="mapping-arrow">→</span><span class="mapping-target">eis_email</span></div>
+                    <div class="mapping-row"><span class="mapping-source">phone</span><span class="mapping-arrow">→</span><span class="mapping-target">eis_phone</span></div>
+                    <div class="mapping-row"><span class="mapping-source">address</span><span class="mapping-arrow">→</span><span class="mapping-target">eis_address</span></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Sync State Tracking -->
+        <div class="section">
+            <h2 class="section-title"><i class="fas fa-sync"></i> Sync State Tracking (Cosmos DB)</h2>
+            <div class="card">
+                <div class="code-block" style="margin-bottom: 24px;">
+<pre><span class="code-comment">// Pet Claim Sync Document Example</span>
+{
+  <span class="code-key">"id"</span>: <span class="code-string">"sync-CLM-PET-2024-001"</span>,
+  <span class="code-key">"entity_type"</span>: <span class="code-string">"pet_claim"</span>,
+  <span class="code-key">"eis_source_id"</span>: <span class="code-string">"CLM-PET-2024-001"</span>,
+  <span class="code-key">"d365_entity_id"</span>: <span class="code-string">"b2c3d4e5-f6g7-..."</span>,
+  <span class="code-key">"pet_id"</span>: <span class="code-string">"PET-001"</span>,
+  <span class="code-key">"pet_name"</span>: <span class="code-string">"Max"</span>,
+  <span class="code-key">"condition_type"</span>: <span class="code-string">"accident"</span>,
+  <span class="code-key">"diagnosis"</span>: <span class="code-string">"CCL tear"</span>,
+  <span class="code-key">"amount_billed"</span>: <span class="code-number">4500.00</span>,
+  <span class="code-key">"fraud_score"</span>: <span class="code-number">0.12</span>,
+  <span class="code-key">"pre_existing_check"</span>: <span class="code-string">"passed"</span>,
+  <span class="code-key">"last_sync_time"</span>: <span class="code-string">"2024-06-15T14:30:00Z"</span>,
+  <span class="code-key">"sync_status"</span>: <span class="code-string">"synced"</span>
+}</pre>
+                </div>
+
+                <h4 style="margin-bottom: 16px;">Sync Status Values</h4>
+                <table>
+                    <thead><tr><th>Status</th><th>Description</th></tr></thead>
+                    <tbody>
+                        <tr><td><code style="color: var(--success);">synced</code></td><td>Successfully synchronized</td></tr>
+                        <tr><td><code style="color: var(--warning);">pending</code></td><td>Awaiting sync</td></tr>
+                        <tr><td><code style="color: var(--primary);">in_progress</code></td><td>Currently syncing</td></tr>
+                        <tr><td><code style="color: var(--danger);">error</code></td><td>Sync failed</td></tr>
+                        <tr><td><code style="color: var(--danger);">fraud_review</code></td><td>Flagged for fraud investigation</td></tr>
+                        <tr><td><code style="color: var(--warning);">pre_existing</code></td><td>Flagged for pre-existing condition review</td></tr>
+                        <tr><td><code style="color: #64748b;">stale</code></td><td>Needs re-sync</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Breed Database Reference -->
+        <div class="section">
+            <h2 class="section-title"><i class="fas fa-dna"></i> Breed Database Reference</h2>
+            <div class="card">
+                <div class="code-block">
+<pre><span class="code-comment">// Example Breed Document (Cosmos DB)</span>
+{
+  <span class="code-key">"id"</span>: <span class="code-string">"breed-golden-retriever"</span>,
+  <span class="code-key">"species"</span>: <span class="code-string">"dog"</span>,
+  <span class="code-key">"breed_name"</span>: <span class="code-string">"Golden Retriever"</span>,
+  <span class="code-key">"breed_group"</span>: <span class="code-string">"Sporting"</span>,
+  <span class="code-key">"size_category"</span>: <span class="code-string">"large"</span>,
+  <span class="code-key">"avg_weight_lbs"</span>: <span class="code-number">65</span>,
+  <span class="code-key">"avg_lifespan_years"</span>: <span class="code-number">11</span>,
+  <span class="code-key">"risk_factor"</span>: <span class="code-number">1.15</span>,
+  <span class="code-key">"base_rate"</span>: <span class="code-number">420.00</span>,
+  <span class="code-key">"hereditary_conditions"</span>: [
+    <span class="code-string">"hip_dysplasia"</span>, <span class="code-string">"elbow_dysplasia"</span>, <span class="code-string">"heart_disease"</span>,
+    <span class="code-string">"cancer"</span>, <span class="code-string">"eye_conditions"</span>
+  ],
+  <span class="code-key">"common_claims"</span>: [
+    <span class="code-string">"ear_infections"</span>, <span class="code-string">"skin_allergies"</span>,
+    <span class="code-string">"ccl_tears"</span>, <span class="code-string">"hypothyroidism"</span>
+  ],
+  <span class="code-key">"age_rating_curve"</span>: {
+    <span class="code-string">"0-1"</span>: <span class="code-number">0.85</span>,
+    <span class="code-string">"1-4"</span>: <span class="code-number">1.00</span>,
+    <span class="code-string">"4-7"</span>: <span class="code-number">1.20</span>,
+    <span class="code-string">"7-10"</span>: <span class="code-number">1.50</span>,
+    <span class="code-string">"10+"</span>: <span class="code-number">2.00</span>
+  }
+}</pre>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

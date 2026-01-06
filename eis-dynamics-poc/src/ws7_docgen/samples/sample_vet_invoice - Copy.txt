@@ -1,0 +1,75 @@
+HAPPY PAWS VETERINARY CLINIC
+123 Pet Street, Chicago, IL 60601
+Phone: (312) 555-0100
+License #: IL-VET-12345
+Email: info@happypaws.vet
+
+==================================================
+                 INVOICE
+==================================================
+
+Invoice #: INV-2024-001234
+Date: December 15, 2024
+
+PATIENT INFORMATION:
+-------------------
+Pet Name: Max
+Species: Dog
+Breed: Golden Retriever
+Age: 5 years
+Weight: 72 lbs
+Owner: John Smith
+Address: 456 Oak Avenue, Chicago, IL 60601
+Phone: (555) 123-4567
+
+DIAGNOSIS:
+----------
+Torn CCL (Cranial Cruciate Ligament) - Right Hind Leg
+ICD Code: S83.2 - Cruciate Ligament Injury
+
+TREATMENT:
+----------
+TPLO Surgery (Tibial Plateau Leveling Osteotomy)
+Post-operative care and monitoring
+
+SERVICES PROVIDED:
+------------------
+Description                              Qty    Unit Price    Amount
+----------------------------------------------------------------------
+Initial Examination                       1      $85.00       $85.00
+X-Ray - Right Hind Leg (2 views)         1     $175.00      $175.00
+Pre-Surgical Blood Work                   1     $150.00      $150.00
+TPLO Surgery                             1   $3,200.00    $3,200.00
+Anesthesia                               1     $350.00      $350.00
+Post-Op Medications (Carprofen)          1      $75.00       $75.00
+Post-Op Medications (Antibiotics)        1      $65.00       $65.00
+E-Collar (Cone)                          1      $25.00       $25.00
+Overnight Hospitalization                1     $200.00      $200.00
+Follow-up Visit (included)               1       $0.00        $0.00
+
+----------------------------------------------------------------------
+                                        SUBTOTAL:         $4,325.00
+                                        TAX (8.25%):        $175.25
+                                        ================================
+                                        TOTAL:            $4,500.25
+
+PAYMENT:
+--------
+Amount Paid: $0.00
+Balance Due: $4,500.25
+Payment Method: Insurance Pending
+
+NOTES:
+------
+- Surgery performed successfully on 12/15/2024
+- Patient recovered well from anesthesia
+- Follow-up appointment scheduled for 12/22/2024
+- Physical therapy recommended starting week 3 post-op
+- Activity restriction: 8 weeks no running, jumping, or stairs
+
+EMERGENCY VISIT: NO
+PRE-EXISTING CONDITION: NO
+
+==================================================
+Thank you for trusting Happy Paws Veterinary Clinic!
+==================================================

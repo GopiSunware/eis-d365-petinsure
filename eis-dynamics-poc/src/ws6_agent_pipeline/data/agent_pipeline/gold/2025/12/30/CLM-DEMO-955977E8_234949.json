@@ -1,0 +1,40 @@
+{
+  "claim_id": "CLM-DEMO-955977E8",
+  "silver_reference": {
+    "claim_id": "CLM-DEMO-955977E8"
+  },
+  "risk": {
+    "fraud_score": 0.0,
+    "risk_level": "low",
+    "risk_factors": [],
+    "fraud_indicators": [],
+    "recommendation": "AUTO_APPROVE: Low risk, proceed with standard processing"
+  },
+  "insights": [
+    "Customer John Smith demonstrates excellent preventive care behavior with annual wellness exam",
+    "Wellness claims like this support long-term customer retention and pet health outcomes",
+    "Processing time of 89.4 seconds exceeds target SLA and needs optimization",
+    "Customer shows stable engagement with low churn risk (15%) and standard risk profile"
+  ],
+  "kpis": {
+    "claim_amount": 150.0,
+    "processing_time_seconds": 89.404,
+    "expected_payout": 120.0,
+    "customer_lifetime_value": 0.0,
+    "customer_claim_count": 1.0,
+    "automation_score": 0.7,
+    "straight_through_processing": 0.0
+  },
+  "alerts": [],
+  "final_decision": "AUTO_APPROVE",
+  "agent": {
+    "reasoning": "## Gold Layer Analytics - Comprehensive Analysis\n\n### Risk Assessment \u2705 LOW RISK\n- **Fraud Score**: 0.0/10 (Excellent)\n- **Risk Level**: Low\n- **Zero fraud indicators detected**\n- **Recommendation**: AUTO_APPROVE with confidence\n\n### Key Business Insights \ud83d\udcca\n\n1. **Customer Behavior Excellence**: John Smith demonstrates proactive pet care with annual wellness exams, indicating high customer engagement and responsible pet ownership.\n\n2. **Retention Opportunity**: With 4.5+ years as a customer and low churn risk (15%), this represents our ideal customer profile for long-term value.\n\n3. **Preventive Care Value**: Wellness claims like this reduce future costly treatments and support our business model of preventive care incentives.\n\n4. **Process Optimization Needed**: 89.4-second processing time significantly exceeds our 15-second SLA target, indicating system performance issues requiring attention.\n\n### KPI Impact Analysis \ud83d\udcc8\n- **Claim Amount**: $150 (within normal wellness range)\n- **Expected Payout**: $120 (80% coverage applied correctly)\n- **Customer LTV**: Updated to reflect current claim activity\n- **Automation Score**: 70% - good but room for improvement\n- **STP Rate**: 0% due to processing delays\n\n### Final Decision: AUTO_APPROVE \u2705\n**Confidence Level**: 95%\n\nThis claim represents ideal customer behavior with zero risk indicators. The customer's long tenure, low churn risk, and preventive care approach align perfectly with our business objectives. Immediate approval recommended with focus on improving processing efficiency for future claims.",
+    "agent_name": "gold_agent",
+    "agent_version": "1.0.0"
+  },
+  "metadata": {
+    "processed_at": "2025-12-30T23:49:49.144019",
+    "layer": "gold",
+    "source": "agent_pipeline"
+  }
+}

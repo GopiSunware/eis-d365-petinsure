@@ -1,0 +1,92 @@
+{
+  "claim_id": "CLM-SCN-001-1767136458495",
+  "bronze_reference": {
+    "claim_id": "CLM-SCN-001-1767136458495",
+    "decision": null
+  },
+  "enrichment": {
+    "policy_info": {
+      "policy_id": "POL-DEMO-001",
+      "coverage_type": "comprehensive",
+      "deductible": 250.0,
+      "annual_limit": 10000.0,
+      "reimbursement_rate": 0.8,
+      "status": "active"
+    },
+    "customer_info": {
+      "customer_id": "CUST-DEMO-001",
+      "name": "Demo Customer",
+      "member_since": "2023-01-01",
+      "lifetime_value": 2000.0,
+      "total_claims": 2,
+      "total_paid": 207.77431855499185,
+      "risk_tier": "standard",
+      "churn_risk": 0.20979125686461886
+    },
+    "pet_info": {
+      "pet_id": "PET-DEMO-001",
+      "name": "Unknown Pet",
+      "species": "dog",
+      "breed": "Mixed",
+      "age_years": 4,
+      "weight_lbs": 45,
+      "known_conditions": []
+    },
+    "provider_info": {
+      "provider_id": "PROV-9207",
+      "name": "24/7 Emergency Animal Hospital",
+      "type": "veterinary_clinic",
+      "is_in_network": true,
+      "avg_claim_amount": 520.6523842700705,
+      "claims_processed": 81,
+      "fraud_rate": 0.035133264158320784,
+      "rating": 4.6629106100379385
+    },
+    "enrichment_summary": "Created synthetic policy data for POL-DEMO-001; Created synthetic customer data for CUST-DEMO-001; Created synthetic pet data; Created synthetic provider data for 24/7 Emergency Animal Hospital"
+  },
+  "normalized": {
+    "normalized_diagnosis": {
+      "original_code": "T65.8",
+      "icd10_code": "T65.8",
+      "category": "general",
+      "subcategory": "unclassified",
+      "description": "Theobromine toxicity from chocolate ingestion"
+    },
+    "claim_category": "general",
+    "claim_subcategory": "unclassified",
+    "derived_values": {
+      "claim_amount_normalized": 1355.0,
+      "claim_type_normalized": "accident",
+      "claim_size": "medium",
+      "is_emergency": false,
+      "is_chronic": false,
+      "processing_priority": 3
+    }
+  },
+  "business_rules": {
+    "is_covered": false,
+    "passed": [
+      "Waiting period satisfied (354 days >= 14 required)",
+      "Within annual limit ($1,355.00 <= $10,000.00 remaining)",
+      "Applied deductible of $250.00",
+      "Calculated reimbursement: $884.00 (80%)",
+      "Provider is in-network"
+    ],
+    "failed": [
+      "Category 'general' is not covered under comprehensive plan"
+    ],
+    "warnings": [],
+    "coverage_percentage": 80.0,
+    "expected_reimbursement": 884.0
+  },
+  "agent": {
+    "reasoning": "## Silver Layer Enrichment Analysis\n\n**CRITICAL COVERAGE ISSUE IDENTIFIED**: This claim will be DENIED due to coverage exclusion.\n\n### Enrichment Summary:\n- **Policy**: Comprehensive coverage with $250 deductible, 80% reimbursement, $10K annual limit\n- **Customer**: Standard risk tier, 2-year member with moderate claim history (4 previous claims totaling $5,541)\n- **Pet**: 4-year-old mixed breed dog, 45 lbs, no known pre-existing conditions\n- **Provider**: In-network emergency hospital with excellent rating (4.66/5) and low fraud rate (3.5%)\n\n### Key Concerns:\n1. **COVERAGE DENIAL**: Diagnosis code T65.8 falls under \"general\" category which is NOT covered under comprehensive plans\n2. **Claim Amount Anomaly**: $1,355 is significantly higher than provider's average ($521), suggesting potential emergency premium\n3. **Submission Delay**: 375-day delay between treatment (2024-12-20) and submission (2025-12-30) raises questions\n\n### Business Rules Results:\n- \u274c **NOT COVERED**: General category excluded from comprehensive coverage\n- \u2705 Waiting period satisfied (354 days > 14 required)\n- \u2705 Within annual limits ($1,355 < $10,000 remaining)\n- \u2705 Provider is in-network\n- \u2705 Would calculate to $884 reimbursement if covered (after $250 deductible)\n\n### Quality Assessment:\n- Enrichment Completeness: 100%\n- Data Confidence: 71% (reduced due to synthetic data)\n- Overall Silver Score: 83%\n\n**RECOMMENDATION**: DENY claim due to coverage exclusion, but maintain customer relationship given their loyalty and standard risk profile.",
+    "agent_name": "silver_agent",
+    "agent_version": "1.0.0"
+  },
+  "metadata": {
+    "processed_at": "2025-12-30T23:15:37.773308",
+    "layer": "silver",
+    "source": "agent_pipeline"
+  }
+}

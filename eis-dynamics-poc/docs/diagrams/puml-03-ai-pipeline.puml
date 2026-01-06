@@ -1,0 +1,45 @@
+@startuml
+!theme cerulean
+title Pet Claims AI Agent Pipeline
+
+start
+:Pet Claim FNOL\nVet Invoice + Description;
+
+partition "Router Agent" #2563eb {
+    if (Analyze Complexity?) then (fast_track)
+        :Simple Claims;
+    elseif (standard)
+        :Normal Processing;
+    else (enhanced)
+        :Complex Review;
+    endif
+}
+
+partition "Bronze Agent\nValidate" #CD7F32 {
+    :Validate Required Fields;
+    :Check Policy Status;
+    :Verify Waiting Period;
+    :Normalize Amounts;
+}
+
+partition "Silver Agent\nEnrich" #C0C0C0 {
+    :Get Pet Owner 360;
+    :Get Policy Details;
+    :Get Pet Medical History;
+    :Verify Vet Provider;
+}
+
+partition "Gold Agent\nDecide" #FFD700 {
+    :Calculate Fraud Score;
+    :Check Pre-existing Conditions;
+    :Check Coverage Eligibility;
+    :Calculate Reimbursement;
+    :Generate Decision + Reasoning;
+}
+
+:Final Output\nAPPROVED | DENIED | REVIEW\nConfidence: 0.0-1.0\nRecommended Payout;
+
+:WebSocket Event\npipeline.completed;
+
+stop
+@enduml

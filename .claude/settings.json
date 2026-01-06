@@ -1,0 +1,60 @@
+{
+  "description": "Claude Code settings for ms-dynamics project",
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 -c \"import json,sys; d=json.load(sys.stdin); p=d.get('tool_input',{}).get('file_path',''); blocked=['.env','.env.local','secrets','.git/config','id_rsa','credentials']; sys.exit(2) if any(b in p for b in blocked) else sys.exit(0)\"",
+            "timeout": 5
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "jq -r '.tool_input.file_path // empty' | { read f; [[ -n \"$f\" && \"$f\" == *.ts ]] && npx prettier --write \"$f\" 2>/dev/null || true; }",
+            "timeout": 30
+          }
+        ]
+      },
+      {
+        "matcher": "Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "jq -r '.tool_input.file_path // empty' | { read f; [[ -n \"$f\" && \"$f\" == *.tsx ]] && npx prettier --write \"$f\" 2>/dev/null || true; }",
+            "timeout": 30
+          }
+        ]
+      },
+      {
+        "matcher": "Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "jq -r '.tool_input.file_path // empty' | { read f; [[ -n \"$f\" && \"$f\" == *.py ]] && command -v black >/dev/null && black --quiet \"$f\" 2>/dev/null || true; }",
+            "timeout": 30
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "echo \"[$(date '+%Y-%m-%d %H:%M:%S')] Session completed\" >> ~/.claude/session.log 2>/dev/null || true",
+            "timeout": 5
+          }
+        ]
+      }
+    ]
+  }
+}

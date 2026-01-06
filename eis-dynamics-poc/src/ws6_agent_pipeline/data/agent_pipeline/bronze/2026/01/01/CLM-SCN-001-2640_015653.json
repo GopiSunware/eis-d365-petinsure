@@ -1,0 +1,101 @@
+{
+  "claim_id": "CLM-SCN-001-2640",
+  "raw_data": {
+    "claim_id": "CLM-SCN-001-2640",
+    "policy_id": "POL-DEMO-001",
+    "customer_id": "CUST-DEMO-001",
+    "pet_id": "PET-DEMO-001",
+    "pet_name": "Buddy",
+    "claim_type": "accident",
+    "claim_category": "Toxicity/Poisoning",
+    "claim_amount": 1355.0,
+    "diagnosis_code": "T65.8",
+    "diagnosis_description": "Theobromine toxicity from chocolate ingestion",
+    "treatment_notes": "Induced vomiting, IV fluid therapy, activated charcoal administration, 24-hour monitoring, cardiac monitoring",
+    "service_date": "2024-12-20",
+    "provider_id": "PROV-0042",
+    "provider_name": "24/7 Emergency Animal Hospital",
+    "is_in_network": false,
+    "is_emergency": true,
+    "line_items": [
+      {
+        "description": "Emergency exam fee (after hours)",
+        "amount": 175.0
+      },
+      {
+        "description": "Toxicology screening panel",
+        "amount": 95.0
+      },
+      {
+        "description": "IV catheter placement + fluids (2L)",
+        "amount": 245.0
+      },
+      {
+        "description": "Activated charcoal treatment",
+        "amount": 55.0
+      },
+      {
+        "description": "24-hour hospitalization",
+        "amount": 485.0
+      },
+      {
+        "description": "Cardiac monitoring",
+        "amount": 120.0
+      },
+      {
+        "description": "Follow-up bloodwork",
+        "amount": 135.0
+      },
+      {
+        "description": "Anti-nausea medication",
+        "amount": 45.0
+      }
+    ],
+    "_cleaned_at": "2026-01-01T01:56:21.404435",
+    "_changes_count": 1
+  },
+  "validation": {
+    "is_valid": true,
+    "errors": [],
+    "warnings": [
+      "Optional field missing: treatment_date",
+      "Optional field missing: submission_date"
+    ],
+    "fields_checked": 17,
+    "missing_required": [],
+    "missing_optional": [
+      "treatment_date",
+      "submission_date"
+    ]
+  },
+  "quality": {
+    "completeness_score": 0.8181818181818182,
+    "accuracy_score": 1.0,
+    "consistency_score": 1.0,
+    "overall_score": 0.9272727272727272,
+    "issues": [],
+    "recommendations": [
+      "Data quality is excellent"
+    ]
+  },
+  "anomalies": {
+    "is_anomalous": false,
+    "anomalies": [],
+    "risk_indicators": [
+      "Customer has 7 recent claims"
+    ],
+    "anomaly_score": 0.2
+  },
+  "agent": {
+    "reasoning": "**QUARANTINE DECISION REASONING:**\n\n**Schema Validation:** \u2705 PASSED\n- All required fields present (claim_id, policy_id, customer_id, claim_amount)\n- Correct data types and formats\n- Only missing optional fields (treatment_date, submission_date)\n\n**Data Quality Assessment:** \u2705 EXCELLENT (92.7% overall score)\n- Completeness: 81.8% (missing only optional fields)\n- Accuracy: 100%\n- Consistency: 100%\n\n**Anomaly Detection:** \u26a0\ufe0f LOW RISK\n- No direct anomalies detected\n- Risk indicator: Customer has 7 recent claims (concerning pattern)\n- Multiple identical claims for same incident (T65.8, same date, same amount)\n\n**Data Cleaning:** \u2705 COMPLETED\n- Normalized claim_type from 'Accident' to 'accident'\n- Line items total correctly matches claim_amount ($1,355)\n\n**Diagnosis Code Validation:** \u2705 VALID\n- T65.8 is valid for toxic effects\n- Claim amount ($1,355) within typical range ($500-$3,000)\n- Treatment aligns with theobromine toxicity protocol\n\n**Critical Issues Identified:**\n1. **Policy Verification Failed:** POL-DEMO-001 returned 404 error - policy may not exist or be inactive\n2. **Provider Verification Failed:** \"24/7 Emergency Animal Hospital\" not found in provider database\n3. **Potential Duplicate Claims:** Historical data shows multiple identical claims for same incident (same pet, diagnosis, date, amount)\n\n**Decision Rationale:**\nWhile the claim data itself is high quality and medically appropriate, the inability to verify the policy existence and provider legitimacy, combined with the pattern of duplicate claims, requires human review. The claim appears legitimate from a medical standpoint but has verification issues that need resolution.",
+    "decision": "QUARANTINE",
+    "confidence": 0.75,
+    "agent_name": "bronze_agent",
+    "agent_version": "1.0.0"
+  },
+  "metadata": {
+    "processed_at": "2026-01-01T01:56:53.886993",
+    "layer": "bronze",
+    "source": "agent_pipeline"
+  }
+}

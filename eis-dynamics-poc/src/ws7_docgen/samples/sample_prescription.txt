@@ -1,0 +1,73 @@
+HAPPY PAWS VETERINARY CLINIC
+123 Pet Street, Chicago, IL 60601
+Phone: (312) 555-0100
+DEA #: AP1234567
+
+==================================================
+              VETERINARY PRESCRIPTION
+==================================================
+
+Rx #: RX-2024-9876
+Date: December 15, 2024
+
+PATIENT INFORMATION:
+-------------------
+Pet Name: Max
+Species: Canine
+Breed: Golden Retriever
+Weight: 72 lbs (32.7 kg)
+Owner: John Smith
+
+PRESCRIBING VETERINARIAN:
+------------------------
+Dr. Sarah Anderson, DVM
+License #: IL-VET-12345
+
+==================================================
+PRESCRIPTION 1
+==================================================
+Medication: Carprofen (Rimadyl)
+Strength: 100mg tablets
+Quantity: 28 tablets
+Directions: Give 1 tablet by mouth twice daily with food
+Duration: 14 days
+Refills: 0
+
+Purpose: Post-operative pain and inflammation management
+
+==================================================
+PRESCRIPTION 2
+==================================================
+Medication: Cephalexin
+Strength: 500mg capsules
+Quantity: 28 capsules
+Directions: Give 1 capsule by mouth twice daily
+Duration: 14 days
+Refills: 0
+
+Purpose: Antibiotic - Prevent surgical site infection
+
+==================================================
+SPECIAL INSTRUCTIONS
+==================================================
+- Give medications with food to reduce stomach upset
+- Complete full course of antibiotics
+- Monitor for signs of GI upset (vomiting, diarrhea)
+- Restrict activity for 8 weeks
+- Use E-collar at all times
+- Keep incision clean and dry
+- Return for suture removal in 10-14 days
+
+WARNINGS:
+- Do not give with other NSAIDs
+- Discontinue if vomiting or loss of appetite occurs
+- Contact clinic immediately if symptoms worsen
+
+==================================================
+DISPENSED BY: Pharmacy Tech Mike Johnson
+DATE FILLED: December 15, 2024
+
+Total Medication Charges: $140.00
+- Carprofen 100mg x 28: $75.00
+- Cephalexin 500mg x 28: $65.00
+==================================================

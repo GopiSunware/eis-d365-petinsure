@@ -1,0 +1,54 @@
+{
+  "claim_id": "CLM-SCN-002-1767137849640",
+  "raw_data": {
+    "claim_id": "CLM-SCN-002-1767137849640",
+    "policy_id": "POL-DEMO-001",
+    "customer_id": "CUST-DEMO-001",
+    "pet_id": "PET-DEMO-003",
+    "claim_type": "accident",
+    "claim_amount": 5935.0,
+    "diagnosis_code": "S83.5",
+    "diagnosis_description": "Complete cranial cruciate ligament rupture, left stifle",
+    "treatment_date": "2024-12-15",
+    "submission_date": "2025-12-30",
+    "provider_name": "Advanced Veterinary Surgical Center",
+    "_cleaned_at": "2025-12-30T23:37:40.583743",
+    "_changes_count": 2
+  },
+  "validation": {
+    "is_valid": true,
+    "errors": [],
+    "warnings": [],
+    "fields_checked": 11,
+    "missing_required": [],
+    "missing_optional": []
+  },
+  "quality": {
+    "completeness_score": 1.0,
+    "accuracy_score": 1.0,
+    "consistency_score": 1.0,
+    "overall_score": 1.0,
+    "issues": [],
+    "recommendations": [
+      "Data quality is excellent"
+    ]
+  },
+  "anomalies": {
+    "is_anomalous": false,
+    "anomalies": [],
+    "risk_indicators": [],
+    "anomaly_score": 0.0
+  },
+  "agent": {
+    "reasoning": "This claim demonstrates excellent data quality across all dimensions: Complete data with all required fields populated, passes schema validation without errors, minimal cleaning required (only standard normalization), zero anomalies detected with appropriate claim amount for cruciate ligament surgery, and perfect quality scores. The claim amount of $5,935 is reasonable for complete cranial cruciate ligament rupture surgery, a common and expensive orthopedic procedure. All dates and identifiers are properly formatted.",
+    "decision": "ACCEPT",
+    "confidence": 0.95,
+    "agent_name": "bronze_agent",
+    "agent_version": "1.0.0"
+  },
+  "metadata": {
+    "processed_at": "2025-12-30T23:37:59.654817",
+    "layer": "bronze",
+    "source": "agent_pipeline"
+  }
+}

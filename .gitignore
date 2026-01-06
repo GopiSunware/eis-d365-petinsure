@@ -1,0 +1,102 @@
+# Environment files with secrets
+.env
+.env.local
+.env.production
+*.env.local
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+venv_*/
+env_*/
+.venv/
+**/venv/
+**/venv_*/
+**/env_*/
+**/.venv/
+**/venv_test/
+**/env_backend/
+**/env_frontend/
+*.egg-info/
+dist/
+build/
+*.whl
+
+# Node.js
+node_modules/
+.next/
+out/
+npm-debug.log*
+.npm/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+.project
+.classpath
+.settings/
+
+# OS
+.DS_Store
+Thumbs.db
+*.log
+logs/
+
+# Terraform
+*.tfstate
+*.tfstate.*
+.terraform/
+*.tfplan
+tfplan
+
+# Docker
+*.tar
+
+# Temp files
+*.tmp
+*.temp
+tmp/
+temp/
+
+# Large files / archives
+*.zip
+*.tar.gz
+*.rar
+*.7z
+ziphP8Dz
+zirOpitB
+zi69ZZY3
+backend-deploy.zip
+
+# Images (large)
+*.png
+*.jpg
+*.jpeg
+*.gif
+image*.png
+
+# Binary / compiled
+*.exe
+*.dll
+*.bin
+
+# Test artifacts
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Keep these
+!.env.example
+!requirements.txt
+!package.json
+!package-lock.json

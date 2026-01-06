@@ -1,0 +1,69 @@
+@startuml
+!theme cerulean
+title Pet Insurance Medallion Data Flow
+
+rectangle "RAW Zone" #f8cecc {
+    file "pet_owners.csv" as R1
+    file "pets.csv" as R2
+    file "policies.csv" as R3
+    file "claims.jsonl" as R4
+    file "providers.csv" as R5
+}
+
+rectangle "BRONZE Layer\nValidate" #CD7F32 {
+    database "pet_owners_bronze" as B1
+    database "pets_bronze" as B2
+    database "policies_bronze" as B3
+    database "claims_bronze" as B4
+    database "providers_bronze" as B5
+}
+
+rectangle "SILVER Layer\nEnrich" #C0C0C0 {
+    database "pet_owner_enriched" as S1
+    database "pet_medical_history" as S2
+    database "policy_coverage" as S3
+    database "claim_enriched" as S4
+    database "provider_verified" as S5
+}
+
+rectangle "GOLD Layer\nDecide" #FFD700 {
+    database "pet_owner_360" as G1
+    database "claim_decision" as G2
+    database "fraud_analytics" as G3
+    database "monthly_kpis" as G4
+}
+
+rectangle "Output" #dae8fc {
+    [Final JSON] as JSON
+    [Audit Trail] as AUDIT
+    database "Dataverse" as DV
+}
+
+R1 --> B1
+R2 --> B2
+R3 --> B3
+R4 --> B4
+R5 --> B5
+
+B1 --> S1
+B2 --> S1
+B2 --> S2
+B3 --> S1
+B3 --> S3
+B4 --> S2
+B4 --> S4
+B5 --> S5
+
+S1 --> G1
+S2 --> G2
+S3 --> G2
+S4 --> G2
+S4 --> G3
+S5 --> G2
+G1 --> G4
+G2 --> G4
+
+G2 --> JSON
+G2 --> AUDIT
+G2 --> DV
+@enduml

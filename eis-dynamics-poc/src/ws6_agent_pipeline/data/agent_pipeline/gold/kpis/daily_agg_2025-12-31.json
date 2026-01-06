@@ -1,0 +1,22 @@
+{
+  "date": "2025-12-31",
+  "total_claims": 1,
+  "total_amount": 1355.0,
+  "claims_by_type": {
+    "Accident": 1
+  },
+  "amount_by_type": {
+    "Accident": 1355.0
+  },
+  "avg_processing_time_ms": 0.0,
+  "claim_ids": [
+    "CLM-SCN-001-1767212238108"
+  ],
+  "claim_amount": 1355.0,
+  "processing_time_seconds": 113.756,
+  "expected_payout": 1084.0,
+  "customer_lifetime_value": 135.5,
+  "customer_claim_count": 1.0,
+  "automation_score": 0.7,
+  "straight_through_processing": 0.0
+}

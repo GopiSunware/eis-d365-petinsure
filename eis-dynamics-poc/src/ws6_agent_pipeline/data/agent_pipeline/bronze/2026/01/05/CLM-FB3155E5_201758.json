@@ -1,0 +1,79 @@
+{
+  "claim_id": "CLM-FB3155E5",
+  "raw_data": {
+    "claim_id": "CLM-FB3155E5",
+    "claim_number": "CLM-20260105-123491",
+    "scenario_id": "DOCGEN-UPLOAD",
+    "customer_id": "DEMO-002",
+    "customer_name": "Demo One",
+    "pet_id": "PET-DEMO-003",
+    "pet_name": "Max",
+    "policy_id": "POL-DEMO-003",
+    "claim_type": "illness",
+    "claim_category": "S01.9 - Unspecified open wound of head (inconsiste",
+    "diagnosis_code": "",
+    "diagnosis": "S01.9 - Unspecified open wound of head (inconsistent with described leg injury)",
+    "service_date": "2026-01-05",
+    "treatment_notes": "This claim presents several concerning inconsistencies that require manual review. While the treatment description and amount are reasonable for a small laceration, there are significant red flags: (1) The category states 'Small cut on leg' but the diagnosis code S01.9 refers to 'unspecified open wound of head' - this is a major anatomical mismatch, (2) The provider is listed as 'Unknown' which prevents verification of legitimacy, (3) The treatment notes appear to be analytical commentary rather than actual veterinary notes, suggesting potential fabrication. The claim amount of $155 is appropriate for minor wound care, but the inconsistencies in documentation and unknown provider status make this unsuitable for auto-approval.",
+    "line_items": [],
+    "claim_amount": 155.0,
+    "provider_id": "",
+    "provider_name": "Unknown",
+    "is_in_network": true,
+    "is_emergency": false,
+    "ingestion_timestamp": "2026-01-05T20:17:09.774473",
+    "source": "customer_portal",
+    "raw_status": "ingested",
+    "layer": "bronze",
+    "_ingestion_timestamp": "2026-01-05T20:17:09.774945",
+    "_source": "api",
+    "_entity_id": "CLM-FB3155E5",
+    "_cleaned_at": "2026-01-05T20:17:29.613284",
+    "_changes_count": 1
+  },
+  "validation": {
+    "is_valid": true,
+    "errors": [],
+    "warnings": [
+      "Optional field missing: diagnosis_description",
+      "Optional field missing: treatment_date",
+      "Optional field missing: submission_date"
+    ],
+    "fields_checked": 27,
+    "missing_required": [],
+    "missing_optional": [
+      "diagnosis_description",
+      "treatment_date",
+      "submission_date"
+    ]
+  },
+  "quality": {
+    "completeness_score": 0.6363636363636364,
+    "accuracy_score": 1.0,
+    "consistency_score": 1.0,
+    "overall_score": 0.8545454545454545,
+    "issues": [],
+    "recommendations": [
+      "Improve data completeness by adding missing optional fields",
+      "Data quality is acceptable for processing"
+    ]
+  },
+  "anomalies": {
+    "is_anomalous": false,
+    "anomalies": [],
+    "risk_indicators": [],
+    "anomaly_score": 0.0
+  },
+  "agent": {
+    "reasoning": "This claim presents multiple critical issues that require manual review: 1) MAJOR INCONSISTENCY: The claim category mentions 'Small cut on leg' but the diagnosis code S01.9 refers to 'unspecified open wound of head' - this is a significant anatomical mismatch that could indicate fraud or data entry errors. 2) UNKNOWN PROVIDER: The provider is listed as 'Unknown' with empty provider_id, making verification impossible and raising legitimacy concerns. 3) SUSPICIOUS TREATMENT NOTES: The treatment notes read like analytical commentary rather than actual veterinary documentation, suggesting potential fabrication. 4) MISSING DIAGNOSIS CODE: The diagnosis_code field is empty despite having diagnosis text. 5) POLICY VERIFICATION FAILED: Unable to verify the policy exists (POL-DEMO-003 returned 404). While the claim amount ($155) is reasonable for minor wound care and no statistical anomalies were detected, the combination of anatomical inconsistencies, unknown provider, suspicious documentation, and policy verification failure makes this claim unsuitable for auto-processing.",
+    "decision": "QUARANTINE",
+    "confidence": 0.95,
+    "agent_name": "bronze_agent",
+    "agent_version": "1.0.0"
+  },
+  "metadata": {
+    "processed_at": "2026-01-05T20:17:58.127739",
+    "layer": "bronze",
+    "source": "agent_pipeline"
+  }
+}

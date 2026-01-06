@@ -1,0 +1,30 @@
+{
+  "date": "2025-12-30",
+  "total_claims": 5,
+  "total_amount": 9315.0,
+  "claims_by_type": {
+    "Accident": 3,
+    "Wellness": 1,
+    "wellness": 1
+  },
+  "amount_by_type": {
+    "Accident": 8645.0,
+    "Wellness": 520.0,
+    "wellness": 150.0
+  },
+  "avg_processing_time_ms": 0.0,
+  "claim_ids": [
+    "CLM-SCN-001-1767117534410",
+    "CLM-QUICK-96ABFD",
+    "CLM-SCN-001-1767136458495",
+    "CLM-SCN-002-1767137849640",
+    "CLM-DEMO-955977E8"
+  ],
+  "claim_amount": 9315.0,
+  "processing_time_seconds": 500.96799999999996,
+  "expected_payout": 7452.0,
+  "customer_lifetime_value": 271.0,
+  "customer_claim_count": 5.0,
+  "automation_score": 3.5,
+  "straight_through_processing": 0.0
+}

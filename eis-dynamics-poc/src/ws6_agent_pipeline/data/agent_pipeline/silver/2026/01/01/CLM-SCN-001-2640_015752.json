@@ -1,0 +1,92 @@
+{
+  "claim_id": "CLM-SCN-001-2640",
+  "bronze_reference": {
+    "claim_id": "CLM-SCN-001-2640",
+    "decision": null
+  },
+  "enrichment": {
+    "policy_info": {
+      "policy_id": "POL-DEMO-001",
+      "coverage_type": "comprehensive",
+      "deductible": 250.0,
+      "annual_limit": 10000.0,
+      "reimbursement_rate": 0.8,
+      "status": "active"
+    },
+    "customer_info": {
+      "customer_id": "CUST-DEMO-001",
+      "name": "Demo Customer",
+      "member_since": "2023-01-01",
+      "lifetime_value": 2000.0,
+      "total_claims": 4,
+      "total_paid": 1309.29249658528,
+      "risk_tier": "standard",
+      "churn_risk": 0.15685498309289192
+    },
+    "pet_info": {
+      "pet_id": "PET-DEMO-001",
+      "name": "Unknown Pet",
+      "species": "dog",
+      "breed": "Mixed",
+      "age_years": 4,
+      "weight_lbs": 45,
+      "known_conditions": []
+    },
+    "provider_info": {
+      "provider_id": "PROV-2469",
+      "name": "24/7 Emergency Animal Hospital",
+      "type": "veterinary_clinic",
+      "is_in_network": false,
+      "avg_claim_amount": 736.5415297161614,
+      "claims_processed": 71,
+      "fraud_rate": 0.03526901696248072,
+      "rating": 4.14413569835018
+    },
+    "enrichment_summary": "Created synthetic policy data for POL-DEMO-001; Created synthetic customer data for CUST-DEMO-001; Created synthetic pet data; Created synthetic provider data for 24/7 Emergency Animal Hospital"
+  },
+  "normalized": {
+    "normalized_diagnosis": {
+      "original_code": "T65.8",
+      "icd10_code": "T65.8",
+      "category": "general",
+      "subcategory": "unclassified",
+      "description": "Theobromine toxicity from chocolate ingestion"
+    },
+    "claim_category": "general",
+    "claim_subcategory": "unclassified",
+    "derived_values": {
+      "claim_amount_normalized": 1355.0,
+      "claim_type_normalized": "accident",
+      "claim_size": "medium",
+      "is_emergency": false,
+      "is_chronic": false,
+      "processing_priority": 3
+    }
+  },
+  "business_rules": {
+    "is_covered": false,
+    "passed": [
+      "Waiting period satisfied (731 days >= 14 required)",
+      "Within annual limit ($1,355.00 <= $10,000.00 remaining)",
+      "Applied deductible of $250.00",
+      "Calculated reimbursement: $884.00 (80%)",
+      "Provider is in-network"
+    ],
+    "failed": [
+      "Category 'general' is not covered under comprehensive plan"
+    ],
+    "warnings": [],
+    "coverage_percentage": 80.0,
+    "expected_reimbursement": 884.0
+  },
+  "agent": {
+    "reasoning": "## Silver Layer Enrichment Analysis for CLM-SCN-001-2640\n\n### Enrichment Summary\nSuccessfully enriched claim with comprehensive policy, customer, pet, and provider data. All required entities were found and linked properly.\n\n### Key Findings:\n\n**Customer Profile:**\n- Demo Customer (CUST-DEMO-001) - Standard risk tier\n- Member since 2023-01-01 (nearly 2 years)\n- Lifetime value: $2,000\n- Previous claim history: 1 prior claim for $1,304.69 (paid $787.52)\n- Low churn risk (15.7%)\n\n**Policy Details:**\n- Comprehensive coverage with $250 deductible\n- 80% reimbursement rate\n- $10,000 annual limit (plenty remaining)\n- Policy is active and in good standing\n\n**Pet Information:**\n- Buddy - 4-year-old mixed breed dog, 45 lbs\n- No known pre-existing conditions\n- Age and breed appropriate for chocolate toxicity incident\n\n**Provider Analysis:**\n- 24/7 Emergency Animal Hospital (out-of-network)\n- Good rating (4.14/5) with low fraud rate (3.5%)\n- Average claim amount $736 (this claim is 84% higher)\n- 71 claims processed - established provider\n\n### Coverage Concerns:\n**CRITICAL ISSUE**: Claim categorized as \"general/unclassified\" which is NOT COVERED under comprehensive plan. This appears to be a normalization error - chocolate toxicity should be covered as an accident/poisoning.\n\n### Recommendations:\n1. Review diagnosis code mapping - T65.8 should map to covered accident category\n2. Manual review recommended due to coverage classification issue\n3. Claim amount is reasonable for emergency chocolate toxicity treatment\n4. Customer has good payment history and low risk profile",
+    "agent_name": "silver_agent",
+    "agent_version": "1.0.0"
+  },
+  "metadata": {
+    "processed_at": "2026-01-01T01:57:52.493732",
+    "layer": "silver",
+    "source": "agent_pipeline"
+  }
+}

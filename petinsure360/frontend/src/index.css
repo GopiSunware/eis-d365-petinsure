@@ -1,0 +1,436 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ========================================
+   CSS Custom Properties (Theme Variables)
+   ======================================== */
+:root {
+  /* Background colors */
+  --bg-primary: #fafafa;
+  --bg-secondary: #ffffff;
+  --bg-tertiary: #f4f4f5;
+
+  /* Text colors */
+  --text-primary: #18181b;
+  --text-secondary: #71717a;
+  --text-muted: #a1a1aa;
+
+  /* Border colors */
+  --border-color: rgba(0, 0, 0, 0.08);
+  --border-hover: rgba(0, 0, 0, 0.15);
+
+  /* Brand accent (pet-orange) */
+  --accent: #f97316;
+  --accent-hover: #ea580c;
+  --accent-light: #fff7ed;
+  --accent-glow: rgba(249, 115, 22, 0.25);
+
+  /* Status colors */
+  --success: #22c55e;
+  --warning: #f59e0b;
+  --danger: #ef4444;
+  --info: #3b82f6;
+}
+
+/* Dark mode */
+.dark {
+  --bg-primary: #0a0a0a;
+  --bg-secondary: #171717;
+  --bg-tertiary: #262626;
+  --text-primary: #fafafa;
+  --text-secondary: #a3a3a3;
+  --text-muted: #71717a;
+  --border-color: rgba(255, 255, 255, 0.08);
+  --border-hover: rgba(255, 255, 255, 0.15);
+  --accent-light: rgba(249, 115, 22, 0.1);
+}
+
+/* ========================================
+   Base Styles
+   ======================================== */
+body {
+  font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Headings use display font */
+h1, h2, h3, h4, h5, h6 {
+  font-family: 'Space Grotesk', system-ui, sans-serif;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+/* Code/monospace */
+code, pre, .font-mono {
+  font-family: 'JetBrains Mono', monospace;
+}
+
+/* ========================================
+   Background Patterns & Depth
+   ======================================== */
+.bg-pattern-dots {
+  background-image: radial-gradient(circle, rgba(0,0,0,0.05) 1px, transparent 1px);
+  background-size: 20px 20px;
+}
+
+.dark .bg-pattern-dots {
+  background-image: radial-gradient(circle, rgba(255,255,255,0.05) 1px, transparent 1px);
+}
+
+.bg-pattern-grid {
+  background-image:
+    linear-gradient(rgba(0,0,0,0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0,0,0,0.03) 1px, transparent 1px);
+  background-size: 40px 40px;
+}
+
+.bg-gradient-hero {
+  background: linear-gradient(135deg, var(--accent) 0%, #ea580c 50%, #c2410c 100%);
+}
+
+.bg-gradient-subtle {
+  background: linear-gradient(180deg, var(--bg-primary) 0%, var(--bg-tertiary) 100%);
+}
+
+/* ========================================
+   Component Classes
+   ======================================== */
+@layer components {
+  /* Card with hover lift effect */
+  .card {
+    @apply bg-white rounded-xl shadow-sm p-6
+           border border-gray-100
+           transition-all duration-200 ease-out;
+    background: var(--bg-secondary);
+    border-color: var(--border-color);
+  }
+
+  .card:hover {
+    @apply shadow-md;
+    border-color: var(--border-hover);
+    transform: translateY(-2px);
+  }
+
+  /* Primary button with glow */
+  .btn-primary {
+    @apply bg-primary-500 hover:bg-primary-600
+           text-white font-semibold
+           py-2.5 px-5 rounded-lg
+           transition-all duration-150 ease-out;
+  }
+
+  .btn-primary:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px var(--accent-glow);
+  }
+
+  .btn-primary:active {
+    transform: translateY(0);
+  }
+
+  /* Secondary button */
+  .btn-secondary {
+    @apply bg-gray-100 hover:bg-gray-200
+           text-gray-800 font-semibold
+           py-2.5 px-5 rounded-lg
+           transition-all duration-150 ease-out;
+  }
+
+  .btn-secondary:hover {
+    transform: translateY(-1px);
+  }
+
+  /* Input fields with focus glow */
+  .input-field {
+    @apply w-full px-4 py-2.5
+           border rounded-lg
+           outline-none
+           transition-all duration-200;
+    background: var(--bg-secondary);
+    border-color: var(--border-color);
+    color: var(--text-primary);
+  }
+
+  .input-field:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px var(--accent-glow);
+  }
+
+  .input-field::placeholder {
+    color: var(--text-muted);
+  }
+
+  /* Label */
+  .label {
+    @apply block text-sm font-medium mb-1.5;
+    color: var(--text-secondary);
+  }
+
+  /* Stats card for dashboard */
+  .stat-card {
+    @apply card flex flex-col gap-2;
+  }
+
+  .stat-value {
+    @apply text-3xl font-bold leading-none;
+    font-family: 'Space Grotesk', sans-serif;
+  }
+
+  .stat-label {
+    @apply text-sm uppercase tracking-wide;
+    color: var(--text-secondary);
+  }
+
+  .stat-change {
+    @apply text-sm font-medium flex items-center gap-1;
+  }
+
+  .stat-change.positive { color: var(--success); }
+  .stat-change.negative { color: var(--danger); }
+
+  /* Badge variants */
+  .badge {
+    @apply inline-flex items-center px-2.5 py-0.5
+           rounded-full text-xs font-semibold;
+  }
+
+  .badge-success { @apply bg-green-100 text-green-700; }
+  .badge-warning { @apply bg-yellow-100 text-yellow-700; }
+  .badge-danger { @apply bg-red-100 text-red-700; }
+  .badge-info { @apply bg-blue-100 text-blue-700; }
+  .badge-primary { @apply bg-orange-100 text-orange-700; }
+
+  /* Glass card effect */
+  .glass-card {
+    background: rgba(255, 255, 255, 0.7);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    @apply rounded-xl p-6;
+  }
+
+  .dark .glass-card {
+    background: rgba(23, 23, 23, 0.7);
+    border-color: rgba(255, 255, 255, 0.1);
+  }
+
+  /* Connection status indicator */
+  .connection-status {
+    @apply inline-flex items-center gap-2 px-3 py-1
+           rounded-full text-xs font-medium;
+  }
+
+  .connection-status.connected {
+    @apply bg-green-100 text-green-700;
+  }
+
+  .connection-status.disconnected {
+    @apply bg-gray-100 text-gray-500;
+  }
+
+  .connection-status::before {
+    content: '';
+    @apply w-2 h-2 rounded-full bg-current;
+  }
+
+  .connection-status.connected::before {
+    animation: pulse 2s ease-in-out infinite;
+  }
+
+  /* Skeleton loading */
+  .skeleton {
+    background: linear-gradient(
+      90deg,
+      var(--bg-tertiary) 25%,
+      var(--bg-secondary) 50%,
+      var(--bg-tertiary) 75%
+    );
+    background-size: 200% 100%;
+    animation: shimmer 1.5s infinite;
+    @apply rounded-lg;
+  }
+
+  .skeleton-text { @apply h-4 w-3/5; }
+  .skeleton-title { @apply h-6 w-2/5; }
+  .skeleton-card { @apply h-32 w-full; }
+  .skeleton-avatar { @apply h-12 w-12 rounded-full; }
+}
+
+/* ========================================
+   Animations
+   ======================================== */
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slideIn {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+@keyframes shimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+/* Animation utility classes */
+.animate-fade-in {
+  animation: fadeIn 0.4s ease-out forwards;
+}
+
+.animate-fade-in-up {
+  animation: fadeInUp 0.5s ease-out forwards;
+  opacity: 0;
+}
+
+.animate-slide-in {
+  animation: slideIn 0.3s ease-out;
+}
+
+/* Staggered animation delays */
+.stagger-1 { animation-delay: 0.1s; }
+.stagger-2 { animation-delay: 0.2s; }
+.stagger-3 { animation-delay: 0.3s; }
+.stagger-4 { animation-delay: 0.4s; }
+.stagger-5 { animation-delay: 0.5s; }
+
+/* ========================================
+   Toast Notifications
+   ======================================== */
+.toast-container {
+  @apply fixed top-4 right-4 z-50 flex flex-col gap-2;
+}
+
+.toast {
+  @apply px-4 py-3 rounded-lg text-sm font-medium text-white
+         shadow-lg animate-slide-in;
+}
+
+.toast-success { background: var(--success); }
+.toast-warning { background: var(--warning); }
+.toast-danger { background: var(--danger); }
+.toast-info { background: var(--info); }
+
+/* ========================================
+   Form Wizard Progress
+   ======================================== */
+.wizard-progress {
+  @apply flex justify-between mb-8;
+}
+
+.wizard-step {
+  @apply flex flex-col items-center gap-2 flex-1 relative;
+}
+
+.wizard-step::after {
+  content: '';
+  @apply absolute top-4 left-1/2 w-full h-0.5;
+  background: var(--border-color);
+}
+
+.wizard-step:last-child::after {
+  display: none;
+}
+
+.wizard-step.completed::after {
+  background: var(--accent);
+}
+
+.step-number {
+  @apply w-8 h-8 rounded-full flex items-center justify-center
+         font-semibold text-sm z-10;
+  background: var(--bg-tertiary);
+  border: 2px solid var(--border-color);
+}
+
+.wizard-step.active .step-number {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: white;
+}
+
+.wizard-step.completed .step-number {
+  background: var(--success);
+  border-color: var(--success);
+  color: white;
+}
+
+.step-label {
+  @apply text-xs text-center;
+  color: var(--text-secondary);
+}
+
+/* ========================================
+   Table Styles
+   ======================================== */
+.table-container {
+  @apply overflow-x-auto;
+}
+
+table {
+  @apply w-full;
+  border-collapse: separate;
+  border-spacing: 0;
+}
+
+table th {
+  @apply px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide;
+  background: var(--bg-tertiary);
+  color: var(--text-secondary);
+}
+
+table td {
+  @apply px-4 py-3 text-sm;
+  border-bottom: 1px solid var(--border-color);
+}
+
+table tbody tr:hover td {
+  background: var(--accent-light);
+}
+
+/* ========================================
+   Scrollbar Styling
+   ======================================== */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--bg-tertiary);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--text-muted);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--text-secondary);
+}

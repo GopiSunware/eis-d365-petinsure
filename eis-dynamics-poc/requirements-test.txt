@@ -1,0 +1,42 @@
+# Test Dependencies for EIS-Dynamics POC
+
+# Core testing
+pytest>=7.4.0
+pytest-asyncio>=0.21.0
+pytest-cov>=4.1.0
+pytest-timeout>=2.2.0
+pytest-mock>=3.12.0
+
+# HTTP testing
+httpx>=0.25.0
+respx>=0.20.0
+
+# Load testing
+locust>=2.20.0
+
+# Async support
+anyio>=4.0.0
+trio>=0.23.0
+
+# Mocking
+unittest-mock>=1.4.0
+freezegun>=1.2.0
+faker>=20.0.0
+
+# Assertions
+assertpy>=1.1
+
+# Coverage
+coverage>=7.3.0
+
+# Type checking
+mypy>=1.7.0
+types-python-dateutil>=2.8.0
+
+# Code quality
+ruff>=0.1.0
+black>=23.11.0
+isort>=5.12.0
+
+# Documentation testing
+doctest-runner>=0.5.0

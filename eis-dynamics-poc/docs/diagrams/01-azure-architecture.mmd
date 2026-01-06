@@ -1,0 +1,71 @@
+flowchart TB
+    subgraph Frontend["Frontend Layer"]
+        WS4[WS4: Agent Portal<br/>Next.js :8080]
+        WS8UI[WS8: Admin Portal<br/>Next.js :8081]
+    end
+
+    subgraph Gateway["Unified Data Gateway"]
+        API[Claims Data API<br/>FastAPI :8000<br/>60+ Endpoints & 44 LLM Tools]
+    end
+
+    subgraph Microservices["Microservices Layer"]
+        WS2[WS2: AI Claims<br/>:8001]
+        WS3[WS3: Integration<br/>:8002]
+        WS5[WS5: Rating<br/>:8003]
+        WS8[WS8: Admin API<br/>:8008]
+    end
+
+    subgraph AI["AI Processing Layer"]
+        WS6[WS6: Agent Pipeline<br/>LangGraph :8006]
+        WS7[WS7: DocGen<br/>:8007]
+    end
+
+    subgraph Pipeline["LangGraph Medallion"]
+        R[Router] --> B[Bronze]
+        B --> S[Silver]
+        S --> G[Gold]
+    end
+
+    subgraph AWS["AWS AppRunner (Primary)"]
+        AR1[(Claims API<br/>LIVE)]
+        AR2[(Agent Pipeline<br/>LIVE)]
+    end
+
+    subgraph Azure["Azure (Optional)"]
+        COSMOS[(Cosmos DB)]
+        BLOB[(Blob Storage)]
+        SB[Service Bus]
+        KV[Key Vault]
+    end
+
+    subgraph D365["Dynamics 365"]
+        DV[(Dataverse)]
+    end
+
+    subgraph LLM["AI Models"]
+        CLAUDE[Claude Sonnet]
+        GPT[GPT-4o]
+    end
+
+    WS4 --> API
+    WS8UI --> API
+    API --> WS2 & WS3 & WS5 & WS8
+    API --> WS6 --> Pipeline
+    API --> WS7
+    G --> CLAUDE & GPT
+    WS6 --> AR2
+    API --> AR1
+    WS3 --> DV
+    G --> COSMOS
+    SB --> DV
+    WS8 --> KV
+
+    style Frontend fill:#fff2cc
+    style Gateway fill:#d5e8d4
+    style Microservices fill:#dae8fc
+    style AI fill:#e1d5e7
+    style Pipeline fill:#f3e5f5
+    style AWS fill:#ff990020,stroke:#FF9900
+    style Azure fill:#0078D420,stroke:#0078D4
+    style D365 fill:#e6d0de
+    style LLM fill:#10b98120,stroke:#10b981

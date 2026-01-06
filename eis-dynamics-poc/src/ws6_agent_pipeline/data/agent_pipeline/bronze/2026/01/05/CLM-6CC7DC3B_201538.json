@@ -1,0 +1,79 @@
+{
+  "claim_id": "CLM-6CC7DC3B",
+  "raw_data": {
+    "claim_id": "CLM-6CC7DC3B",
+    "claim_number": "CLM-20260105-FE04C2",
+    "scenario_id": "DOCGEN-UPLOAD",
+    "customer_id": "DEMO-002",
+    "customer_name": "Demo One",
+    "pet_id": "PET-DEMO-003",
+    "pet_name": "Max",
+    "policy_id": "POL-DEMO-003",
+    "claim_type": "illness",
+    "claim_category": "Small cut on leg from running in yard",
+    "diagnosis_code": "",
+    "diagnosis": "Small cut on leg from running in yard",
+    "service_date": "2026-01-05",
+    "treatment_notes": "This claim appears to be a straightforward minor accident claim for a small laceration. The treatment (wound cleaning, bandaging, antibiotics) is appropriate for the described injury. The amount ($155) is reasonable for this type of minor veterinary care. However, the unknown provider is a concern that requires verification before approval. The claim narrative is consistent and the diagnosis code S01.9 (unspecified open wound of head) matches the described treatment. No fraud patterns detected, but provider verification is needed.",
+    "line_items": [],
+    "claim_amount": 155.0,
+    "provider_id": "",
+    "provider_name": "Unknown",
+    "is_in_network": true,
+    "is_emergency": false,
+    "ingestion_timestamp": "2026-01-05T20:14:51.076391",
+    "source": "customer_portal",
+    "raw_status": "ingested",
+    "layer": "bronze",
+    "_ingestion_timestamp": "2026-01-05T20:14:51.076850",
+    "_source": "api",
+    "_entity_id": "CLM-6CC7DC3B",
+    "_cleaned_at": "2026-01-05T20:15:10.040950",
+    "_changes_count": 1
+  },
+  "validation": {
+    "is_valid": true,
+    "errors": [],
+    "warnings": [
+      "Optional field missing: diagnosis_description",
+      "Optional field missing: treatment_date",
+      "Optional field missing: submission_date"
+    ],
+    "fields_checked": 27,
+    "missing_required": [],
+    "missing_optional": [
+      "diagnosis_description",
+      "treatment_date",
+      "submission_date"
+    ]
+  },
+  "quality": {
+    "completeness_score": 0.6363636363636364,
+    "accuracy_score": 1.0,
+    "consistency_score": 1.0,
+    "overall_score": 0.8545454545454545,
+    "issues": [],
+    "recommendations": [
+      "Improve data completeness by adding missing optional fields",
+      "Data quality is acceptable for processing"
+    ]
+  },
+  "anomalies": {
+    "is_anomalous": false,
+    "anomalies": [],
+    "risk_indicators": [],
+    "anomaly_score": 0.0
+  },
+  "agent": {
+    "reasoning": "This claim requires QUARANTINE due to several critical data integrity issues: 1) Policy verification failed - POL-DEMO-003 could not be found in the system, which is a fundamental requirement for claim processing. 2) Provider verification failed - \"Unknown\" provider cannot be validated, creating compliance and fraud risk concerns. 3) Missing diagnosis code - while treatment notes reference S01.9, the diagnosis_code field is empty, creating inconsistency. 4) Claim type mismatch - labeled as \"Illness\" but describes an accident (cut from running), which affects coverage determination. Despite these issues, the claim shows positive indicators: reasonable amount ($155), no anomalies detected, good overall data quality (85.5%), and detailed treatment notes. The claim appears legitimate but requires manual review to resolve the policy/provider verification issues and correct the diagnosis coding before processing can continue.",
+    "decision": "QUARANTINE",
+    "confidence": 0.75,
+    "agent_name": "bronze_agent",
+    "agent_version": "1.0.0"
+  },
+  "metadata": {
+    "processed_at": "2026-01-05T20:15:38.151701",
+    "layer": "bronze",
+    "source": "agent_pipeline"
+  }
+}

@@ -1,0 +1,956 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>System Overview - EIS-Dynamics POC</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --primary: #2563eb;
+            --primary-dark: #1d4ed8;
+            --secondary: #7c3aed;
+            --accent: #06b6d4;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+            --dark: #1e293b;
+            --light: #f8fafc;
+            --gray: #64748b;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: #0f172a;
+            color: #e2e8f0;
+            line-height: 1.6;
+        }
+
+        nav {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            background: rgba(15, 23, 42, 0.95);
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+            padding: 16px 24px;
+            z-index: 100;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        nav a { color: #94a3b8; text-decoration: none; font-size: 14px; transition: color 0.2s; }
+        nav a:hover { color: #fff; }
+        .nav-links { display: flex; gap: 24px; }
+        .nav-links a.active { color: var(--primary); }
+
+        .container { max-width: 1400px; margin: 0 auto; padding: 100px 24px 60px; }
+
+        .page-header { text-align: center; margin-bottom: 60px; }
+        .page-header h1 {
+            font-size: 40px;
+            font-weight: 700;
+            margin-bottom: 16px;
+            background: linear-gradient(135deg, #fff 0%, #94a3b8 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .page-header p { color: #94a3b8; font-size: 18px; max-width: 700px; margin: 0 auto; }
+
+        .section { margin-bottom: 60px; }
+        .section-title {
+            font-size: 24px;
+            font-weight: 600;
+            margin-bottom: 24px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .section-title i { color: var(--primary); }
+
+        .card {
+            background: rgba(255,255,255,0.03);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 16px;
+            padding: 32px;
+            margin-bottom: 24px;
+        }
+
+        .layer { margin-bottom: 32px; }
+        .layer-header {
+            background: linear-gradient(90deg, rgba(37, 99, 235, 0.2) 0%, transparent 100%);
+            padding: 12px 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            font-weight: 600;
+            font-size: 14px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: var(--primary);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .services-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 20px;
+        }
+
+        .service-card {
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 12px;
+            padding: 24px;
+            transition: all 0.3s ease;
+        }
+        .service-card:hover {
+            border-color: var(--primary);
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+        }
+
+        .service-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 12px;
+        }
+        .service-name { font-weight: 600; font-size: 16px; }
+        .service-port {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 12px;
+            background: rgba(6, 182, 212, 0.2);
+            color: var(--accent);
+            padding: 4px 10px;
+            border-radius: 4px;
+        }
+        .service-tech { font-size: 12px; color: #64748b; margin-bottom: 12px; }
+        .service-features { list-style: none; font-size: 13px; color: #94a3b8; }
+        .service-features li { padding: 4px 0; display: flex; align-items: center; gap: 8px; }
+        .service-features li::before { content: ''; width: 6px; height: 6px; background: var(--success); border-radius: 50%; }
+
+        .arrow-down { text-align: center; padding: 16px; color: #64748b; font-size: 20px; }
+
+        .gateway-card {
+            background: linear-gradient(135deg, rgba(37, 99, 235, 0.1) 0%, rgba(6, 182, 212, 0.1) 100%);
+            border: 1px solid rgba(37, 99, 235, 0.3);
+            border-radius: 16px;
+            padding: 32px;
+            text-align: center;
+        }
+        .gateway-card h3 { font-size: 20px; margin-bottom: 8px; }
+        .gateway-card .subtitle { color: #94a3b8; font-size: 14px; margin-bottom: 20px; }
+        .endpoint-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+            gap: 12px;
+            margin-top: 20px;
+        }
+        .endpoint-badge {
+            background: rgba(255,255,255,0.05);
+            padding: 10px;
+            border-radius: 8px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 12px;
+            color: var(--accent);
+        }
+
+        .pipeline-section {
+            background: linear-gradient(135deg, rgba(124, 58, 237, 0.1) 0%, rgba(37, 99, 235, 0.1) 100%);
+            border: 1px solid rgba(124, 58, 237, 0.3);
+            border-radius: 16px;
+            padding: 32px;
+        }
+        .pipeline-flow {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 16px;
+            flex-wrap: wrap;
+            margin-top: 24px;
+        }
+        .agent-box {
+            flex: 1;
+            min-width: 180px;
+            text-align: center;
+            padding: 24px 16px;
+            background: rgba(255,255,255,0.05);
+            border-radius: 12px;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+        .agent-box h4 { font-size: 15px; margin-bottom: 8px; color: var(--secondary); }
+        .agent-box p { font-size: 12px; color: #94a3b8; }
+        .arrow-right { color: var(--secondary); font-size: 24px; }
+
+        /* Domain Model */
+        .domain-model {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 24px;
+        }
+        .entity-card {
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 12px;
+            padding: 24px;
+        }
+        .entity-card h4 {
+            font-size: 16px;
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            color: var(--accent);
+        }
+        .entity-fields { font-size: 13px; }
+        .entity-fields .field {
+            display: flex;
+            justify-content: space-between;
+            padding: 6px 0;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+        }
+        .entity-fields .field:last-child { border-bottom: none; }
+        .field-name { color: #e2e8f0; }
+        .field-type { color: #64748b; font-family: 'JetBrains Mono', monospace; font-size: 11px; }
+
+        /* Tables */
+        .table-container { overflow-x: auto; }
+        table { width: 100%; border-collapse: collapse; }
+        th, td { padding: 14px 16px; text-align: left; border-bottom: 1px solid rgba(255,255,255,0.1); }
+        th {
+            background: rgba(37, 99, 235, 0.1);
+            font-weight: 600;
+            font-size: 13px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: var(--primary);
+        }
+        td { font-size: 14px; }
+        tr:hover td { background: rgba(255,255,255,0.03); }
+
+        .badge {
+            display: inline-block;
+            padding: 4px 10px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+        .badge-port { background: rgba(6, 182, 212, 0.2); color: var(--accent); font-family: 'JetBrains Mono', monospace; }
+        .badge-tech { background: rgba(16, 185, 129, 0.2); color: var(--success); }
+        .badge-live { background: rgba(16, 185, 129, 0.2); color: var(--success); }
+        .badge-dev { background: rgba(255,255,255,0.1); color: #94a3b8; }
+
+        .status-live {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .status-live::before {
+            content: '';
+            width: 8px;
+            height: 8px;
+            background: var(--success);
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+        }
+        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+
+        /* AI Processing Example */
+        .ai-example {
+            background: rgba(0,0,0,0.3);
+            border-radius: 12px;
+            padding: 24px;
+            margin-top: 24px;
+        }
+        .ai-example-title {
+            font-size: 14px;
+            font-weight: 600;
+            margin-bottom: 16px;
+            color: var(--warning);
+        }
+        .code-block {
+            background: rgba(0,0,0,0.5);
+            border-radius: 8px;
+            padding: 16px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 12px;
+            overflow-x: auto;
+            margin-bottom: 16px;
+        }
+        .code-block pre { margin: 0; white-space: pre-wrap; }
+        .code-comment { color: #64748b; }
+        .code-key { color: var(--accent); }
+        .code-string { color: var(--success); }
+        .code-number { color: var(--warning); }
+
+        /* Fraud Detection */
+        .fraud-patterns {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 20px;
+        }
+        .fraud-card {
+            background: rgba(239, 68, 68, 0.1);
+            border: 1px solid rgba(239, 68, 68, 0.3);
+            border-radius: 12px;
+            padding: 20px;
+        }
+        .fraud-card h5 {
+            font-size: 14px;
+            margin-bottom: 12px;
+            color: var(--danger);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .fraud-card ul { list-style: none; font-size: 13px; color: #94a3b8; }
+        .fraud-card li { padding: 4px 0; }
+
+        .fraud-score-scale {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 12px;
+            margin-top: 20px;
+        }
+        .score-item {
+            text-align: center;
+            padding: 16px;
+            border-radius: 8px;
+        }
+        .score-item.low { background: rgba(16, 185, 129, 0.2); border: 1px solid rgba(16, 185, 129, 0.4); }
+        .score-item.medium { background: rgba(245, 158, 11, 0.2); border: 1px solid rgba(245, 158, 11, 0.4); }
+        .score-item.high { background: rgba(239, 68, 68, 0.2); border: 1px solid rgba(239, 68, 68, 0.4); }
+        .score-item.critical { background: rgba(139, 0, 0, 0.3); border: 1px solid rgba(239, 68, 68, 0.6); }
+        .score-range { font-family: 'JetBrains Mono', monospace; font-size: 14px; font-weight: 600; }
+        .score-label { font-size: 12px; color: #94a3b8; margin-top: 4px; }
+        .score-action { font-size: 11px; color: #64748b; margin-top: 8px; }
+
+        @media (max-width: 768px) {
+            .pipeline-flow { flex-direction: column; }
+            .arrow-right { transform: rotate(90deg); }
+            .services-grid { grid-template-columns: 1fr; }
+            .fraud-score-scale { grid-template-columns: repeat(2, 1fr); }
+        }
+    </style>
+</head>
+<body>
+    <nav>
+        <a href="index.html"><i class="fas fa-home"></i> EIS-Dynamics POC</a>
+        <div class="nav-links">
+            <a href="overview.html" class="active">Overview</a>
+            <a href="data-flow.html">Data Flow</a>
+            <a href="infrastructure.html">Infrastructure</a>
+            <a href="security.html">Security</a>
+        </div>
+    </nav>
+
+    <div class="container">
+        <div class="page-header">
+            <h1>System Architecture Overview</h1>
+            <p>Comprehensive view of the EIS-Dynamics POC microservices architecture, pet insurance domain model, and AI-powered claims processing</p>
+        </div>
+
+        <!-- Full System Architecture -->
+        <div class="section">
+            <h2 class="section-title"><i class="fas fa-sitemap"></i> Full System Architecture</h2>
+
+            <div class="card">
+                <!-- Presentation Layer -->
+                <div class="layer">
+                    <div class="layer-header">
+                        <i class="fas fa-desktop"></i> Presentation Layer
+                    </div>
+                    <div class="services-grid">
+                        <div class="service-card">
+                            <div class="service-header">
+                                <span class="service-name">WS4: Agent Portal</span>
+                                <span class="service-port">:8080</span>
+                            </div>
+                            <div class="service-tech">Next.js 14 + React 18 + TypeScript</div>
+                            <ul class="service-features">
+                                <li>Dashboard with pet/claim statistics</li>
+                                <li>Pet Owner 360 view</li>
+                                <li>Pet Claim Manager with AI triage</li>
+                                <li>Pet Quote Wizard</li>
+                                <li>Pipeline visualization (XYFlow)</li>
+                            </ul>
+                        </div>
+                        <div class="service-card">
+                            <div class="service-header">
+                                <span class="service-name">WS8: Admin Portal</span>
+                                <span class="service-port">:8081</span>
+                            </div>
+                            <div class="service-tech">Next.js 14 + React 18 + Zustand</div>
+                            <ul class="service-features">
+                                <li>AI provider/model configuration</li>
+                                <li>Cost monitoring (Azure/AWS)</li>
+                                <li>Audit log viewing</li>
+                                <li>User/role management</li>
+                                <li>Maker-checker approval workflow</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="arrow-down"><i class="fas fa-arrow-down"></i></div>
+
+                <!-- Unified Data Gateway -->
+                <div class="layer">
+                    <div class="layer-header">
+                        <i class="fas fa-database"></i> Unified Data Gateway
+                    </div>
+                    <div class="gateway-card">
+                        <h3>Claims Data API</h3>
+                        <span class="service-port" style="font-size: 14px;">Port 8000</span>
+                        <p class="subtitle">FastAPI + Python 3.11 | 60+ Endpoints | 44 LLM Tools for Agent Processing</p>
+                        <div class="endpoint-grid">
+                            <div class="endpoint-badge">/customers<br><small>6 routes</small></div>
+                            <div class="endpoint-badge">/pets<br><small>5 routes</small></div>
+                            <div class="endpoint-badge">/policies<br><small>6 routes</small></div>
+                            <div class="endpoint-badge">/providers<br><small>5 routes</small></div>
+                            <div class="endpoint-badge">/claims<br><small>8 routes</small></div>
+                            <div class="endpoint-badge">/fraud<br><small>6 routes</small></div>
+                            <div class="endpoint-badge">/medical<br><small>5 routes</small></div>
+                            <div class="endpoint-badge">/billing<br><small>5 routes</small></div>
+                            <div class="endpoint-badge">/validation<br><small>7 routes</small></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="arrow-down"><i class="fas fa-arrow-down"></i></div>
+
+                <!-- Microservices Layer -->
+                <div class="layer">
+                    <div class="layer-header">
+                        <i class="fas fa-cogs"></i> Microservices Layer
+                    </div>
+                    <div class="services-grid">
+                        <div class="service-card">
+                            <div class="service-header">
+                                <span class="service-name">WS2: AI Claims Service</span>
+                                <span class="service-port">:8001</span>
+                            </div>
+                            <div class="service-tech">FastAPI + Python 3.11</div>
+                            <ul class="service-features">
+                                <li>Pet FNOL intake and processing</li>
+                                <li>AI-powered extraction from docs</li>
+                                <li>Claim severity and priority triage</li>
+                                <li>Fraud analysis and detection</li>
+                                <li>Pre-existing condition detection</li>
+                            </ul>
+                        </div>
+                        <div class="service-card">
+                            <div class="service-header">
+                                <span class="service-name">WS3: Integration Layer</span>
+                                <span class="service-port">:8002</span>
+                            </div>
+                            <div class="service-tech">FastAPI + Python 3.11</div>
+                            <ul class="service-features">
+                                <li>Mock EIS Suite APIs</li>
+                                <li>D365 Dataverse synchronization</li>
+                                <li>Webhook processing</li>
+                                <li>Vet provider management</li>
+                                <li>Entity mapping (EIS → Dataverse)</li>
+                            </ul>
+                        </div>
+                        <div class="service-card">
+                            <div class="service-header">
+                                <span class="service-name">WS5: Rating Engine</span>
+                                <span class="service-port">:8003</span>
+                            </div>
+                            <div class="service-tech">FastAPI + Python 3.11</div>
+                            <ul class="service-features">
+                                <li>Pet premium calculation</li>
+                                <li>Species/breed rating factors</li>
+                                <li>Age-based pricing curves</li>
+                                <li>Multi-pet, annual pay discounts</li>
+                                <li>Coverage plan options</li>
+                            </ul>
+                        </div>
+                        <div class="service-card">
+                            <div class="service-header">
+                                <span class="service-name">WS8: Admin Backend</span>
+                                <span class="service-port">:8008</span>
+                            </div>
+                            <div class="service-tech">FastAPI + Python 3.11</div>
+                            <ul class="service-features">
+                                <li>AI provider/model configuration</li>
+                                <li>Claims processing rules</li>
+                                <li>Cost monitoring (Azure/AWS)</li>
+                                <li>Audit logging and retrieval</li>
+                                <li>RBAC & maker-checker workflow</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="arrow-down"><i class="fas fa-arrow-down"></i></div>
+
+                <!-- AI Processing Layer -->
+                <div class="layer">
+                    <div class="layer-header">
+                        <i class="fas fa-brain"></i> AI Processing Layer
+                    </div>
+                    <div class="services-grid">
+                        <div class="service-card">
+                            <div class="service-header">
+                                <span class="service-name">WS6: Agent Pipeline</span>
+                                <span class="service-port">:8006</span>
+                            </div>
+                            <div class="service-tech">FastAPI + LangGraph | Claude Sonnet / GPT-4o</div>
+                            <ul class="service-features">
+                                <li>Medallion Architecture (Bronze → Silver → Gold)</li>
+                                <li>Router agent for complexity classification</li>
+                                <li>WebSocket real-time events (/ws/events)</li>
+                                <li>44 LLM Tools via Claims Data API</li>
+                                <li>Async and sync pipeline triggers</li>
+                            </ul>
+                        </div>
+                        <div class="service-card">
+                            <div class="service-header">
+                                <span class="service-name">WS7: DocGen Service</span>
+                                <span class="service-port">:8007</span>
+                            </div>
+                            <div class="service-tech">FastAPI + LangChain | Claude Sonnet / GPT-4o</div>
+                            <ul class="service-features">
+                                <li>Document upload (PDF, Image, ZIP)</li>
+                                <li>OCR and text extraction</li>
+                                <li>Schema mapping to claims</li>
+                                <li>Data validation and completeness</li>
+                                <li>Export: PDF, Word, CSV formats</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- LangGraph Agent Pipeline -->
+        <div class="section">
+            <h2 class="section-title"><i class="fas fa-robot"></i> LangGraph Agent Pipeline</h2>
+            <div class="pipeline-section">
+                <p style="color: #94a3b8; margin-bottom: 16px;">AI-powered claims processing using medallion architecture with four specialized agents. Each agent performs specific tasks and passes enriched data to the next stage.</p>
+                <div class="pipeline-flow">
+                    <div class="agent-box">
+                        <h4><i class="fas fa-route"></i> Router Agent</h4>
+                        <p>Analyzes claim complexity<br>Determines routing path<br><strong>fast_track | standard | enhanced</strong></p>
+                    </div>
+                    <span class="arrow-right"><i class="fas fa-arrow-right"></i></span>
+                    <div class="agent-box">
+                        <h4><i class="fas fa-check-circle"></i> Bronze Agent</h4>
+                        <p>Data validation<br>Field cleansing<br>Quality scoring</p>
+                    </div>
+                    <span class="arrow-right"><i class="fas fa-arrow-right"></i></span>
+                    <div class="agent-box">
+                        <h4><i class="fas fa-expand-arrows-alt"></i> Silver Agent</h4>
+                        <p>Policy enrichment<br>Customer context<br>Medical history</p>
+                    </div>
+                    <span class="arrow-right"><i class="fas fa-arrow-right"></i></span>
+                    <div class="agent-box">
+                        <h4><i class="fas fa-star"></i> Gold Agent</h4>
+                        <p>Risk assessment<br>Fraud detection<br>Final decision</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Pet Insurance Domain Model -->
+        <div class="section">
+            <h2 class="section-title"><i class="fas fa-paw"></i> Pet Insurance Domain Model</h2>
+            <div class="domain-model">
+                <div class="entity-card">
+                    <h4><i class="fas fa-user"></i> Pet Owner (Customer)</h4>
+                    <div class="entity-fields">
+                        <div class="field"><span class="field-name">customer_id</span><span class="field-type">PK</span></div>
+                        <div class="field"><span class="field-name">first_name, last_name</span><span class="field-type">string</span></div>
+                        <div class="field"><span class="field-name">email</span><span class="field-type">string</span></div>
+                        <div class="field"><span class="field-name">phone</span><span class="field-type">string</span></div>
+                        <div class="field"><span class="field-name">address, city, state, zip</span><span class="field-type">string</span></div>
+                        <div class="field"><span class="field-name">customer_type</span><span class="field-type">enum</span></div>
+                    </div>
+                </div>
+                <div class="entity-card">
+                    <h4><i class="fas fa-file-contract"></i> Policy</h4>
+                    <div class="entity-fields">
+                        <div class="field"><span class="field-name">policy_id</span><span class="field-type">PK</span></div>
+                        <div class="field"><span class="field-name">policy_number</span><span class="field-type">string</span></div>
+                        <div class="field"><span class="field-name">effective_date, expiration_date</span><span class="field-type">date</span></div>
+                        <div class="field"><span class="field-name">status</span><span class="field-type">enum</span></div>
+                        <div class="field"><span class="field-name">plan_type</span><span class="field-type">accident_only | accident_illness | comprehensive</span></div>
+                        <div class="field"><span class="field-name">total_premium</span><span class="field-type">currency</span></div>
+                        <div class="field"><span class="field-name">deductible, annual_limit</span><span class="field-type">currency</span></div>
+                        <div class="field"><span class="field-name">reimbursement_pct</span><span class="field-type">integer (70-90%)</span></div>
+                    </div>
+                </div>
+                <div class="entity-card">
+                    <h4><i class="fas fa-dog"></i> Pet</h4>
+                    <div class="entity-fields">
+                        <div class="field"><span class="field-name">pet_id</span><span class="field-type">PK</span></div>
+                        <div class="field"><span class="field-name">name</span><span class="field-type">string</span></div>
+                        <div class="field"><span class="field-name">species</span><span class="field-type">dog | cat | bird | rabbit | reptile</span></div>
+                        <div class="field"><span class="field-name">breed</span><span class="field-type">string</span></div>
+                        <div class="field"><span class="field-name">date_of_birth</span><span class="field-type">date</span></div>
+                        <div class="field"><span class="field-name">gender</span><span class="field-type">male | female</span></div>
+                        <div class="field"><span class="field-name">microchip_id</span><span class="field-type">string</span></div>
+                        <div class="field"><span class="field-name">weight</span><span class="field-type">decimal</span></div>
+                        <div class="field"><span class="field-name">pre_existing</span><span class="field-type">text</span></div>
+                    </div>
+                </div>
+                <div class="entity-card">
+                    <h4><i class="fas fa-file-medical"></i> Claim</h4>
+                    <div class="entity-fields">
+                        <div class="field"><span class="field-name">claim_id</span><span class="field-type">PK</span></div>
+                        <div class="field"><span class="field-name">claim_number</span><span class="field-type">string</span></div>
+                        <div class="field"><span class="field-name">date_of_service, date_reported</span><span class="field-type">date</span></div>
+                        <div class="field"><span class="field-name">status</span><span class="field-type">submitted | under_review | approved | denied | paid</span></div>
+                        <div class="field"><span class="field-name">condition_type</span><span class="field-type">accident | illness | wellness | dental</span></div>
+                        <div class="field"><span class="field-name">diagnosis, treatment</span><span class="field-type">text</span></div>
+                        <div class="field"><span class="field-name">amount_billed, approved, paid</span><span class="field-type">currency</span></div>
+                        <div class="field"><span class="field-name">fraud_score</span><span class="field-type">decimal (0-1)</span></div>
+                    </div>
+                </div>
+                <div class="entity-card">
+                    <h4><i class="fas fa-hospital"></i> Vet Provider</h4>
+                    <div class="entity-fields">
+                        <div class="field"><span class="field-name">provider_id</span><span class="field-type">PK</span></div>
+                        <div class="field"><span class="field-name">clinic_name</span><span class="field-type">string</span></div>
+                        <div class="field"><span class="field-name">address, phone, email</span><span class="field-type">string</span></div>
+                        <div class="field"><span class="field-name">license_number</span><span class="field-type">string</span></div>
+                        <div class="field"><span class="field-name">is_preferred</span><span class="field-type">boolean</span></div>
+                        <div class="field"><span class="field-name">fraud_flag</span><span class="field-type">boolean</span></div>
+                    </div>
+                </div>
+                <div class="entity-card">
+                    <h4><i class="fas fa-shield-alt"></i> Coverage</h4>
+                    <div class="entity-fields">
+                        <div class="field"><span class="field-name">coverage_id</span><span class="field-type">PK</span></div>
+                        <div class="field"><span class="field-name">coverage_type</span><span class="field-type">accident | illness | wellness | dental</span></div>
+                        <div class="field"><span class="field-name">limit</span><span class="field-type">currency</span></div>
+                        <div class="field"><span class="field-name">waiting_period</span><span class="field-type">days (0-14)</span></div>
+                        <div class="field"><span class="field-name">premium</span><span class="field-type">currency</span></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Coverage Types -->
+        <div class="section">
+            <h2 class="section-title"><i class="fas fa-umbrella"></i> Coverage Types</h2>
+            <div class="card">
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Coverage Type</th>
+                                <th>Description</th>
+                                <th>Typical Limits</th>
+                                <th>Waiting Period</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><span class="badge badge-tech">accident</span></td>
+                                <td>Injuries (broken bones, lacerations, ingestion)</td>
+                                <td>$5,000 - $30,000/year</td>
+                                <td>0-3 days</td>
+                            </tr>
+                            <tr>
+                                <td><span class="badge badge-tech">illness</span></td>
+                                <td>Sickness, infections, diseases, cancer</td>
+                                <td>$5,000 - $30,000/year</td>
+                                <td>14 days</td>
+                            </tr>
+                            <tr>
+                                <td><span class="badge badge-tech">wellness</span></td>
+                                <td>Routine care (vaccines, checkups, flea/tick)</td>
+                                <td>$200 - $600/year</td>
+                                <td>None</td>
+                            </tr>
+                            <tr>
+                                <td><span class="badge badge-tech">dental</span></td>
+                                <td>Dental illness and periodontal disease</td>
+                                <td>$500 - $1,500/year</td>
+                                <td>14 days</td>
+                            </tr>
+                            <tr>
+                                <td><span class="badge badge-tech">hereditary</span></td>
+                                <td>Breed-specific conditions (hip dysplasia, etc.)</td>
+                                <td>Included or excluded</td>
+                                <td>14 days</td>
+                            </tr>
+                            <tr>
+                                <td><span class="badge badge-tech">behavioral</span></td>
+                                <td>Behavioral therapy and training</td>
+                                <td>$500 - $1,000/year</td>
+                                <td>14 days</td>
+                            </tr>
+                            <tr>
+                                <td><span class="badge badge-tech">alternative</span></td>
+                                <td>Acupuncture, chiropractic, hydrotherapy</td>
+                                <td>$500 - $2,000/year</td>
+                                <td>14 days</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- AI Claims Processing Example -->
+        <div class="section">
+            <h2 class="section-title"><i class="fas fa-magic"></i> AI Claims Processing Example</h2>
+            <div class="card">
+                <div class="ai-example">
+                    <div class="ai-example-title"><i class="fas fa-comment-alt"></i> INPUT: Free Text from Pet Owner</div>
+                    <div class="code-block">
+                        <pre>"My golden retriever Max started limping yesterday after playing at the dog park. He won't put weight on his back left leg. The vet did x-rays and said it's a torn CCL (cruciate ligament). They're recommending TPLO surgery which costs $4,500. Max is 5 years old and has been healthy until now."</pre>
+                    </div>
+                </div>
+
+                <div class="arrow-down"><i class="fas fa-arrow-down"></i> AI Processing (Claude/GPT-4o)</div>
+
+                <div class="ai-example">
+                    <div class="ai-example-title"><i class="fas fa-file-code"></i> OUTPUT: Structured Extraction</div>
+                    <div class="code-block">
+<pre>{
+  <span class="code-key">"pet_name"</span>: <span class="code-string">"Max"</span>,
+  <span class="code-key">"species"</span>: <span class="code-string">"dog"</span>,
+  <span class="code-key">"breed"</span>: <span class="code-string">"Golden Retriever"</span>,
+  <span class="code-key">"pet_age_years"</span>: <span class="code-number">5</span>,
+  <span class="code-key">"condition_type"</span>: <span class="code-string">"accident"</span>,
+  <span class="code-key">"diagnosis"</span>: <span class="code-string">"Torn CCL (Cranial Cruciate Ligament)"</span>,
+  <span class="code-key">"affected_body_part"</span>: <span class="code-string">"back left leg"</span>,
+  <span class="code-key">"symptoms"</span>: [<span class="code-string">"limping"</span>, <span class="code-string">"non-weight-bearing"</span>],
+  <span class="code-key">"recommended_treatment"</span>: <span class="code-string">"TPLO surgery"</span>,
+  <span class="code-key">"diagnostic_performed"</span>: [<span class="code-string">"x-ray"</span>],
+  <span class="code-key">"estimated_cost"</span>: <span class="code-number">4500.00</span>,
+  <span class="code-key">"pre_existing_indicators"</span>: [],
+  <span class="code-key">"severity"</span>: <span class="code-string">"moderate"</span>,
+  <span class="code-key">"confidence_score"</span>: <span class="code-number">0.94</span>
+}</pre>
+                    </div>
+                </div>
+
+                <div class="arrow-down"><i class="fas fa-arrow-down"></i> Triage & Coverage Check</div>
+
+                <div class="ai-example">
+                    <div class="ai-example-title"><i class="fas fa-clipboard-check"></i> TRIAGE RECOMMENDATION</div>
+                    <div class="code-block">
+<pre>{
+  <span class="code-key">"claim_category"</span>: <span class="code-string">"orthopedic_surgery"</span>,
+  <span class="code-key">"auto_approve"</span>: <span class="code-number">false</span>,
+  <span class="code-key">"requires_review"</span>: <span class="code-number">true</span>,
+  <span class="code-key">"review_reasons"</span>: [
+    <span class="code-string">"Surgery claim over $3,000 threshold"</span>,
+    <span class="code-string">"CCL is hereditary/congenital in some breeds"</span>
+  ],
+  <span class="code-key">"coverage_check"</span>: {
+    <span class="code-key">"covered"</span>: <span class="code-number">true</span>,
+    <span class="code-key">"coverage_type"</span>: <span class="code-string">"accident"</span>,
+    <span class="code-key">"annual_limit_remaining"</span>: <span class="code-number">8500.00</span>,
+    <span class="code-key">"deductible_remaining"</span>: <span class="code-number">0.00</span>,
+    <span class="code-key">"reimbursement_rate"</span>: <span class="code-number">0.80</span>
+  },
+  <span class="code-key">"estimated_payout"</span>: <span class="code-number">3600.00</span>
+}</pre>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Fraud Detection -->
+        <div class="section">
+            <h2 class="section-title"><i class="fas fa-exclamation-triangle"></i> Fraud Detection Patterns</h2>
+            <div class="card">
+                <div class="fraud-patterns">
+                    <div class="fraud-card">
+                        <h5><i class="fas fa-history"></i> 1. Pre-Existing Conditions</h5>
+                        <ul>
+                            <li>Claim submitted within waiting period</li>
+                            <li>Condition matches breed-specific hereditary issues</li>
+                            <li>Symptoms suggest chronic condition</li>
+                            <li>Prior vet records show earlier treatment</li>
+                        </ul>
+                    </div>
+                    <div class="fraud-card">
+                        <h5><i class="fas fa-clone"></i> 2. Duplicate/Inflated Claims</h5>
+                        <ul>
+                            <li>Same treatment claimed to multiple insurers</li>
+                            <li>Invoice totals don't match itemized charges</li>
+                            <li>Unusually high charges for standard procedures</li>
+                            <li>Multiple claims for same condition</li>
+                        </ul>
+                    </div>
+                    <div class="fraud-card">
+                        <h5><i class="fas fa-ghost"></i> 3. Phantom Pet / Identity Fraud</h5>
+                        <ul>
+                            <li>No microchip verification available</li>
+                            <li>Pet age/breed doesn't match policy records</li>
+                            <li>Different pets treated under same policy</li>
+                            <li>Vet records show inconsistent descriptions</li>
+                        </ul>
+                    </div>
+                    <div class="fraud-card">
+                        <h5><i class="fas fa-handshake"></i> 4. Vet Collusion</h5>
+                        <ul>
+                            <li>Clinic flagged for suspicious billing patterns</li>
+                            <li>Unbundled services to maximize claims</li>
+                            <li>Unnecessary procedures recommended</li>
+                            <li>Invoice alterations detected</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <h4 style="margin-top: 32px; margin-bottom: 16px;">Fraud Score Scale</h4>
+                <div class="fraud-score-scale">
+                    <div class="score-item low">
+                        <div class="score-range">0.0 - 0.3</div>
+                        <div class="score-label">LOW RISK</div>
+                        <div class="score-action">Auto-process eligible</div>
+                    </div>
+                    <div class="score-item medium">
+                        <div class="score-range">0.3 - 0.6</div>
+                        <div class="score-label">MEDIUM RISK</div>
+                        <div class="score-action">Standard review queue</div>
+                    </div>
+                    <div class="score-item high">
+                        <div class="score-range">0.6 - 0.8</div>
+                        <div class="score-label">HIGH RISK</div>
+                        <div class="score-action">Senior adjuster review</div>
+                    </div>
+                    <div class="score-item critical">
+                        <div class="score-range">0.8 - 1.0</div>
+                        <div class="score-label">CRITICAL</div>
+                        <div class="score-action">SIU Investigation</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Service Port Summary -->
+        <div class="section">
+            <h2 class="section-title"><i class="fas fa-network-wired"></i> Service Port Configuration</h2>
+            <div class="card">
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Service</th>
+                                <th>Port</th>
+                                <th>Technology</th>
+                                <th>Purpose</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><strong>Claims Data API</strong></td>
+                                <td><span class="badge badge-port">8000</span></td>
+                                <td><span class="badge badge-tech">FastAPI</span></td>
+                                <td>Unified data gateway (60+ endpoints)</td>
+                                <td><span class="status-live badge-live">AWS Live</span></td>
+                            </tr>
+                            <tr>
+                                <td>WS2: AI Claims</td>
+                                <td><span class="badge badge-port">8001</span></td>
+                                <td><span class="badge badge-tech">FastAPI</span></td>
+                                <td>FNOL intake, fraud detection, triage</td>
+                                <td><span class="badge badge-dev">Local Dev</span></td>
+                            </tr>
+                            <tr>
+                                <td>WS3: Integration</td>
+                                <td><span class="badge badge-port">8002</span></td>
+                                <td><span class="badge badge-tech">FastAPI</span></td>
+                                <td>Mock EIS APIs, D365 sync</td>
+                                <td><span class="badge badge-dev">Local Dev</span></td>
+                            </tr>
+                            <tr>
+                                <td>WS5: Rating Engine</td>
+                                <td><span class="badge badge-port">8003</span></td>
+                                <td><span class="badge badge-tech">FastAPI</span></td>
+                                <td>Premium calculation, breed factors</td>
+                                <td><span class="badge badge-dev">Local Dev</span></td>
+                            </tr>
+                            <tr>
+                                <td><strong>WS6: Agent Pipeline</strong></td>
+                                <td><span class="badge badge-port">8006</span></td>
+                                <td><span class="badge" style="background: rgba(124, 58, 237, 0.2); color: #7c3aed;">LangGraph</span></td>
+                                <td>AI agent processing (medallion)</td>
+                                <td><span class="status-live badge-live">AWS Live</span></td>
+                            </tr>
+                            <tr>
+                                <td>WS7: DocGen</td>
+                                <td><span class="badge badge-port">8007</span></td>
+                                <td><span class="badge badge-tech">FastAPI</span></td>
+                                <td>Document processing & export</td>
+                                <td><span class="badge badge-dev">Local Dev</span></td>
+                            </tr>
+                            <tr>
+                                <td>WS8: Admin Backend</td>
+                                <td><span class="badge badge-port">8008</span></td>
+                                <td><span class="badge badge-tech">FastAPI</span></td>
+                                <td>Configuration, cost monitoring, RBAC</td>
+                                <td><span class="badge badge-dev">Local Dev</span></td>
+                            </tr>
+                            <tr>
+                                <td><strong>WS4: Agent Portal</strong></td>
+                                <td><span class="badge badge-port">8080</span></td>
+                                <td><span class="badge" style="background: rgba(255,255,255,0.1); color: #fff;">Next.js</span></td>
+                                <td>Claims processing UI</td>
+                                <td><span class="badge badge-dev">Local Dev</span></td>
+                            </tr>
+                            <tr>
+                                <td><strong>WS8: Admin Portal</strong></td>
+                                <td><span class="badge badge-port">8081</span></td>
+                                <td><span class="badge" style="background: rgba(255,255,255,0.1); color: #fff;">Next.js</span></td>
+                                <td>Admin configuration UI</td>
+                                <td><span class="badge badge-dev">Local Dev</span></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Key Design Decisions -->
+        <div class="section">
+            <h2 class="section-title"><i class="fas fa-lightbulb"></i> Key Design Decisions</h2>
+            <div class="card">
+                <div class="services-grid">
+                    <div class="service-card">
+                        <h4 style="color: var(--accent); margin-bottom: 8px;"><i class="fas fa-paw"></i> Pet-Centric Model</h4>
+                        <p style="font-size: 14px; color: #94a3b8;">Pets are first-class entities, not just attributes of policies. Enables comprehensive pet medical history tracking.</p>
+                    </div>
+                    <div class="service-card">
+                        <h4 style="color: var(--accent); margin-bottom: 8px;"><i class="fas fa-dna"></i> Breed-Based Rating</h4>
+                        <p style="font-size: 14px; color: #94a3b8;">Extensive breed database for accurate risk assessment with hereditary condition tracking.</p>
+                    </div>
+                    <div class="service-card">
+                        <h4 style="color: var(--accent); margin-bottom: 8px;"><i class="fas fa-brain"></i> AI-Powered Processing</h4>
+                        <p style="font-size: 14px; color: #94a3b8;">Claude/GPT-4o for claims analysis, fraud detection, and document processing with 44 specialized tools.</p>
+                    </div>
+                    <div class="service-card">
+                        <h4 style="color: var(--accent); margin-bottom: 8px;"><i class="fas fa-layer-group"></i> Medallion Architecture</h4>
+                        <p style="font-size: 14px; color: #94a3b8;">Bronze → Silver → Gold data processing layers in agent pipeline for progressive data enrichment.</p>
+                    </div>
+                    <div class="service-card">
+                        <h4 style="color: var(--accent); margin-bottom: 8px;"><i class="fas fa-users"></i> Multi-Pet Policies</h4>
+                        <p style="font-size: 14px; color: #94a3b8;">Support for households with multiple pets on single policy with multi-pet discounts.</p>
+                    </div>
+                    <div class="service-card">
+                        <h4 style="color: var(--accent); margin-bottom: 8px;"><i class="fas fa-cloud"></i> Multi-Cloud</h4>
+                        <p style="font-size: 14px; color: #94a3b8;">AWS AppRunner for production, Azure for optional enterprise services (Cosmos DB, Service Bus).</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

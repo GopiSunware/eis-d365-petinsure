@@ -1,0 +1,66 @@
+flowchart LR
+    subgraph RAW["RAW Zone (CSV/JSONL)"]
+        R1[pet_owners.csv]
+        R2[pets.csv]
+        R3[policies.csv]
+        R4[claims.jsonl]
+        R5[providers.csv]
+    end
+
+    subgraph BRONZE["BRONZE Layer - Validate"]
+        direction TB
+        B1[(pet_owners_bronze)]
+        B2[(pets_bronze)]
+        B3[(policies_bronze)]
+        B4[(claims_bronze)]
+        B5[(providers_bronze)]
+    end
+
+    subgraph SILVER["SILVER Layer - Enrich"]
+        direction TB
+        S1[(pet_owner_enriched)]
+        S2[(pet_medical_history)]
+        S3[(policy_coverage)]
+        S4[(claim_enriched)]
+        S5[(provider_verified)]
+    end
+
+    subgraph GOLD["GOLD Layer - Decide"]
+        direction TB
+        G1[(pet_owner_360)]
+        G2[(claim_decision)]
+        G3[(fraud_analytics)]
+        G4[(monthly_kpis)]
+    end
+
+    subgraph OUTPUT["Output"]
+        JSON[Final JSON]
+        AUDIT[Audit Trail]
+        DV[(Dataverse)]
+    end
+
+    R1 --> B1
+    R2 --> B2
+    R3 --> B3
+    R4 --> B4
+    R5 --> B5
+
+    B1 & B2 & B3 --> S1
+    B2 & B4 --> S2
+    B3 --> S3
+    B4 --> S4
+    B5 --> S5
+
+    S1 --> G1
+    S2 & S3 & S4 & S5 --> G2
+    S4 --> G3
+    G1 & G2 --> G4
+
+    G2 --> JSON & AUDIT
+    G2 --> DV
+
+    style RAW fill:#f8cecc
+    style BRONZE fill:#cd7f32,color:#fff
+    style SILVER fill:#c0c0c0
+    style GOLD fill:#ffd700
+    style OUTPUT fill:#dae8fc

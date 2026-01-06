@@ -1,0 +1,100 @@
+{
+  "claim_id": "CLM-DEMO-955977E8",
+  "bronze_reference": {
+    "claim_id": "CLM-DEMO-955977E8",
+    "decision": null
+  },
+  "enrichment": {
+    "policy_info": {
+      "policy_id": "POL-2024-00567",
+      "policy_number": "PET-567-2024",
+      "customer_id": "CUST-001",
+      "pet_id": "PET-001",
+      "coverage_type": "comprehensive",
+      "deductible": 250.0,
+      "annual_limit": 15000.0,
+      "reimbursement_rate": 0.8,
+      "start_date": "2024-01-01",
+      "end_date": "2024-12-31",
+      "status": "active"
+    },
+    "customer_info": {
+      "customer_id": "CUST-001",
+      "name": "John Smith",
+      "email": "john.smith@email.com",
+      "member_since": "2020-05-15",
+      "lifetime_value": 4500.0,
+      "total_claims": 3,
+      "total_paid": 2800.0,
+      "risk_tier": "standard",
+      "churn_risk": 0.15
+    },
+    "pet_info": {
+      "pet_id": "PET-001",
+      "name": "Max",
+      "species": "dog",
+      "breed": "Golden Retriever",
+      "age_years": 5,
+      "weight_lbs": 70,
+      "known_conditions": [
+        "hip_dysplasia_risk"
+      ]
+    },
+    "provider_info": {
+      "provider_id": "PROV-001",
+      "name": "City Pet Hospital",
+      "type": "veterinary_hospital",
+      "is_in_network": true,
+      "avg_claim_amount": 850.0,
+      "claims_processed": 150,
+      "fraud_rate": 0.02,
+      "rating": 4.5
+    },
+    "enrichment_summary": "Found policy: PET-567-2024; Found customer: John Smith; Found pet: Max (Golden Retriever); Found provider: City Pet Hospital (in-network: True)"
+  },
+  "normalized": {
+    "normalized_diagnosis": {
+      "original_code": "Z00.0",
+      "icd10_code": "Z00.0",
+      "category": "general",
+      "subcategory": "unclassified",
+      "description": "Annual wellness exam"
+    },
+    "claim_category": "general",
+    "claim_subcategory": "unclassified",
+    "derived_values": {
+      "claim_amount_normalized": 150.0,
+      "claim_type_normalized": "wellness",
+      "claim_size": "small",
+      "is_emergency": false,
+      "is_chronic": false,
+      "processing_priority": 3
+    }
+  },
+  "business_rules": {
+    "is_covered": false,
+    "passed": [
+      "Waiting period satisfied (729 days >= 14 required)",
+      "Within annual limit ($150.00 <= $15,000.00 remaining)",
+      "Applied deductible of $250.00",
+      "Calculated reimbursement: $0.00 (80%)",
+      "Provider is in-network"
+    ],
+    "failed": [
+      "Category 'general' is not covered under comprehensive plan"
+    ],
+    "warnings": [],
+    "coverage_percentage": 80.0,
+    "expected_reimbursement": 0.0
+  },
+  "agent": {
+    "reasoning": "## Silver Layer Enrichment Analysis for CLM-DEMO-955977E8\n\n### Enrichment Summary\nSuccessfully enriched claim with complete policy, customer, pet, and provider data. All lookups returned valid information with 100% enrichment completeness.\n\n### Key Findings:\n1. **Customer Profile**: John Smith is a loyal customer (member since 2020) with standard risk tier and low churn risk (15%). Lifetime value of $4,500 indicates good customer relationship.\n\n2. **Policy Details**: Comprehensive coverage with $250 deductible, 80% reimbursement rate, and $15,000 annual limit. Policy is active and within coverage period.\n\n3. **Pet Information**: Max is a 5-year-old Golden Retriever with known hip dysplasia risk - important for future claim considerations.\n\n4. **Provider Assessment**: City Pet Hospital is in-network with excellent rating (4.5/5) and low fraud rate (2%). This adds confidence to the claim.\n\n### Critical Coverage Issue:\n**CLAIM NOT COVERED** - The wellness exam falls under 'general' category which is excluded from the comprehensive plan. Despite meeting all other criteria (waiting period, limits, in-network provider), the claim will result in $0 reimbursement.\n\n### Quality Assessment:\n- Enrichment Completeness: 100%\n- Data Confidence: 85%\n- Overall Silver Score: 91%\n\nThis represents a high-quality enriched record with complete context for downstream processing.",
+    "agent_name": "silver_agent",
+    "agent_version": "1.0.0"
+  },
+  "metadata": {
+    "processed_at": "2025-12-30T23:48:46.881999",
+    "layer": "silver",
+    "source": "agent_pipeline"
+  }
+}

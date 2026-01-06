@@ -1,0 +1,367 @@
+{
+  "validation_scenarios": [
+    {
+      "scenario_id": "VAL-001",
+      "name": "Diagnosis-Treatment Mismatch - Dental for Orthopedic",
+      "description": "Dental cleaning billed for a CCL tear diagnosis",
+      "validation_type": "diagnosis_treatment_mismatch",
+      "expected_rule_result": "APPROVED",
+      "expected_ai_result": "FAIL",
+      "claim_data": {
+        "claim_id": "CLM-VAL-001",
+        "policy_id": "POL-001",
+        "pet_id": "PET-001",
+        "provider_id": "PROV-001",
+        "diagnosis_code": "S83.5",
+        "diagnosis_description": "Cruciate Ligament Rupture",
+        "procedure_codes": ["DENT-CLN", "DENT-XRAY"],
+        "procedure_descriptions": ["Dental cleaning under anesthesia", "Dental X-rays full mouth"],
+        "medications": [],
+        "claim_amount": 650.00,
+        "service_date": "2024-12-15"
+      }
+    },
+    {
+      "scenario_id": "VAL-002",
+      "name": "Diagnosis-Treatment Mismatch - Over-Treatment",
+      "description": "MRI ordered for simple allergic reaction - excessive diagnostic",
+      "validation_type": "diagnosis_treatment_mismatch",
+      "expected_rule_result": "APPROVED",
+      "expected_ai_result": "WARNING",
+      "claim_data": {
+        "claim_id": "CLM-VAL-002",
+        "policy_id": "POL-005",
+        "pet_id": "PET-007",
+        "provider_id": "PROV-003",
+        "diagnosis_code": "L50.0",
+        "diagnosis_description": "Allergic Urticaria (Hives)",
+        "procedure_codes": ["IMG-MRI", "MED-ANTIH", "MED-STER"],
+        "procedure_descriptions": ["MRI Full Body Scan", "Antihistamine injection", "Steroid injection"],
+        "medications": ["Diphenhydramine", "Dexamethasone"],
+        "claim_amount": 2800.00,
+        "service_date": "2024-12-10"
+      }
+    },
+    {
+      "scenario_id": "VAL-003",
+      "name": "Document Inconsistency - Pet Name Mismatch",
+      "description": "Invoice shows different pet name than policy",
+      "validation_type": "document_consistency",
+      "expected_rule_result": "APPROVED",
+      "expected_ai_result": "FAIL",
+      "claim_data": {
+        "claim_id": "CLM-VAL-003",
+        "policy_id": "POL-010",
+        "pet_id": "PET-015",
+        "provider_id": "PROV-005",
+        "diagnosis_code": "K59.9",
+        "diagnosis_description": "Gastrointestinal disorder",
+        "procedure_codes": ["EXAM-GI", "LAB-FECAL", "MED-ANTI"],
+        "procedure_descriptions": ["GI examination", "Fecal analysis", "Metronidazole"],
+        "medications": ["Metronidazole"],
+        "claim_amount": 285.00,
+        "service_date": "2024-12-12",
+        "invoice_data": {
+          "pet_name": "Buddy",
+          "procedures": ["GI exam", "Fecal test", "Medication"],
+          "amount": 285.00,
+          "date": "2024-12-12"
+        },
+        "medical_record_data": {
+          "patient_name": "Buddy",
+          "visit_date": "2024-12-12",
+          "diagnosis": "Acute gastroenteritis"
+        }
+      }
+    },
+    {
+      "scenario_id": "VAL-004",
+      "name": "Document Inconsistency - Amount Mismatch",
+      "description": "Invoice total differs from medical record charges",
+      "validation_type": "document_consistency",
+      "expected_rule_result": "APPROVED",
+      "expected_ai_result": "FAIL",
+      "claim_data": {
+        "claim_id": "CLM-VAL-004",
+        "policy_id": "POL-020",
+        "pet_id": "PET-030",
+        "provider_id": "PROV-010",
+        "diagnosis_code": "L50.0",
+        "diagnosis_description": "Allergic reaction",
+        "procedure_codes": ["EXAM-ER", "MED-ANTIH", "MED-STER"],
+        "procedure_descriptions": ["Emergency examination", "Antihistamine injection", "Steroid injection"],
+        "medications": ["Diphenhydramine", "Dexamethasone"],
+        "claim_amount": 450.00,
+        "service_date": "2024-12-08",
+        "invoice_data": {
+          "pet_name": "Luna",
+          "procedures": ["ER exam", "Injections"],
+          "amount": 450.00,
+          "date": "2024-12-08"
+        },
+        "medical_record_data": {
+          "patient_name": "Luna",
+          "visit_date": "2024-12-08",
+          "total_charges": 385.00,
+          "diagnosis": "Allergic reaction to bee sting"
+        }
+      }
+    },
+    {
+      "scenario_id": "VAL-005",
+      "name": "Missing Prerequisite - Surgery Without Pre-Op",
+      "description": "TPLO surgery without pre-anesthetic bloodwork",
+      "validation_type": "completeness_sequence",
+      "expected_rule_result": "APPROVED",
+      "expected_ai_result": "WARNING",
+      "claim_data": {
+        "claim_id": "CLM-VAL-005",
+        "policy_id": "POL-034",
+        "pet_id": "PET-034",
+        "provider_id": "PROV-011",
+        "diagnosis_code": "S83.5",
+        "diagnosis_description": "CCL rupture left stifle",
+        "procedure_codes": ["SURG-TPLO"],
+        "procedure_descriptions": ["TPLO surgery left stifle"],
+        "medications": ["Carprofen", "Tramadol"],
+        "claim_amount": 4500.00,
+        "service_date": "2024-12-05"
+      }
+    },
+    {
+      "scenario_id": "VAL-006",
+      "name": "Missing Prerequisite - Chemo Without Staging",
+      "description": "Chemotherapy started without proper staging workup",
+      "validation_type": "completeness_sequence",
+      "expected_rule_result": "APPROVED",
+      "expected_ai_result": "WARNING",
+      "claim_data": {
+        "claim_id": "CLM-VAL-006",
+        "policy_id": "POL-050",
+        "pet_id": "PET-075",
+        "provider_id": "PROV-020",
+        "diagnosis_code": "C76.9",
+        "diagnosis_description": "Lymphoma",
+        "procedure_codes": ["MED-CHEMO"],
+        "procedure_descriptions": ["Chemotherapy - CHOP protocol cycle 1"],
+        "medications": ["Vincristine", "Cyclophosphamide"],
+        "claim_amount": 850.00,
+        "service_date": "2024-12-01"
+      }
+    },
+    {
+      "scenario_id": "VAL-007",
+      "name": "License Expired - Provider License Issue",
+      "description": "Service provided by provider with expired license",
+      "validation_type": "license_verification",
+      "expected_rule_result": "APPROVED",
+      "expected_ai_result": "CRITICAL",
+      "claim_data": {
+        "claim_id": "CLM-VAL-007",
+        "policy_id": "POL-060",
+        "pet_id": "PET-090",
+        "provider_id": "PROV-045",
+        "diagnosis_code": "Z00.0",
+        "diagnosis_description": "Routine wellness examination",
+        "procedure_codes": ["EXAM-WELL", "VAC-CORE"],
+        "procedure_descriptions": ["Annual wellness exam", "Core vaccinations"],
+        "medications": [],
+        "claim_amount": 175.00,
+        "service_date": "2024-12-20"
+      }
+    },
+    {
+      "scenario_id": "VAL-008",
+      "name": "Controlled Substance - Missing DEA",
+      "description": "Schedule II controlled substance prescribed by provider without DEA",
+      "validation_type": "controlled_substance",
+      "expected_rule_result": "APPROVED",
+      "expected_ai_result": "FAIL",
+      "claim_data": {
+        "claim_id": "CLM-VAL-008",
+        "policy_id": "POL-070",
+        "pet_id": "PET-105",
+        "provider_id": "PROV-048",
+        "diagnosis_code": "G95.89",
+        "diagnosis_description": "IVDD - Intervertebral Disc Disease",
+        "procedure_codes": ["EXAM-NEURO", "MED-PAIN"],
+        "procedure_descriptions": ["Neurological examination", "Pain management protocol"],
+        "medications": ["Hydrocodone", "Gabapentin", "Methocarbamol"],
+        "claim_amount": 320.00,
+        "service_date": "2024-12-18"
+      }
+    },
+    {
+      "scenario_id": "VAL-009",
+      "name": "Controlled Substance - Unusual Diagnosis",
+      "description": "Pain medication for condition that doesn't typically require it",
+      "validation_type": "controlled_substance",
+      "expected_rule_result": "APPROVED",
+      "expected_ai_result": "WARNING",
+      "claim_data": {
+        "claim_id": "CLM-VAL-009",
+        "policy_id": "POL-080",
+        "pet_id": "PET-120",
+        "provider_id": "PROV-025",
+        "diagnosis_code": "Z00.0",
+        "diagnosis_description": "Routine wellness examination",
+        "procedure_codes": ["EXAM-WELL"],
+        "procedure_descriptions": ["Annual wellness exam"],
+        "medications": ["Tramadol", "Gabapentin"],
+        "claim_amount": 225.00,
+        "service_date": "2024-12-14"
+      }
+    },
+    {
+      "scenario_id": "VAL-010",
+      "name": "Comprehensive - Multiple Issues",
+      "description": "Claim with diagnosis mismatch, missing prerequisites, and documentation issues",
+      "validation_type": "comprehensive",
+      "expected_rule_result": "APPROVED",
+      "expected_ai_result": "MANUAL_REVIEW",
+      "claim_data": {
+        "claim_id": "CLM-VAL-010",
+        "policy_id": "POL-090",
+        "pet_id": "PET-135",
+        "provider_id": "PROV-030",
+        "diagnosis_code": "S83.5",
+        "diagnosis_description": "ACL tear",
+        "procedure_codes": ["DENT-CLN", "SURG-TPLO"],
+        "procedure_descriptions": ["Dental prophylaxis", "TPLO surgery"],
+        "medications": ["Tramadol", "Carprofen"],
+        "claim_amount": 5200.00,
+        "service_date": "2024-12-16",
+        "invoice_data": {
+          "pet_name": "Charlie",
+          "procedures": ["Dental", "Knee surgery"],
+          "amount": 5200.00,
+          "date": "2024-12-16"
+        },
+        "medical_record_data": {
+          "patient_name": "Charles",
+          "visit_date": "2024-12-15",
+          "total_charges": 4850.00,
+          "diagnosis": "Cranial cruciate ligament rupture"
+        }
+      }
+    },
+    {
+      "scenario_id": "DQ-001",
+      "name": "Data Quality - Date Mismatch",
+      "description": "Invoice date differs from medical record visit date",
+      "validation_type": "document_consistency",
+      "expected_rule_result": "APPROVED",
+      "expected_ai_result": "WARNING",
+      "claim_data": {
+        "claim_id": "CLM-DQ-001",
+        "policy_id": "POL-100",
+        "pet_id": "PET-150",
+        "provider_id": "PROV-015",
+        "diagnosis_code": "K08.3",
+        "diagnosis_description": "Dental disease",
+        "procedure_codes": ["DENT-CLN", "DENT-EXT"],
+        "procedure_descriptions": ["Dental cleaning", "Tooth extraction"],
+        "medications": ["Antibiotics"],
+        "claim_amount": 850.00,
+        "service_date": "2024-12-18",
+        "invoice_data": {
+          "pet_name": "Rover",
+          "procedures": ["Dental cleaning", "Extraction"],
+          "amount": 850.00,
+          "date": "2024-12-18"
+        },
+        "medical_record_data": {
+          "patient_name": "Rover",
+          "visit_date": "2024-12-17",
+          "total_charges": 850.00,
+          "diagnosis": "Periodontal disease grade 3"
+        }
+      }
+    },
+    {
+      "scenario_id": "DQ-002",
+      "name": "Data Quality - Procedure Mismatch",
+      "description": "Invoice lists procedures not in medical records",
+      "validation_type": "document_consistency",
+      "expected_rule_result": "APPROVED",
+      "expected_ai_result": "WARNING",
+      "claim_data": {
+        "claim_id": "CLM-DQ-002",
+        "policy_id": "POL-110",
+        "pet_id": "PET-160",
+        "provider_id": "PROV-018",
+        "diagnosis_code": "N39.0",
+        "diagnosis_description": "Urinary Tract Infection",
+        "procedure_codes": ["LAB-UA", "MED-ANTI"],
+        "procedure_descriptions": ["Urinalysis", "Antibiotics", "Ultrasound"],
+        "medications": ["Clavamox"],
+        "claim_amount": 425.00,
+        "service_date": "2024-12-19",
+        "invoice_data": {
+          "pet_name": "Cleo",
+          "procedures": ["Urinalysis", "Antibiotics", "Ultrasound", "Blood panel"],
+          "amount": 425.00,
+          "date": "2024-12-19"
+        },
+        "medical_record_data": {
+          "patient_name": "Cleo",
+          "visit_date": "2024-12-19",
+          "total_charges": 425.00,
+          "procedures_performed": ["Urinalysis", "Antibiotics"],
+          "diagnosis": "UTI - uncomplicated"
+        }
+      }
+    },
+    {
+      "scenario_id": "DQ-003",
+      "name": "Data Quality - Diagnosis Semantic Mismatch",
+      "description": "Invoice diagnosis description doesn't match medical records",
+      "validation_type": "document_consistency",
+      "expected_rule_result": "APPROVED",
+      "expected_ai_result": "WARNING",
+      "claim_data": {
+        "claim_id": "CLM-DQ-003",
+        "policy_id": "POL-120",
+        "pet_id": "PET-170",
+        "provider_id": "PROV-022",
+        "diagnosis_code": "L20.9",
+        "diagnosis_description": "Skin condition",
+        "procedure_codes": ["EXAM-DERM", "LAB-CYTO"],
+        "procedure_descriptions": ["Dermatology exam", "Skin cytology"],
+        "medications": ["Apoquel"],
+        "claim_amount": 320.00,
+        "service_date": "2024-12-20",
+        "invoice_data": {
+          "pet_name": "Sparky",
+          "procedures": ["Derm exam", "Cytology"],
+          "amount": 320.00,
+          "date": "2024-12-20",
+          "diagnosis": "Leg injury"
+        },
+        "medical_record_data": {
+          "patient_name": "Sparky",
+          "visit_date": "2024-12-20",
+          "total_charges": 320.00,
+          "diagnosis": "Atopic dermatitis"
+        }
+      }
+    }
+  ],
+  "summary": {
+    "total_scenarios": 13,
+    "by_type": {
+      "diagnosis_treatment_mismatch": 2,
+      "document_consistency": 5,
+      "completeness_sequence": 2,
+      "license_verification": 1,
+      "controlled_substance": 2,
+      "comprehensive": 1
+    },
+    "by_result": {
+      "FAIL": 4,
+      "WARNING": 7,
+      "CRITICAL": 1,
+      "MANUAL_REVIEW": 1
+    }
+  }
+}

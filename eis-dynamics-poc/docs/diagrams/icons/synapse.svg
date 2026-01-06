@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
+  <polygon points="32,8 56,24 56,48 32,56 8,48 8,24" fill="#0078D4" stroke="#005A9E" stroke-width="2"/>
+  <circle cx="32" cy="32" r="12" fill="#50E6FF"/>
+  <text x="32" y="36" font-family="Arial" font-size="8" fill="#0078D4" text-anchor="middle">SQL</text>
+</svg>

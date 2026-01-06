@@ -1,0 +1,40 @@
+{
+  "claim_id": "CLM-QUICK-96ABFD",
+  "silver_reference": {
+    "claim_id": "CLM-QUICK-96ABFD"
+  },
+  "risk": {
+    "fraud_score": 0.0,
+    "risk_level": "low",
+    "risk_factors": [],
+    "fraud_indicators": [],
+    "recommendation": "AUTO_APPROVE: Low risk, proceed with standard processing"
+  },
+  "insights": [
+    "Routine wellness claim with comprehensive preventive care services",
+    "Customer demonstrates responsible pet ownership through proactive healthcare",
+    "In-network provider usage optimizes cost efficiency",
+    "Claim amount within normal range for comprehensive wellness visit"
+  ],
+  "kpis": {
+    "claim_amount": 520.0,
+    "processing_time_seconds": 120.125,
+    "expected_payout": 416.0,
+    "customer_lifetime_value": 0.0,
+    "customer_claim_count": 1.0,
+    "automation_score": 0.7,
+    "straight_through_processing": 0.0
+  },
+  "alerts": [],
+  "final_decision": "AUTO_APPROVE",
+  "agent": {
+    "reasoning": "## Comprehensive Gold Layer Analysis for CLM-QUICK-96ABFD\n\n### Risk Assessment Summary\n- **Fraud Score**: 0.0 (No Risk)\n- **Risk Level**: Low\n- **Recommendation**: AUTO_APPROVE\n\nThis wellness claim presents zero fraud indicators and represents standard preventive care practices.\n\n### Key Business Insights\n1. **Responsible Pet Ownership**: Customer demonstrates proactive healthcare approach with comprehensive wellness visit including all standard vaccines and preventive treatments\n2. **Cost Efficiency**: In-network provider usage (Companion Animal Hospital) optimizes reimbursement rates\n3. **Standard Care Pattern**: Claim amount ($520) and services align with typical annual wellness visit expectations\n4. **Customer Value**: First claim for this customer, establishing positive engagement pattern\n\n### KPI Performance Analysis\n- **Processing Time**: 120.125 seconds (needs improvement - exceeds 15s target)\n- **Expected Payout**: $416 (80% coverage after deductible)\n- **Automation Score**: 0.7 (good automation potential)\n- **Customer Impact**: Updates customer lifetime value and establishes claim history baseline\n\n### Processing Decision Rationale\nAUTO_APPROVE is recommended based on:\n- Zero fraud risk indicators\n- Standard wellness care services\n- In-network provider\n- Appropriate pricing for services rendered\n- Customer demonstrates responsible pet care behavior\n\n### Business Recommendations\n1. **Process Optimization**: Investigate processing time delays to improve efficiency\n2. **Customer Engagement**: Leverage this positive wellness claim to promote additional preventive care programs\n3. **Provider Relations**: Continue partnership with Companion Animal Hospital given appropriate pricing and comprehensive care\n\nThis claim represents ideal customer behavior and should be processed immediately to maintain customer satisfaction and encourage continued preventive care practices.",
+    "agent_name": "gold_agent",
+    "agent_version": "1.0.0"
+  },
+  "metadata": {
+    "processed_at": "2025-12-30T19:47:42.051576",
+    "layer": "gold",
+    "source": "agent_pipeline"
+  }
+}

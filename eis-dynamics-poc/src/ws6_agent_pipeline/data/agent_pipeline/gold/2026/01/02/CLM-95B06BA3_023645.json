@@ -1,0 +1,41 @@
+{
+  "claim_id": "CLM-95B06BA3",
+  "silver_reference": {
+    "claim_id": "CLM-95B06BA3"
+  },
+  "risk": {
+    "fraud_score": 0.0,
+    "risk_level": "low",
+    "risk_factors": [],
+    "fraud_indicators": [],
+    "recommendation": "AUTO_APPROVE: Low risk, proceed with standard processing"
+  },
+  "insights": [
+    "CRITICAL SYSTEM ISSUE: Bronze layer processing failed with recursion error",
+    "Claim CLM-95B06BA3 requires manual intervention due to upstream processing failure",
+    "Processing time of 6.76 seconds indicates system performance issues",
+    "Quality score of 0.85 suggests partial data recovery was possible",
+    "No fraud analysis possible due to missing core claim data"
+  ],
+  "kpis": {
+    "claim_amount": 0.0,
+    "processing_time_seconds": 6.757483,
+    "expected_payout": 0.0,
+    "customer_lifetime_value": 0.0,
+    "customer_claim_count": 1.0,
+    "automation_score": 0.85,
+    "straight_through_processing": 1.0
+  },
+  "alerts": [],
+  "final_decision": "SYSTEM_ERROR",
+  "agent": {
+    "reasoning": "This claim cannot be properly processed due to a critical Bronze layer failure. The recursion error indicates a system issue that prevented extraction of core claim data (customer ID, pet ID, provider ID, claim amount, diagnosis code, service date). Without this fundamental information, fraud detection, risk assessment, and business rule validation are impossible. The claim must be flagged for manual intervention and system debugging. The 6.76-second processing time and quality score of 0.85 suggest the system attempted recovery but failed to extract essential data. This represents a system failure rather than a claim processing decision.",
+    "agent_name": "gold_agent",
+    "agent_version": "1.0.0"
+  },
+  "metadata": {
+    "processed_at": "2026-01-02T02:36:45.776126",
+    "layer": "gold",
+    "source": "agent_pipeline"
+  }
+}

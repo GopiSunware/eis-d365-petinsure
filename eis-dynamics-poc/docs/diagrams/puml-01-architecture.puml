@@ -1,0 +1,70 @@
+@startuml
+!theme cerulean
+title EIS-Dynamics POC - Multi-Cloud Architecture
+
+package "Frontend Layer" #fff2cc {
+    [WS4: Agent Portal\n:8080] as WS4
+    [WS8: Admin Portal\n:8081] as WS8UI
+}
+
+package "Unified Gateway" #d5e8d4 {
+    [Claims Data API\nFastAPI :8000\n60+ Endpoints] as API
+}
+
+package "Microservices" #dae8fc {
+    [WS2: AI Claims\n:8001] as WS2
+    [WS3: Integration\n:8002] as WS3
+    [WS5: Rating\n:8003] as WS5
+    [WS8: Admin API\n:8008] as WS8
+}
+
+package "AI Processing" #e1d5e7 {
+    [WS6: Agent Pipeline\nLangGraph :8006] as WS6
+    [WS7: DocGen\n:8007] as WS7
+}
+
+package "LangGraph Medallion" #f3e5f5 {
+    [Router] as R
+    [Bronze] as B
+    [Silver] as S
+    [Gold] as G
+    R --> B --> S --> G
+}
+
+cloud "AWS AppRunner" #FF9900 {
+    database "Claims API\nLIVE" as AR1
+    database "Agent Pipeline\nLIVE" as AR2
+}
+
+cloud "Azure (Optional)" #0078D4 {
+    database "Cosmos DB" as COSMOS
+    database "Blob Storage" as BLOB
+    queue "Service Bus" as SB
+    component "Key Vault" as KV
+}
+
+database "Dataverse" as DV #742774
+
+cloud "AI Models" #10b981 {
+    [Claude Sonnet] as CLAUDE
+    [GPT-4o] as GPT
+}
+
+WS4 --> API
+WS8UI --> API
+API --> WS2
+API --> WS3
+API --> WS5
+API --> WS8
+API --> WS6
+WS6 --> R
+API --> WS7
+G --> CLAUDE
+G --> GPT
+API --> AR1
+WS6 --> AR2
+WS3 --> DV
+G --> COSMOS
+SB --> DV
+WS8 --> KV
+@enduml

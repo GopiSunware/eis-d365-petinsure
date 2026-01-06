@@ -1,0 +1,92 @@
+{
+  "claim_id": "CLM-SCN-002-1767229105702",
+  "bronze_reference": {
+    "claim_id": "CLM-SCN-002-1767229105702",
+    "decision": null
+  },
+  "enrichment": {
+    "policy_info": {
+      "policy_id": "POL-DEMO-001",
+      "coverage_type": "comprehensive",
+      "deductible": 250.0,
+      "annual_limit": 10000.0,
+      "reimbursement_rate": 0.8,
+      "status": "active"
+    },
+    "customer_info": {
+      "customer_id": "CUST-DEMO-001",
+      "name": "Demo Customer",
+      "member_since": "2023-01-01",
+      "lifetime_value": 2000.0,
+      "total_claims": 1,
+      "total_paid": 1244.2095008784338,
+      "risk_tier": "standard",
+      "churn_risk": 0.14743678859548304
+    },
+    "pet_info": {
+      "pet_id": "PET-DEMO-003",
+      "name": "Unknown Pet",
+      "species": "dog",
+      "breed": "Mixed",
+      "age_years": 4,
+      "weight_lbs": 45,
+      "known_conditions": []
+    },
+    "provider_info": {
+      "provider_id": "PROV-0881",
+      "name": "Advanced Veterinary Surgical Center",
+      "type": "veterinary_clinic",
+      "is_in_network": false,
+      "avg_claim_amount": 662.9962216729,
+      "claims_processed": 29,
+      "fraud_rate": 0.017548746519051486,
+      "rating": 4.263332589813922
+    },
+    "enrichment_summary": "Created synthetic policy data for POL-DEMO-001; Created synthetic customer data for CUST-DEMO-001; Created synthetic pet data; Created synthetic provider data for Advanced Veterinary Surgical Center"
+  },
+  "normalized": {
+    "normalized_diagnosis": {
+      "original_code": "S83.5",
+      "icd10_code": "S83.5",
+      "category": "general",
+      "subcategory": "unclassified",
+      "description": "Complete cranial cruciate ligament rupture, left stifle"
+    },
+    "claim_category": "general",
+    "claim_subcategory": "unclassified",
+    "derived_values": {
+      "claim_amount_normalized": 5935.0,
+      "claim_type_normalized": "accident",
+      "claim_size": "large",
+      "is_emergency": false,
+      "is_chronic": false,
+      "processing_priority": 2
+    }
+  },
+  "business_rules": {
+    "is_covered": false,
+    "passed": [
+      "Waiting period satisfied (349 days >= 14 required)",
+      "Within annual limit ($5,935.00 <= $10,000.00 remaining)",
+      "Applied deductible of $250.00",
+      "Calculated reimbursement: $4,548.00 (80%)",
+      "Provider is in-network"
+    ],
+    "failed": [
+      "Category 'general' is not covered under comprehensive plan"
+    ],
+    "warnings": [],
+    "coverage_percentage": 80.0,
+    "expected_reimbursement": 4548.0
+  },
+  "agent": {
+    "reasoning": "## Silver Layer Enrichment Analysis\n\n### Critical Issues Identified:\n1. **TEMPORAL ANOMALY**: Submission date (2026-01-01) is 13+ months in the future from treatment date (2024-12-15) - this confirms the Bronze layer quarantine decision\n2. **COVERAGE DENIAL**: Diagnosis category 'general' is not covered under comprehensive plan despite claim being for accident\n3. **HIGH CLAIM AMOUNT**: $5,935 is significantly higher than provider's average claim amount of $663\n\n### Enrichment Summary:\n- **Policy**: Active comprehensive coverage with $250 deductible, 80% reimbursement rate\n- **Customer**: Standard risk tier, low churn risk (14.7%), only 1 previous claim\n- **Pet**: 4-year-old mixed breed dog, no known pre-existing conditions\n- **Provider**: Out-of-network specialist surgical center with good rating (4.26) and low fraud rate (1.75%)\n\n### Business Rules Validation:\n- Waiting period satisfied (349 days)\n- Within annual limit ($10,000)\n- Would calculate to $4,548 reimbursement if covered\n- However, DENIED due to diagnosis categorization issue\n\n### Recommendation:\nMaintain QUARANTINE status for human review to address:\n1. Date discrepancy investigation\n2. Diagnosis code categorization review (S83.5 should likely be orthopedic/accident, not general)\n3. Verify legitimacy of high-cost TPLO surgery claim",
+    "agent_name": "silver_agent",
+    "agent_version": "1.0.0"
+  },
+  "metadata": {
+    "processed_at": "2026-01-01T00:59:58.319567",
+    "layer": "silver",
+    "source": "agent_pipeline"
+  }
+}

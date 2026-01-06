@@ -1,0 +1,96 @@
+{
+  "claim_id": "CLM-2F69FFDA",
+  "raw_data": {
+    "claim_id": "CLM-2F69FFDA",
+    "claim_number": "CLM-20260105-B3C30D",
+    "scenario_id": "SCN-023",
+    "customer_id": "DEMO-002",
+    "customer_name": "Demo One",
+    "pet_id": "PET-DEMO-003",
+    "pet_name": "Max",
+    "policy_id": "POL-DEMO-003",
+    "claim_type": "accident",
+    "claim_category": "Laceration",
+    "diagnosis_code": "S01.9",
+    "diagnosis": "Superficial laceration - left forelimb",
+    "service_date": "2026-01-05",
+    "treatment_notes": "Small cut on leg from running in yard. Wound cleaned, no sutures required. Bandaged and sent home with antibiotics.",
+    "line_items": [
+      {
+        "description": "Office examination",
+        "amount": 55
+      },
+      {
+        "description": "Wound cleaning and flush",
+        "amount": 35
+      },
+      {
+        "description": "Bandaging",
+        "amount": 25
+      },
+      {
+        "description": "Clavamox antibiotic (7 days)",
+        "amount": 40
+      }
+    ],
+    "claim_amount": 155.0,
+    "provider_id": "PROV-0005",
+    "provider_name": "Companion Animal Hospital",
+    "is_in_network": true,
+    "is_emergency": false,
+    "ingestion_timestamp": "2026-01-05T20:13:59.310570",
+    "source": "customer_portal",
+    "raw_status": "ingested",
+    "layer": "bronze",
+    "_ingestion_timestamp": "2026-01-05T20:13:59.310944",
+    "_source": "api",
+    "_entity_id": "CLM-2F69FFDA",
+    "_cleaned_at": "2026-01-05T20:14:48.501819",
+    "_changes_count": 1
+  },
+  "validation": {
+    "is_valid": true,
+    "errors": [],
+    "warnings": [
+      "Optional field missing: diagnosis_description",
+      "Optional field missing: treatment_date",
+      "Optional field missing: submission_date"
+    ],
+    "fields_checked": 27,
+    "missing_required": [],
+    "missing_optional": [
+      "diagnosis_description",
+      "treatment_date",
+      "submission_date"
+    ]
+  },
+  "quality": {
+    "completeness_score": 0.7272727272727273,
+    "accuracy_score": 1.0,
+    "consistency_score": 1.0,
+    "overall_score": 0.8909090909090909,
+    "issues": [],
+    "recommendations": [
+      "Improve data completeness by adding missing optional fields",
+      "Data quality is acceptable for processing"
+    ]
+  },
+  "anomalies": {
+    "is_anomalous": false,
+    "anomalies": [],
+    "risk_indicators": [],
+    "anomaly_score": 0.0
+  },
+  "agent": {
+    "reasoning": "Claim CLM-2F69FFDA passed all technical validation checks with high data quality (89.1% overall score). Schema validation passed with all required fields present. No anomalies were detected by the automated system. However, manual review of historical claims revealed a potential duplicate claim (CLM-778335A8) with identical diagnosis code, treatment notes, line items, amounts, service date, and provider. While the claim data itself appears legitimate for a superficial laceration treatment with appropriate costs ($155 total), the existence of what appears to be a duplicate submission requires human investigation to determine if this is a system error, legitimate resubmission, or potential fraud attempt. The claim is being quarantined for manual review rather than automatic processing.",
+    "decision": "QUARANTINE",
+    "confidence": 0.75,
+    "agent_name": "bronze_agent",
+    "agent_version": "1.0.0"
+  },
+  "metadata": {
+    "processed_at": "2026-01-05T20:15:20.252185",
+    "layer": "bronze",
+    "source": "agent_pipeline"
+  }
+}

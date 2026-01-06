@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
+  <rect x="8" y="8" width="48" height="48" rx="4" fill="#742774" stroke="#5C1F5C" stroke-width="2"/>
+  <text x="32" y="36" font-family="Arial" font-size="16" fill="white" text-anchor="middle" font-weight="bold">D365</text>
+  <text x="32" y="60" font-family="Arial" font-size="5" fill="#742774" text-anchor="middle">Dataverse</text>
+</svg>

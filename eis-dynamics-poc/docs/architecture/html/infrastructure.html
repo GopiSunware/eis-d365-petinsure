@@ -1,0 +1,604 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Infrastructure - EIS-Dynamics POC</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --primary: #2563eb;
+            --secondary: #7c3aed;
+            --accent: #06b6d4;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --aws: #FF9900;
+            --azure: #0078D4;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: #0f172a;
+            color: #e2e8f0;
+            line-height: 1.6;
+        }
+
+        nav {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            background: rgba(15, 23, 42, 0.95);
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+            padding: 16px 24px;
+            z-index: 100;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        nav a { color: #94a3b8; text-decoration: none; font-size: 14px; transition: color 0.2s; }
+        nav a:hover { color: #fff; }
+        .nav-links { display: flex; gap: 24px; }
+        .nav-links a.active { color: var(--primary); }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 100px 24px 60px;
+        }
+
+        .page-header {
+            text-align: center;
+            margin-bottom: 60px;
+        }
+
+        .page-header h1 {
+            font-size: 40px;
+            font-weight: 700;
+            margin-bottom: 16px;
+            background: linear-gradient(135deg, #fff 0%, #94a3b8 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .page-header p {
+            color: #94a3b8;
+            font-size: 18px;
+            max-width: 700px;
+            margin: 0 auto;
+        }
+
+        .cloud-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 24px;
+            margin-bottom: 40px;
+        }
+
+        @media (max-width: 900px) {
+            .cloud-grid { grid-template-columns: 1fr; }
+        }
+
+        .cloud-card {
+            background: rgba(255,255,255,0.03);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 16px;
+            overflow: hidden;
+        }
+
+        .cloud-header {
+            padding: 24px;
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+
+        .cloud-header.aws {
+            background: linear-gradient(90deg, rgba(255, 153, 0, 0.1) 0%, transparent 100%);
+        }
+
+        .cloud-header.azure {
+            background: linear-gradient(90deg, rgba(0, 120, 212, 0.1) 0%, transparent 100%);
+        }
+
+        .cloud-logo {
+            width: 48px;
+            height: 48px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+        }
+
+        .cloud-logo.aws { background: rgba(255, 153, 0, 0.2); color: var(--aws); }
+        .cloud-logo.azure { background: rgba(0, 120, 212, 0.2); color: var(--azure); }
+
+        .cloud-title h3 {
+            font-size: 18px;
+            font-weight: 600;
+        }
+
+        .cloud-title span {
+            font-size: 13px;
+            color: #64748b;
+        }
+
+        .cloud-badge {
+            margin-left: auto;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+
+        .cloud-badge.primary {
+            background: rgba(16, 185, 129, 0.2);
+            color: var(--success);
+        }
+
+        .cloud-badge.optional {
+            background: rgba(100, 116, 139, 0.2);
+            color: #94a3b8;
+        }
+
+        .cloud-content {
+            padding: 24px;
+        }
+
+        .service-group {
+            margin-bottom: 24px;
+        }
+
+        .service-group:last-child {
+            margin-bottom: 0;
+        }
+
+        .service-group h4 {
+            font-size: 13px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: #64748b;
+            margin-bottom: 12px;
+        }
+
+        .service-list {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .service-item {
+            background: rgba(255,255,255,0.05);
+            border-radius: 8px;
+            padding: 14px 16px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .service-item i {
+            font-size: 18px;
+            width: 24px;
+            text-align: center;
+        }
+
+        .service-item .info {
+            flex: 1;
+        }
+
+        .service-item .name {
+            font-weight: 500;
+            font-size: 14px;
+        }
+
+        .service-item .desc {
+            font-size: 12px;
+            color: #64748b;
+        }
+
+        .service-item .url {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 11px;
+            color: var(--accent);
+            word-break: break-all;
+        }
+
+        .live-indicator {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 11px;
+            color: var(--success);
+        }
+
+        .live-indicator::before {
+            content: '';
+            width: 8px;
+            height: 8px;
+            background: var(--success);
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        /* Local Dev Section */
+        .local-dev {
+            background: rgba(255,255,255,0.03);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 16px;
+            padding: 32px;
+            margin-bottom: 40px;
+        }
+
+        .section-title {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-size: 20px;
+            font-weight: 600;
+            margin-bottom: 24px;
+        }
+
+        .section-title i {
+            color: var(--primary);
+        }
+
+        .dev-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+            gap: 12px;
+        }
+
+        .dev-service {
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 10px;
+            padding: 16px;
+            text-align: center;
+            transition: all 0.2s;
+        }
+
+        .dev-service:hover {
+            border-color: var(--primary);
+        }
+
+        .dev-service .port {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 20px;
+            font-weight: 600;
+            color: var(--accent);
+            margin-bottom: 4px;
+        }
+
+        .dev-service .name {
+            font-size: 12px;
+            color: #94a3b8;
+        }
+
+        /* Terraform Section */
+        .terraform-section {
+            background: rgba(255,255,255,0.03);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 16px;
+            padding: 32px;
+            margin-bottom: 40px;
+        }
+
+        .dir-tree {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 13px;
+            line-height: 1.8;
+            background: #1e293b;
+            border-radius: 8px;
+            padding: 20px;
+            overflow-x: auto;
+        }
+
+        .dir-tree .folder { color: var(--warning); }
+        .dir-tree .file { color: #94a3b8; }
+        .dir-tree .comment { color: #64748b; }
+
+        /* Start Commands */
+        .commands-section {
+            background: rgba(255,255,255,0.03);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 16px;
+            overflow: hidden;
+        }
+
+        .commands-header {
+            padding: 20px 24px;
+            background: rgba(255,255,255,0.03);
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .command-block {
+            padding: 20px 24px;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+        }
+
+        .command-block:last-child {
+            border-bottom: none;
+        }
+
+        .command-block h4 {
+            font-size: 14px;
+            margin-bottom: 8px;
+            color: #94a3b8;
+        }
+
+        .command {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 13px;
+            background: #1e293b;
+            padding: 12px 16px;
+            border-radius: 6px;
+            color: var(--success);
+        }
+
+        .command .comment {
+            color: #64748b;
+        }
+    </style>
+</head>
+<body>
+    <nav>
+        <a href="index.html"><i class="fas fa-home"></i> EIS-Dynamics POC</a>
+        <div class="nav-links">
+            <a href="overview.html">Overview</a>
+            <a href="data-flow.html">Data Flow</a>
+            <a href="infrastructure.html" class="active">Infrastructure</a>
+            <a href="security.html">Security</a>
+        </div>
+    </nav>
+
+    <div class="container">
+        <div class="page-header">
+            <h1>Infrastructure Architecture</h1>
+            <p>Multi-cloud deployment on AWS AppRunner with Azure for optional enterprise services</p>
+        </div>
+
+        <!-- Cloud Providers -->
+        <div class="cloud-grid">
+            <!-- AWS -->
+            <div class="cloud-card">
+                <div class="cloud-header aws">
+                    <div class="cloud-logo aws">
+                        <i class="fab fa-aws"></i>
+                    </div>
+                    <div class="cloud-title">
+                        <h3>Amazon Web Services</h3>
+                        <span>US-EAST-1 Region</span>
+                    </div>
+                    <span class="cloud-badge primary">PRIMARY</span>
+                </div>
+                <div class="cloud-content">
+                    <div class="service-group">
+                        <h4>AWS AppRunner</h4>
+                        <div class="service-list">
+                            <div class="service-item">
+                                <i class="fas fa-database" style="color: var(--accent);"></i>
+                                <div class="info">
+                                    <div class="name">Claims Data API</div>
+                                    <div class="url">p7qrmgi9sp.us-east-1.awsapprunner.com</div>
+                                </div>
+                                <span class="live-indicator">LIVE</span>
+                            </div>
+                            <div class="service-item">
+                                <i class="fas fa-brain" style="color: var(--secondary);"></i>
+                                <div class="info">
+                                    <div class="name">Agent Pipeline</div>
+                                    <div class="url">bn9ymuxtwp.us-east-1.awsapprunner.com</div>
+                                </div>
+                                <span class="live-indicator">LIVE</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="service-group">
+                        <h4>Configuration</h4>
+                        <div class="service-list">
+                            <div class="service-item">
+                                <i class="fas fa-cog" style="color: #64748b;"></i>
+                                <div class="info">
+                                    <div class="name">Auto-scaling</div>
+                                    <div class="desc">Enabled with health checks</div>
+                                </div>
+                            </div>
+                            <div class="service-item">
+                                <i class="fas fa-key" style="color: var(--warning);"></i>
+                                <div class="info">
+                                    <div class="name">Secrets Manager</div>
+                                    <div class="desc">API keys via IAM role</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Azure -->
+            <div class="cloud-card">
+                <div class="cloud-header azure">
+                    <div class="cloud-logo azure">
+                        <i class="fab fa-microsoft"></i>
+                    </div>
+                    <div class="cloud-title">
+                        <h3>Microsoft Azure</h3>
+                        <span>East US Region</span>
+                    </div>
+                    <span class="cloud-badge optional">OPTIONAL</span>
+                </div>
+                <div class="cloud-content">
+                    <div class="service-group">
+                        <h4>Data Services</h4>
+                        <div class="service-list">
+                            <div class="service-item">
+                                <i class="fas fa-database" style="color: var(--azure);"></i>
+                                <div class="info">
+                                    <div class="name">Cosmos DB</div>
+                                    <div class="desc">sync_state, audit_logs, config</div>
+                                </div>
+                            </div>
+                            <div class="service-item">
+                                <i class="fas fa-hdd" style="color: var(--azure);"></i>
+                                <div class="info">
+                                    <div class="name">Blob Storage</div>
+                                    <div class="desc">Vet invoices, medical records</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="service-group">
+                        <h4>Integration</h4>
+                        <div class="service-list">
+                            <div class="service-item">
+                                <i class="fas fa-exchange-alt" style="color: var(--azure);"></i>
+                                <div class="info">
+                                    <div class="name">Service Bus</div>
+                                    <div class="desc">Event queues and topics</div>
+                                </div>
+                            </div>
+                            <div class="service-item">
+                                <i class="fas fa-key" style="color: var(--azure);"></i>
+                                <div class="info">
+                                    <div class="name">Key Vault</div>
+                                    <div class="desc">Secrets management</div>
+                                </div>
+                            </div>
+                            <div class="service-item">
+                                <i class="fas fa-users" style="color: var(--azure);"></i>
+                                <div class="info">
+                                    <div class="name">Dataverse (D365)</div>
+                                    <div class="desc">CRM entities sync</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Local Development -->
+        <div class="local-dev">
+            <div class="section-title">
+                <i class="fas fa-laptop-code"></i>
+                Local Development Services
+            </div>
+            <div class="dev-grid">
+                <div class="dev-service">
+                    <div class="port">:8000</div>
+                    <div class="name">Claims API</div>
+                </div>
+                <div class="dev-service">
+                    <div class="port">:8001</div>
+                    <div class="name">WS2 AI</div>
+                </div>
+                <div class="dev-service">
+                    <div class="port">:8002</div>
+                    <div class="name">WS3 Integration</div>
+                </div>
+                <div class="dev-service">
+                    <div class="port">:8003</div>
+                    <div class="name">WS5 Rating</div>
+                </div>
+                <div class="dev-service">
+                    <div class="port">:8006</div>
+                    <div class="name">WS6 Pipeline</div>
+                </div>
+                <div class="dev-service">
+                    <div class="port">:8007</div>
+                    <div class="name">WS7 DocGen</div>
+                </div>
+                <div class="dev-service">
+                    <div class="port">:8008</div>
+                    <div class="name">WS8 Admin API</div>
+                </div>
+                <div class="dev-service">
+                    <div class="port">:8080</div>
+                    <div class="name">Agent Portal</div>
+                </div>
+                <div class="dev-service">
+                    <div class="port">:8081</div>
+                    <div class="name">Admin Portal</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Terraform Structure -->
+        <div class="terraform-section">
+            <div class="section-title">
+                <i class="fas fa-code"></i>
+                Terraform Module Structure
+            </div>
+            <div class="dir-tree">
+<span class="folder">infrastructure/</span>
+├── <span class="folder">environments/</span>
+│   ├── <span class="folder">dev/</span>
+│   │   ├── <span class="file">main.tf</span>          <span class="comment"># Dev environment</span>
+│   │   ├── <span class="file">variables.tf</span>
+│   │   └── <span class="file">terraform.tfvars</span>
+│   ├── <span class="folder">staging/</span>
+│   └── <span class="folder">prod/</span>
+├── <span class="folder">modules/</span>
+│   ├── <span class="folder">resource-group/</span>    <span class="comment"># Azure RG</span>
+│   ├── <span class="folder">key-vault/</span>         <span class="comment"># Azure KV</span>
+│   ├── <span class="folder">cosmos-db/</span>         <span class="comment"># Azure Cosmos</span>
+│   ├── <span class="folder">service-bus/</span>       <span class="comment"># Azure SB</span>
+│   ├── <span class="folder">apprunner/</span>         <span class="comment"># AWS AppRunner</span>
+│   ├── <span class="folder">ecr/</span>               <span class="comment"># AWS ECR</span>
+│   └── <span class="folder">s3/</span>                <span class="comment"># AWS S3</span>
+└── <span class="folder">scripts/</span>
+    ├── <span class="file">deploy-aws.sh</span>
+    └── <span class="file">deploy-azure.sh</span>
+            </div>
+        </div>
+
+        <!-- Start Commands -->
+        <div class="commands-section">
+            <div class="commands-header">
+                <i class="fas fa-terminal"></i>
+                Quick Start Commands
+            </div>
+            <div class="command-block">
+                <h4>Claims Data API (Port 8000)</h4>
+                <div class="command">
+                    cd src/shared/claims_data_api && uvicorn app.main:app --port 8000 --reload
+                </div>
+            </div>
+            <div class="command-block">
+                <h4>Agent Pipeline (Port 8006)</h4>
+                <div class="command">
+                    cd src/ws6_agent_pipeline && uvicorn app.main:app --port 8006 --reload
+                </div>
+            </div>
+            <div class="command-block">
+                <h4>Agent Portal UI (Port 8080)</h4>
+                <div class="command">
+                    cd src/ws4_agent_portal && npm run dev <span class="comment"># Runs on :8080</span>
+                </div>
+            </div>
+            <div class="command-block">
+                <h4>Admin Portal UI (Port 8081)</h4>
+                <div class="command">
+                    cd src/ws8_admin_portal/frontend && npm run dev <span class="comment"># Runs on :8081</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

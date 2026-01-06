@@ -1,0 +1,725 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Security - EIS-Dynamics POC</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --primary: #2563eb;
+            --secondary: #7c3aed;
+            --accent: #06b6d4;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: #0f172a;
+            color: #e2e8f0;
+            line-height: 1.6;
+        }
+
+        nav {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            background: rgba(15, 23, 42, 0.95);
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+            padding: 16px 24px;
+            z-index: 100;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        nav a { color: #94a3b8; text-decoration: none; font-size: 14px; transition: color 0.2s; }
+        nav a:hover { color: #fff; }
+        .nav-links { display: flex; gap: 24px; }
+        .nav-links a.active { color: var(--primary); }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 100px 24px 60px;
+        }
+
+        .page-header {
+            text-align: center;
+            margin-bottom: 60px;
+        }
+
+        .page-header h1 {
+            font-size: 40px;
+            font-weight: 700;
+            margin-bottom: 16px;
+            background: linear-gradient(135deg, #fff 0%, #94a3b8 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .page-header p {
+            color: #94a3b8;
+            font-size: 18px;
+            max-width: 700px;
+            margin: 0 auto;
+        }
+
+        .security-section {
+            background: rgba(255,255,255,0.03);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 16px;
+            padding: 32px;
+            margin-bottom: 32px;
+        }
+
+        .section-title {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-size: 20px;
+            font-weight: 600;
+            margin-bottom: 24px;
+        }
+
+        .section-title i {
+            color: var(--success);
+            font-size: 24px;
+        }
+
+        /* Auth Flow */
+        .auth-flow {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 16px;
+            flex-wrap: wrap;
+            margin-bottom: 30px;
+        }
+
+        .auth-step {
+            flex: 1;
+            min-width: 150px;
+            text-align: center;
+        }
+
+        .auth-step .icon {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background: rgba(16, 185, 129, 0.1);
+            border: 2px solid rgba(16, 185, 129, 0.3);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 12px;
+            font-size: 24px;
+            color: var(--success);
+        }
+
+        .auth-step h4 {
+            font-size: 14px;
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+
+        .auth-step p {
+            font-size: 12px;
+            color: #64748b;
+        }
+
+        .auth-arrow {
+            color: #64748b;
+            font-size: 20px;
+        }
+
+        .jwt-config {
+            background: rgba(16, 185, 129, 0.1);
+            border: 1px solid rgba(16, 185, 129, 0.2);
+            border-radius: 10px;
+            padding: 20px;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 16px;
+        }
+
+        .jwt-item {
+            text-align: center;
+        }
+
+        .jwt-item .label {
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: #64748b;
+            margin-bottom: 4px;
+        }
+
+        .jwt-item .value {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 14px;
+            color: var(--success);
+        }
+
+        /* RBAC */
+        .roles-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+        }
+
+        .role-card {
+            background: rgba(255,255,255,0.03);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 12px;
+            padding: 24px;
+            transition: all 0.3s;
+        }
+
+        .role-card:hover {
+            border-color: var(--primary);
+        }
+
+        .role-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+
+        .role-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+        }
+
+        .role-icon.admin { background: rgba(239, 68, 68, 0.2); color: var(--danger); }
+        .role-icon.approver { background: rgba(245, 158, 11, 0.2); color: var(--warning); }
+        .role-icon.config { background: rgba(37, 99, 235, 0.2); color: var(--primary); }
+        .role-icon.viewer { background: rgba(100, 116, 139, 0.2); color: #94a3b8; }
+
+        .role-card h4 {
+            font-size: 16px;
+            font-weight: 600;
+        }
+
+        .permissions-list {
+            list-style: none;
+            font-size: 13px;
+        }
+
+        .permissions-list li {
+            padding: 6px 0;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+        }
+
+        .permissions-list li:last-child {
+            border-bottom: none;
+        }
+
+        .permissions-list i.fa-check {
+            color: var(--success);
+            font-size: 12px;
+        }
+
+        .permissions-list i.fa-times {
+            color: var(--danger);
+            font-size: 12px;
+        }
+
+        /* Permission Matrix */
+        .permission-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 13px;
+        }
+
+        .permission-table th,
+        .permission-table td {
+            padding: 12px 16px;
+            text-align: center;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+
+        .permission-table th {
+            background: rgba(37, 99, 235, 0.1);
+            font-weight: 600;
+            color: var(--primary);
+        }
+
+        .permission-table th:first-child,
+        .permission-table td:first-child {
+            text-align: left;
+        }
+
+        .permission-table td code {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 12px;
+            color: #94a3b8;
+        }
+
+        .permission-table .yes {
+            color: var(--success);
+        }
+
+        .permission-table .no {
+            color: var(--danger);
+        }
+
+        /* Maker-Checker Flow */
+        .workflow-flow {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            margin-top: 24px;
+        }
+
+        .workflow-step {
+            display: flex;
+            gap: 20px;
+            align-items: flex-start;
+        }
+
+        .step-number {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            background: rgba(124, 58, 237, 0.2);
+            color: var(--secondary);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            flex-shrink: 0;
+        }
+
+        .step-content {
+            flex: 1;
+            background: rgba(255,255,255,0.03);
+            border-radius: 10px;
+            padding: 16px 20px;
+        }
+
+        .step-content h5 {
+            font-size: 14px;
+            margin-bottom: 6px;
+        }
+
+        .step-content p {
+            font-size: 13px;
+            color: #94a3b8;
+        }
+
+        /* Secrets */
+        .secrets-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 20px;
+        }
+
+        .secret-group {
+            background: rgba(255,255,255,0.03);
+            border-radius: 12px;
+            padding: 20px;
+        }
+
+        .secret-group h4 {
+            font-size: 14px;
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .secret-group h4 i {
+            color: var(--warning);
+        }
+
+        .secret-list {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 12px;
+        }
+
+        .secret-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+        }
+
+        .secret-item:last-child {
+            border-bottom: none;
+        }
+
+        .secret-name {
+            color: var(--accent);
+        }
+
+        .secret-desc {
+            color: #64748b;
+            font-family: 'Inter', sans-serif;
+        }
+
+        @media (max-width: 768px) {
+            .auth-flow { flex-direction: column; }
+            .auth-arrow { transform: rotate(90deg); }
+            .roles-grid { grid-template-columns: 1fr; }
+            .workflow-step { flex-direction: column; }
+        }
+    </style>
+</head>
+<body>
+    <nav>
+        <a href="index.html"><i class="fas fa-home"></i> EIS-Dynamics POC</a>
+        <div class="nav-links">
+            <a href="overview.html">Overview</a>
+            <a href="data-flow.html">Data Flow</a>
+            <a href="infrastructure.html">Infrastructure</a>
+            <a href="security.html" class="active">Security</a>
+        </div>
+    </nav>
+
+    <div class="container">
+        <div class="page-header">
+            <h1>Security Architecture</h1>
+            <p>Authentication, authorization, RBAC, and secrets management for the EIS-Dynamics POC</p>
+        </div>
+
+        <!-- JWT Authentication -->
+        <div class="security-section">
+            <div class="section-title">
+                <i class="fas fa-key"></i>
+                JWT Authentication (WS8 Admin Portal)
+            </div>
+
+            <div class="auth-flow">
+                <div class="auth-step">
+                    <div class="icon"><i class="fas fa-user"></i></div>
+                    <h4>1. Login</h4>
+                    <p>POST /api/v1/auth/login</p>
+                </div>
+                <span class="auth-arrow"><i class="fas fa-arrow-right"></i></span>
+                <div class="auth-step">
+                    <div class="icon"><i class="fas fa-check-circle"></i></div>
+                    <h4>2. Validate</h4>
+                    <p>Check credentials</p>
+                </div>
+                <span class="auth-arrow"><i class="fas fa-arrow-right"></i></span>
+                <div class="auth-step">
+                    <div class="icon"><i class="fas fa-certificate"></i></div>
+                    <h4>3. JWT Token</h4>
+                    <p>HS256 signed token</p>
+                </div>
+                <span class="auth-arrow"><i class="fas fa-arrow-right"></i></span>
+                <div class="auth-step">
+                    <div class="icon"><i class="fas fa-shield-alt"></i></div>
+                    <h4>4. Access</h4>
+                    <p>Bearer token in header</p>
+                </div>
+            </div>
+
+            <div class="jwt-config">
+                <div class="jwt-item">
+                    <div class="label">Algorithm</div>
+                    <div class="value">HS256</div>
+                </div>
+                <div class="jwt-item">
+                    <div class="label">Expiration</div>
+                    <div class="value">24 hours</div>
+                </div>
+                <div class="jwt-item">
+                    <div class="label">Secret Storage</div>
+                    <div class="value">ENV / Key Vault</div>
+                </div>
+                <div class="jwt-item">
+                    <div class="label">Claims</div>
+                    <div class="value">sub, role, exp</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- RBAC -->
+        <div class="security-section">
+            <div class="section-title">
+                <i class="fas fa-users-cog"></i>
+                Role-Based Access Control (RBAC)
+            </div>
+
+            <div class="roles-grid">
+                <div class="role-card">
+                    <div class="role-header">
+                        <div class="role-icon admin"><i class="fas fa-crown"></i></div>
+                        <h4>Administrator</h4>
+                    </div>
+                    <ul class="permissions-list">
+                        <li><i class="fas fa-check"></i> Full CRUD on all entities</li>
+                        <li><i class="fas fa-check"></i> AI provider configuration</li>
+                        <li><i class="fas fa-check"></i> Rating factor updates</li>
+                        <li><i class="fas fa-check"></i> User & role management</li>
+                        <li><i class="fas fa-check"></i> View all audit logs</li>
+                        <li><i class="fas fa-check"></i> Cost monitoring</li>
+                    </ul>
+                </div>
+
+                <div class="role-card">
+                    <div class="role-header">
+                        <div class="role-icon approver"><i class="fas fa-check-double"></i></div>
+                        <h4>Approver</h4>
+                    </div>
+                    <ul class="permissions-list">
+                        <li><i class="fas fa-check"></i> Approve config changes</li>
+                        <li><i class="fas fa-check"></i> Review AI model changes</li>
+                        <li><i class="fas fa-check"></i> Approve rating updates</li>
+                        <li><i class="fas fa-check"></i> View approval history</li>
+                        <li><i class="fas fa-times"></i> Cannot create changes</li>
+                        <li><i class="fas fa-times"></i> Cannot manage users</li>
+                    </ul>
+                </div>
+
+                <div class="role-card">
+                    <div class="role-header">
+                        <div class="role-icon config"><i class="fas fa-cog"></i></div>
+                        <h4>Config Manager</h4>
+                    </div>
+                    <ul class="permissions-list">
+                        <li><i class="fas fa-check"></i> Create config changes</li>
+                        <li><i class="fas fa-check"></i> Update AI settings</li>
+                        <li><i class="fas fa-check"></i> Modify claims rules</li>
+                        <li><i class="fas fa-check"></i> View audit logs</li>
+                        <li><i class="fas fa-times"></i> Cannot approve own changes</li>
+                        <li><i class="fas fa-times"></i> Cannot manage users</li>
+                    </ul>
+                </div>
+
+                <div class="role-card">
+                    <div class="role-header">
+                        <div class="role-icon viewer"><i class="fas fa-eye"></i></div>
+                        <h4>Viewer</h4>
+                    </div>
+                    <ul class="permissions-list">
+                        <li><i class="fas fa-check"></i> Read-only configuration</li>
+                        <li><i class="fas fa-check"></i> View cost reports</li>
+                        <li><i class="fas fa-check"></i> View audit logs</li>
+                        <li><i class="fas fa-check"></i> View pipeline status</li>
+                        <li><i class="fas fa-times"></i> Cannot modify anything</li>
+                        <li><i class="fas fa-times"></i> Cannot trigger pipelines</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- Permission Matrix -->
+        <div class="security-section">
+            <div class="section-title">
+                <i class="fas fa-table"></i>
+                API Permission Matrix
+            </div>
+
+            <table class="permission-table">
+                <thead>
+                    <tr>
+                        <th>Endpoint</th>
+                        <th>Viewer</th>
+                        <th>Config Mgr</th>
+                        <th>Approver</th>
+                        <th>Admin</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><code>GET /api/v1/config/ai/*</code></td>
+                        <td class="yes"><i class="fas fa-check"></i></td>
+                        <td class="yes"><i class="fas fa-check"></i></td>
+                        <td class="yes"><i class="fas fa-check"></i></td>
+                        <td class="yes"><i class="fas fa-check"></i></td>
+                    </tr>
+                    <tr>
+                        <td><code>PUT /api/v1/config/ai/*</code></td>
+                        <td class="no"><i class="fas fa-times"></i></td>
+                        <td class="yes"><i class="fas fa-check"></i></td>
+                        <td class="no"><i class="fas fa-times"></i></td>
+                        <td class="yes"><i class="fas fa-check"></i></td>
+                    </tr>
+                    <tr>
+                        <td><code>GET /api/v1/costs/*</code></td>
+                        <td class="yes"><i class="fas fa-check"></i></td>
+                        <td class="yes"><i class="fas fa-check"></i></td>
+                        <td class="yes"><i class="fas fa-check"></i></td>
+                        <td class="yes"><i class="fas fa-check"></i></td>
+                    </tr>
+                    <tr>
+                        <td><code>GET /api/v1/audit/*</code></td>
+                        <td class="yes"><i class="fas fa-check"></i></td>
+                        <td class="yes"><i class="fas fa-check"></i></td>
+                        <td class="yes"><i class="fas fa-check"></i></td>
+                        <td class="yes"><i class="fas fa-check"></i></td>
+                    </tr>
+                    <tr>
+                        <td><code>POST /api/v1/approvals/*/approve</code></td>
+                        <td class="no"><i class="fas fa-times"></i></td>
+                        <td class="no"><i class="fas fa-times"></i></td>
+                        <td class="yes"><i class="fas fa-check"></i></td>
+                        <td class="yes"><i class="fas fa-check"></i></td>
+                    </tr>
+                    <tr>
+                        <td><code>GET /api/v1/users/*</code></td>
+                        <td class="no"><i class="fas fa-times"></i></td>
+                        <td class="no"><i class="fas fa-times"></i></td>
+                        <td class="no"><i class="fas fa-times"></i></td>
+                        <td class="yes"><i class="fas fa-check"></i></td>
+                    </tr>
+                    <tr>
+                        <td><code>PUT /api/v1/users/*</code></td>
+                        <td class="no"><i class="fas fa-times"></i></td>
+                        <td class="no"><i class="fas fa-times"></i></td>
+                        <td class="no"><i class="fas fa-times"></i></td>
+                        <td class="yes"><i class="fas fa-check"></i></td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Maker-Checker Workflow -->
+        <div class="security-section">
+            <div class="section-title">
+                <i class="fas fa-tasks"></i>
+                Maker-Checker Approval Workflow
+            </div>
+
+            <p style="color: #94a3b8; margin-bottom: 20px;">
+                Configuration changes to <code>ai_config</code>, <code>claims_rules</code>, <code>rating_config</code>, and <code>policy_config</code> require approval.
+            </p>
+
+            <div class="workflow-flow">
+                <div class="workflow-step">
+                    <div class="step-number">1</div>
+                    <div class="step-content">
+                        <h5>Config Manager Submits Change</h5>
+                        <p>Creates a pending configuration change request (maker)</p>
+                    </div>
+                </div>
+                <div class="workflow-step">
+                    <div class="step-number">2</div>
+                    <div class="step-content">
+                        <h5>System Creates Approval Request</h5>
+                        <p>Change stored as "pending" with full audit trail</p>
+                    </div>
+                </div>
+                <div class="workflow-step">
+                    <div class="step-number">3</div>
+                    <div class="step-content">
+                        <h5>Approver Notified</h5>
+                        <p>Notification sent to approver role for review</p>
+                    </div>
+                </div>
+                <div class="workflow-step">
+                    <div class="step-number">4</div>
+                    <div class="step-content">
+                        <h5>Review & Decision</h5>
+                        <p>Approver reviews and approves or rejects (checker)</p>
+                    </div>
+                </div>
+                <div class="workflow-step">
+                    <div class="step-number">5</div>
+                    <div class="step-content">
+                        <h5>Configuration Applied</h5>
+                        <p>If approved, config applied and audit log updated</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Secrets Management -->
+        <div class="security-section">
+            <div class="section-title">
+                <i class="fas fa-user-secret"></i>
+                Secrets Management
+            </div>
+
+            <div class="secrets-grid">
+                <div class="secret-group">
+                    <h4><i class="fas fa-robot"></i> AI Services</h4>
+                    <div class="secret-list">
+                        <div class="secret-item">
+                            <span class="secret-name">ANTHROPIC_API_KEY</span>
+                            <span class="secret-desc">Claude API (primary)</span>
+                        </div>
+                        <div class="secret-item">
+                            <span class="secret-name">OPENAI_API_KEY</span>
+                            <span class="secret-desc">GPT-4o (fallback)</span>
+                        </div>
+                        <div class="secret-item">
+                            <span class="secret-name">AZURE_OPENAI_ENDPOINT</span>
+                            <span class="secret-desc">Azure OpenAI (optional)</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="secret-group">
+                    <h4><i class="fas fa-shield-alt"></i> Authentication</h4>
+                    <div class="secret-list">
+                        <div class="secret-item">
+                            <span class="secret-name">JWT_SECRET</span>
+                            <span class="secret-desc">HS256 signing key</span>
+                        </div>
+                        <div class="secret-item">
+                            <span class="secret-name">JWT_EXPIRATION</span>
+                            <span class="secret-desc">Token lifetime (24h)</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="secret-group">
+                    <h4><i class="fas fa-database"></i> Azure Services</h4>
+                    <div class="secret-list">
+                        <div class="secret-item">
+                            <span class="secret-name">COSMOS_DB_KEY</span>
+                            <span class="secret-desc">Database access</span>
+                        </div>
+                        <div class="secret-item">
+                            <span class="secret-name">STORAGE_CONNECTION</span>
+                            <span class="secret-desc">Blob storage</span>
+                        </div>
+                        <div class="secret-item">
+                            <span class="secret-name">SERVICE_BUS_CONN</span>
+                            <span class="secret-desc">Message queues</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="secret-group">
+                    <h4><i class="fas fa-cog"></i> Application</h4>
+                    <div class="secret-list">
+                        <div class="secret-item">
+                            <span class="secret-name">ENVIRONMENT</span>
+                            <span class="secret-desc">dev / staging / prod</span>
+                        </div>
+                        <div class="secret-item">
+                            <span class="secret-name">DEBUG</span>
+                            <span class="secret-desc">true / false</span>
+                        </div>
+                        <div class="secret-item">
+                            <span class="secret-name">LOG_LEVEL</span>
+                            <span class="secret-desc">INFO / DEBUG</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

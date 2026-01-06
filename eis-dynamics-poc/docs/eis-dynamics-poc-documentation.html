@@ -1,0 +1,1729 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EIS-to-Dynamics 365 POC | Pet Insurance Technical Documentation</title>
+    <style>
+        :root {
+            --primary: #0078d4;
+            --primary-dark: #005a9e;
+            --secondary: #6b7280;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+            --dark: #1f2937;
+            --light: #f9fafb;
+            --border: #e5e7eb;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        @page {
+            size: A4;
+            margin: 20mm;
+        }
+
+        body {
+            font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, 'Roboto', sans-serif;
+            line-height: 1.6;
+            color: var(--dark);
+            background: #fff;
+            font-size: 11pt;
+        }
+
+        /* Cover Page */
+        .cover-page {
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+            color: white;
+            page-break-after: always;
+        }
+
+        .cover-logo {
+            width: 120px;
+            height: 120px;
+            background: white;
+            border-radius: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 40px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.2);
+        }
+
+        .cover-logo svg {
+            width: 80px;
+            height: 80px;
+        }
+
+        .cover-title {
+            font-size: 42pt;
+            font-weight: 700;
+            margin-bottom: 10px;
+            letter-spacing: -1px;
+        }
+
+        .cover-subtitle {
+            font-size: 18pt;
+            font-weight: 300;
+            opacity: 0.9;
+            margin-bottom: 60px;
+        }
+
+        .cover-meta {
+            font-size: 11pt;
+            opacity: 0.8;
+        }
+
+        .cover-meta p {
+            margin: 5px 0;
+        }
+
+        .cover-badge {
+            display: inline-block;
+            background: rgba(255,255,255,0.2);
+            padding: 8px 20px;
+            border-radius: 20px;
+            margin-top: 40px;
+            font-size: 10pt;
+        }
+
+        /* Table of Contents */
+        .toc {
+            page-break-after: always;
+            padding: 40px;
+        }
+
+        .toc h2 {
+            font-size: 24pt;
+            color: var(--primary);
+            margin-bottom: 30px;
+            padding-bottom: 10px;
+            border-bottom: 3px solid var(--primary);
+        }
+
+        .toc-section {
+            margin-bottom: 25px;
+        }
+
+        .toc-section h3 {
+            font-size: 14pt;
+            color: var(--dark);
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+        }
+
+        .toc-section h3::before {
+            content: '';
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            background: var(--primary);
+            border-radius: 50%;
+            margin-right: 10px;
+        }
+
+        .toc-items {
+            margin-left: 28px;
+        }
+
+        .toc-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 6px 0;
+            border-bottom: 1px dotted var(--border);
+            color: var(--secondary);
+            font-size: 10pt;
+        }
+
+        /* Main Content */
+        .content {
+            padding: 0 40px;
+        }
+
+        .section {
+            page-break-before: always;
+            padding-top: 20px;
+        }
+
+        .section:first-of-type {
+            page-break-before: auto;
+        }
+
+        h1 {
+            font-size: 28pt;
+            color: var(--primary);
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 3px solid var(--primary);
+        }
+
+        h2 {
+            font-size: 18pt;
+            color: var(--dark);
+            margin: 30px 0 15px;
+            padding-bottom: 8px;
+            border-bottom: 2px solid var(--border);
+        }
+
+        h3 {
+            font-size: 14pt;
+            color: var(--primary-dark);
+            margin: 25px 0 12px;
+        }
+
+        h4 {
+            font-size: 12pt;
+            color: var(--dark);
+            margin: 20px 0 10px;
+        }
+
+        p {
+            margin-bottom: 12px;
+            text-align: justify;
+        }
+
+        /* Architecture Diagrams */
+        .diagram {
+            background: var(--light);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 20px;
+            margin: 20px 0;
+            overflow-x: auto;
+            font-family: 'Consolas', 'Monaco', monospace;
+            font-size: 9pt;
+            line-height: 1.4;
+            white-space: pre;
+        }
+
+        .diagram-title {
+            font-family: 'Segoe UI', sans-serif;
+            font-size: 11pt;
+            font-weight: 600;
+            color: var(--primary);
+            margin-bottom: 15px;
+            display: block;
+        }
+
+        /* Tables */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+            font-size: 10pt;
+        }
+
+        th {
+            background: var(--primary);
+            color: white;
+            padding: 12px 15px;
+            text-align: left;
+            font-weight: 600;
+        }
+
+        td {
+            padding: 10px 15px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        tr:nth-child(even) {
+            background: var(--light);
+        }
+
+        tr:hover {
+            background: #e8f4fc;
+        }
+
+        /* Code Blocks */
+        .code-block {
+            background: #1e1e1e;
+            color: #d4d4d4;
+            border-radius: 8px;
+            padding: 15px 20px;
+            margin: 15px 0;
+            overflow-x: auto;
+            font-family: 'Consolas', 'Monaco', monospace;
+            font-size: 9pt;
+            line-height: 1.5;
+        }
+
+        .code-block .keyword { color: #569cd6; }
+        .code-block .string { color: #ce9178; }
+        .code-block .number { color: #b5cea8; }
+        .code-block .comment { color: #6a9955; }
+
+        code {
+            background: var(--light);
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: 'Consolas', 'Monaco', monospace;
+            font-size: 9pt;
+            color: var(--primary-dark);
+        }
+
+        /* Info Boxes */
+        .info-box {
+            border-radius: 8px;
+            padding: 15px 20px;
+            margin: 20px 0;
+            border-left: 4px solid;
+        }
+
+        .info-box.info {
+            background: #eff6ff;
+            border-color: var(--primary);
+        }
+
+        .info-box.success {
+            background: #ecfdf5;
+            border-color: var(--success);
+        }
+
+        .info-box.warning {
+            background: #fffbeb;
+            border-color: var(--warning);
+        }
+
+        .info-box.danger {
+            background: #fef2f2;
+            border-color: var(--danger);
+        }
+
+        .info-box-title {
+            font-weight: 600;
+            margin-bottom: 5px;
+        }
+
+        /* Cards */
+        .card-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 20px;
+            margin: 20px 0;
+        }
+
+        .card {
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 20px;
+            background: white;
+        }
+
+        .card-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+
+        .card-icon {
+            width: 40px;
+            height: 40px;
+            background: var(--primary);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 12px;
+            color: white;
+            font-weight: bold;
+        }
+
+        .card-title {
+            font-size: 12pt;
+            font-weight: 600;
+            color: var(--dark);
+        }
+
+        .card-content {
+            font-size: 10pt;
+            color: var(--secondary);
+        }
+
+        /* Status Indicators */
+        .status {
+            display: inline-block;
+            padding: 3px 10px;
+            border-radius: 12px;
+            font-size: 9pt;
+            font-weight: 500;
+        }
+
+        .status.complete { background: #dcfce7; color: #166534; }
+        .status.progress { background: #fef3c7; color: #92400e; }
+        .status.pending { background: #e5e7eb; color: #374151; }
+
+        /* Flow Steps */
+        .flow-steps {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            margin: 20px 0;
+        }
+
+        .flow-step {
+            display: flex;
+            align-items: flex-start;
+        }
+
+        .step-number {
+            width: 32px;
+            height: 32px;
+            background: var(--primary);
+            color: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            font-size: 11pt;
+            flex-shrink: 0;
+            margin-right: 15px;
+        }
+
+        .step-content h4 {
+            margin: 0 0 5px;
+            font-size: 11pt;
+        }
+
+        .step-content p {
+            margin: 0;
+            font-size: 10pt;
+            color: var(--secondary);
+        }
+
+        /* API Endpoint */
+        .endpoint {
+            background: var(--light);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            margin: 20px 0;
+            overflow: hidden;
+        }
+
+        .endpoint-header {
+            display: flex;
+            align-items: center;
+            padding: 12px 15px;
+            background: white;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .endpoint-method {
+            padding: 4px 10px;
+            border-radius: 4px;
+            font-size: 9pt;
+            font-weight: 600;
+            margin-right: 12px;
+        }
+
+        .endpoint-method.get { background: #dcfce7; color: #166534; }
+        .endpoint-method.post { background: #dbeafe; color: #1e40af; }
+        .endpoint-method.put { background: #fef3c7; color: #92400e; }
+        .endpoint-method.delete { background: #fee2e2; color: #991b1b; }
+
+        .endpoint-path {
+            font-family: 'Consolas', monospace;
+            font-size: 10pt;
+        }
+
+        .endpoint-body {
+            padding: 15px;
+        }
+
+        /* Metrics */
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 15px;
+            margin: 20px 0;
+        }
+
+        .metric {
+            background: var(--light);
+            border-radius: 8px;
+            padding: 15px;
+            text-align: center;
+        }
+
+        .metric-value {
+            font-size: 24pt;
+            font-weight: 700;
+            color: var(--primary);
+        }
+
+        .metric-label {
+            font-size: 9pt;
+            color: var(--secondary);
+            margin-top: 5px;
+        }
+
+        /* Footer */
+        .page-footer {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            padding: 10px 40px;
+            font-size: 8pt;
+            color: var(--secondary);
+            display: flex;
+            justify-content: space-between;
+            border-top: 1px solid var(--border);
+            background: white;
+        }
+
+        /* Print Styles */
+        @media print {
+            body {
+                font-size: 10pt;
+            }
+
+            .cover-page {
+                height: 100vh;
+            }
+
+            .section {
+                page-break-before: always;
+            }
+
+            .diagram, .code-block {
+                page-break-inside: avoid;
+            }
+
+            table {
+                page-break-inside: avoid;
+            }
+        }
+
+        /* Utility */
+        .text-center { text-align: center; }
+        .text-primary { color: var(--primary); }
+        .text-muted { color: var(--secondary); }
+        .mt-20 { margin-top: 20px; }
+        .mb-20 { margin-bottom: 20px; }
+        .highlight { background: #fef3c7; padding: 2px 4px; }
+    </style>
+</head>
+<body>
+
+<!-- Cover Page -->
+<div class="cover-page">
+    <div class="cover-logo">
+        <svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <rect x="10" y="20" width="35" height="60" rx="4" fill="#0078d4"/>
+            <rect x="55" y="20" width="35" height="60" rx="4" fill="#00a4ef"/>
+            <path d="M45 50 L55 50" stroke="#0078d4" stroke-width="4"/>
+            <path d="M50 35 L50 65" stroke="#0078d4" stroke-width="4"/>
+            <circle cx="27" cy="40" r="8" fill="white"/>
+            <circle cx="73" cy="40" r="8" fill="white"/>
+            <rect x="19" y="55" width="16" height="3" rx="1.5" fill="white"/>
+            <rect x="65" y="55" width="16" height="3" rx="1.5" fill="white"/>
+            <rect x="19" y="62" width="12" height="3" rx="1.5" fill="white"/>
+            <rect x="65" y="62" width="12" height="3" rx="1.5" fill="white"/>
+        </svg>
+    </div>
+    <h1 class="cover-title">EIS-to-Dynamics 365</h1>
+    <p class="cover-subtitle">Pet Insurance POC Technical Documentation</p>
+    <div class="cover-meta">
+        <p><strong>Version:</strong> 1.0</p>
+        <p><strong>Date:</strong> December 2024</p>
+        <p><strong>Classification:</strong> Internal</p>
+    </div>
+    <div class="cover-badge">
+        AI-Powered Pet Insurance Integration Platform
+    </div>
+</div>
+
+<!-- Table of Contents -->
+<div class="toc">
+    <h2>Table of Contents</h2>
+
+    <div class="toc-section">
+        <h3>1. Executive Summary</h3>
+        <div class="toc-items">
+            <div class="toc-item"><span>Project Overview</span><span>4</span></div>
+            <div class="toc-item"><span>Technology Stack</span><span>4</span></div>
+            <div class="toc-item"><span>Key Metrics</span><span>5</span></div>
+        </div>
+    </div>
+
+    <div class="toc-section">
+        <h3>2. System Architecture</h3>
+        <div class="toc-items">
+            <div class="toc-item"><span>Architecture Overview</span><span>6</span></div>
+            <div class="toc-item"><span>Component Diagram</span><span>7</span></div>
+            <div class="toc-item"><span>Infrastructure (Azure)</span><span>9</span></div>
+            <div class="toc-item"><span>Data Flow</span><span>11</span></div>
+        </div>
+    </div>
+
+    <div class="toc-section">
+        <h3>3. Business Flows</h3>
+        <div class="toc-items">
+            <div class="toc-item"><span>Pet Claim FNOL Processing</span><span>14</span></div>
+            <div class="toc-item"><span>Pet Quote Generation</span><span>17</span></div>
+            <div class="toc-item"><span>Data Synchronization</span><span>20</span></div>
+        </div>
+    </div>
+
+    <div class="toc-section">
+        <h3>4. API Reference</h3>
+        <div class="toc-items">
+            <div class="toc-item"><span>Pet Claims API (WS2)</span><span>22</span></div>
+            <div class="toc-item"><span>Pet Rating API (WS5)</span><span>25</span></div>
+            <div class="toc-item"><span>EIS Integration API (WS3)</span><span>28</span></div>
+        </div>
+    </div>
+
+    <div class="toc-section">
+        <h3>5. Security & Compliance</h3>
+        <div class="toc-items">
+            <div class="toc-item"><span>Authentication</span><span>31</span></div>
+            <div class="toc-item"><span>Authorization (RBAC)</span><span>32</span></div>
+            <div class="toc-item"><span>Data Protection</span><span>33</span></div>
+        </div>
+    </div>
+
+    <div class="toc-section">
+        <h3>6. Appendix</h3>
+        <div class="toc-items">
+            <div class="toc-item"><span>Glossary</span><span>35</span></div>
+            <div class="toc-item"><span>Configuration Reference</span><span>36</span></div>
+        </div>
+    </div>
+</div>
+
+<!-- Executive Summary -->
+<div class="content">
+    <div class="section">
+        <h1>1. Executive Summary</h1>
+
+        <h2>Project Overview</h2>
+        <p>
+            The EIS-to-Dynamics 365 Pet Insurance Proof of Concept demonstrates the integration between EIS Insurance Suite
+            and Microsoft Dynamics 365, showcasing AI-powered pet claims processing, vet invoice OCR, breed-based rating,
+            and a modern agent portal. This solution enables pet insurance carriers to leverage both platforms while
+            providing a seamless experience for agents and pet owners.
+        </p>
+
+        <div class="info-box info">
+            <div class="info-box-title">Key Objective</div>
+            Validate the technical feasibility of integrating EIS Suite pet insurance functionality with
+            Dynamics 365 CRM capabilities through a hybrid architecture approach, featuring AI-powered
+            claim extraction and breed-specific rating.
+        </div>
+
+        <h2>Workstream Summary</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th>Workstream</th>
+                    <th>Description</th>
+                    <th>Technology</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td><strong>WS1</strong></td>
+                    <td>Foundation & Infrastructure</td>
+                    <td>Terraform, Azure</td>
+                    <td><span class="status complete">Complete</span></td>
+                </tr>
+                <tr>
+                    <td><strong>WS2</strong></td>
+                    <td>AI Pet Claims Service</td>
+                    <td>FastAPI, Azure OpenAI</td>
+                    <td><span class="status complete">Complete</span></td>
+                </tr>
+                <tr>
+                    <td><strong>WS3</strong></td>
+                    <td>EIS Integration Layer</td>
+                    <td>FastAPI, Service Bus</td>
+                    <td><span class="status complete">Complete</span></td>
+                </tr>
+                <tr>
+                    <td><strong>WS4</strong></td>
+                    <td>Agent Portal</td>
+                    <td>Next.js, React</td>
+                    <td><span class="status complete">Complete</span></td>
+                </tr>
+                <tr>
+                    <td><strong>WS5</strong></td>
+                    <td>Pet Rating Engine</td>
+                    <td>FastAPI, Python</td>
+                    <td><span class="status complete">Complete</span></td>
+                </tr>
+                <tr>
+                    <td><strong>WS6</strong></td>
+                    <td>Validation & Testing</td>
+                    <td>Pytest, Locust</td>
+                    <td><span class="status complete">Complete</span></td>
+                </tr>
+            </tbody>
+        </table>
+
+        <h2>Technology Stack</h2>
+        <div class="card-grid">
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-icon">FE</div>
+                    <div class="card-title">Frontend</div>
+                </div>
+                <div class="card-content">
+                    Next.js 14, React 18, Tailwind CSS, React Query
+                </div>
+            </div>
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-icon">BE</div>
+                    <div class="card-title">Backend</div>
+                </div>
+                <div class="card-content">
+                    Python 3.11, FastAPI, Pydantic, HTTPX
+                </div>
+            </div>
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-icon">AI</div>
+                    <div class="card-title">AI Services</div>
+                </div>
+                <div class="card-content">
+                    Azure OpenAI (GPT-4o), Claude API, Document Intelligence (Vet Invoice OCR)
+                </div>
+            </div>
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-icon">DB</div>
+                    <div class="card-title">Data Layer</div>
+                </div>
+                <div class="card-content">
+                    Cosmos DB (Breed Database), Dataverse, Azure Blob Storage
+                </div>
+            </div>
+        </div>
+
+        <h2>Key Performance Metrics</h2>
+        <div class="metrics-grid">
+            <div class="metric">
+                <div class="metric-value">&lt;500ms</div>
+                <div class="metric-label">API Latency (P95)</div>
+            </div>
+            <div class="metric">
+                <div class="metric-value">94%</div>
+                <div class="metric-label">Vet Invoice OCR Accuracy</div>
+            </div>
+            <div class="metric">
+                <div class="metric-value">+/-2%</div>
+                <div class="metric-label">Rating Parity vs EIS</div>
+            </div>
+            <div class="metric">
+                <div class="metric-value">&lt;1%</div>
+                <div class="metric-label">Error Rate</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- System Architecture -->
+    <div class="section">
+        <h1>2. System Architecture</h1>
+
+        <h2>Architecture Overview</h2>
+        <p>
+            The pet insurance solution follows a microservices architecture pattern with clear separation of concerns.
+            Each workstream is implemented as an independent service, communicating through well-defined
+            APIs and event-driven messaging. The architecture supports breed-specific rating, vet invoice processing,
+            and pre-existing condition detection.
+        </p>
+
+        <div class="diagram">
+<span class="diagram-title">High-Level System Architecture - Pet Insurance</span>
++--------------------------------------------------------------------------------------+
+|                                    PRESENTATION LAYER                                  |
+|  +---------------------------------------------------------------------------------+ |
+|  |                           WS4: Agent Portal (Next.js 14)                        | |
+|  |  +----------+  +----------+  +----------+  +----------+  +----------+           | |
+|  |  |Dashboard |  |Pet Owner |  | Pet      |  | Quote    |  | Policy   |           | |
+|  |  |   Page   |  |   360    |  | Claims   |  |  Wizard  |  |   List   |           | |
+|  |  +----------+  +----------+  +----------+  +----------+  +----------+           | |
+|  +---------------------------------------------------------------------------------+ |
++--------------------------------------------------------------------------------------+
+                                              |
+                                              v
++--------------------------------------------------------------------------------------+
+|                                     API GATEWAY                                        |
+|  +---------------------------------------------------------------------------------+ |
+|  |                        Azure API Management (APIM)                              | |
+|  |      * Rate Limiting  * Authentication  * Request Routing  * Monitoring        | |
+|  +---------------------------------------------------------------------------------+ |
++--------------------------------------------------------------------------------------+
+           |                                  |                                  |
+           v                                  v                                  v
++------------------------+     +------------------------+     +------------------------+
+|   WS2: AI PET CLAIMS   |     |   WS3: INTEGRATION     |     |   WS5: PET RATING      |
+|   SERVICE              |     |   LAYER                |     |   ENGINE               |
+|  +------------------+  |     |  +------------------+  |     |  +------------------+  |
+|  |  FNOL Processor  |  |     |  |  Mock EIS APIs   |  |     |  |  Rate Calculator |  |
+|  |  * Vet Invoice   |  |     |  |  * Pet Policies  |  |     |  |  * Breed Factors |  |
+|  |  * Pre-existing  |  |     |  |  * Pet Claims    |  |     |  |  * Age Curves    |  |
+|  |  * Doc Intel     |  |     |  |  * Pet Owners    |  |     |  |  * Add-ons       |  |
+|  +------------------+  |     |  +------------------+  |     |  +------------------+  |
+|  +------------------+  |     |  +------------------+  |     |  +------------------+  |
+|  |  Fraud Detector  |  |     |  |  Sync Service    |  |     |  |  Breed Database  |  |
+|  |  * Risk Scoring  |  |     |  |  * EIS->D365     |  |     |  |  * 200+ Breeds   |  |
+|  |  * Vet Provider  |  |     |  |  * Webhooks      |  |     |  |  * Risk Factors  |  |
+|  +------------------+  |     |  +------------------+  |     |  +------------------+  |
+|  Port: 8001            |     |  Port: 8002            |     |  Port: 8003            |
++------------------------+     +------------------------+     +------------------------+
+           |                                  |                                  |
+           +----------------------------------+----------------------------------+
+                                              |
+                                              v
++--------------------------------------------------------------------------------------+
+|                                    AI SERVICES                                         |
+|  +---------------------------------+     +---------------------------------+          |
+|  |      Azure OpenAI Service       |     |    Azure Document Intelligence |          |
+|  |  * GPT-4o (Claim Extraction)    |     |  * Vet Invoice OCR             |          |
+|  |  * Pre-existing Detection       |     |  * Medical Records             |          |
+|  +---------------------------------+     +---------------------------------+          |
++--------------------------------------------------------------------------------------+
+                                              |
+                                              v
++--------------------------------------------------------------------------------------+
+|                                    DATA LAYER                                          |
+|  +----------------------+  +----------------------+  +----------------------+         |
+|  |    Azure Cosmos DB   |  |  Dataverse (D365)    |  |  Azure Blob Storage  |         |
+|  |  * breed_database    |  |  * eis_petpolicy     |  |  * vet-invoices      |         |
+|  |  * sync_state        |  |  * eis_petclaim      |  |  * medical-records   |         |
+|  |  * rate_tables       |  |  * eis_pet           |  |  * OCR Output        |         |
+|  |  Serverless Mode     |  |  * eis_petowner      |  |  Hot/Cool Tiers      |         |
+|  +----------------------+  +----------------------+  +----------------------+         |
++--------------------------------------------------------------------------------------+</div>
+
+        <h2>Infrastructure Components</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th>Resource</th>
+                    <th>Name Pattern</th>
+                    <th>Purpose</th>
+                    <th>Est. Cost/mo</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>Resource Groups</td>
+                    <td><code>rg-eis-pet-d365-{layer}-dev</code></td>
+                    <td>Organize by: shared, data, ai, integration</td>
+                    <td>-</td>
+                </tr>
+                <tr>
+                    <td>Key Vault</td>
+                    <td><code>kv-eispetd365-dev</code></td>
+                    <td>Secrets management</td>
+                    <td>$3</td>
+                </tr>
+                <tr>
+                    <td>Storage Account</td>
+                    <td><code>steispetd365dev</code></td>
+                    <td>Blob storage for vet invoices</td>
+                    <td>$5</td>
+                </tr>
+                <tr>
+                    <td>Service Bus</td>
+                    <td><code>sb-eispetd365-dev</code></td>
+                    <td>Event messaging (queues/topics)</td>
+                    <td>$10</td>
+                </tr>
+                <tr>
+                    <td>Cosmos DB</td>
+                    <td><code>cosmos-eispetd365-dev</code></td>
+                    <td>Breed database & sync state</td>
+                    <td>$10-30</td>
+                </tr>
+                <tr>
+                    <td>Azure OpenAI</td>
+                    <td><code>oai-eispetd365-dev</code></td>
+                    <td>GPT-4o + embeddings</td>
+                    <td>$50-150</td>
+                </tr>
+                <tr>
+                    <td>Document Intelligence</td>
+                    <td><code>di-eispetd365-dev</code></td>
+                    <td>Vet invoice OCR</td>
+                    <td>$10-30</td>
+                </tr>
+                <tr>
+                    <td>API Management</td>
+                    <td><code>apim-eispetd365-dev</code></td>
+                    <td>API gateway</td>
+                    <td>$5-15</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <h2>Data Flow Architecture</h2>
+
+        <h3>EIS to Dataverse Synchronization (Pet Insurance)</h3>
+        <div class="diagram">
+<span class="diagram-title">Sync Flow: EIS Pet Policy -> Dataverse</span>
+  EIS Suite                Integration Layer                Service Bus              Dataverse
+     |                            |                              |                       |
+     |  1. Pet Policy Change      |                              |                       |
+     |  (Policy/Claim/Pet/Owner)  |                              |                       |
+     | -------------------------->|                              |                       |
+     |                            |  2. Validate Webhook         |                       |
+     |                            |     Signature                |                       |
+     |                            |----------+                   |                       |
+     |                            |<---------+                   |                       |
+     |                            |  3. Transform to             |                       |
+     |                            |     Pet Insurance Format     |                       |
+     |                            |----------+                   |                       |
+     |                            |<---------+                   |                       |
+     |                            |  4. Publish to               |                       |
+     |                            |     pet-policy-sync-queue    |                       |
+     |                            | ---------------------------->|                       |
+     |                            |                              |  5. Process Message   |
+     |                            |                              | --------------------->|
+     |                            |                              |                       |
+     |                            |                              |  6. Create/Update     |
+     |                            |                              |     eis_petpolicy     |
+     |                            |                              | <---------------------|
+     |                            |  7. Update Sync State        |                       |
+     |                            |<-----------------------------|                       |
+     v                            v                              v                       v</div>
+
+        <h3>Entity Mapping (Pet Insurance)</h3>
+        <table>
+            <thead>
+                <tr>
+                    <th>EIS Field</th>
+                    <th>Dataverse Field</th>
+                    <th>Type</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>policy_id</td>
+                    <td>eis_eissourceid</td>
+                    <td>String</td>
+                </tr>
+                <tr>
+                    <td>policy_number</td>
+                    <td>eis_policynumber</td>
+                    <td>String</td>
+                </tr>
+                <tr>
+                    <td>plan_type</td>
+                    <td>eis_plantype</td>
+                    <td>OptionSet (accident_only, accident_illness, comprehensive)</td>
+                </tr>
+                <tr>
+                    <td>pet_id</td>
+                    <td>eis_petid</td>
+                    <td>Lookup</td>
+                </tr>
+                <tr>
+                    <td>pet_name</td>
+                    <td>eis_petname</td>
+                    <td>String</td>
+                </tr>
+                <tr>
+                    <td>species</td>
+                    <td>eis_species</td>
+                    <td>OptionSet (dog, cat, bird, rabbit)</td>
+                </tr>
+                <tr>
+                    <td>breed</td>
+                    <td>eis_breed</td>
+                    <td>String</td>
+                </tr>
+                <tr>
+                    <td>annual_limit</td>
+                    <td>eis_annuallimit</td>
+                    <td>Currency</td>
+                </tr>
+                <tr>
+                    <td>deductible</td>
+                    <td>eis_deductible</td>
+                    <td>Currency</td>
+                </tr>
+                <tr>
+                    <td>reimbursement_pct</td>
+                    <td>eis_reimbursementpct</td>
+                    <td>Integer (70, 80, 90)</td>
+                </tr>
+                <tr>
+                    <td>customer_id</td>
+                    <td>eis_petownerid</td>
+                    <td>Lookup</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Business Flows -->
+    <div class="section">
+        <h1>3. Business Flows</h1>
+
+        <h2>Pet Claim FNOL Processing</h2>
+        <p>
+            The pet insurance FNOL process captures veterinary expense claims and initiates the claims handling workflow.
+            AI-powered extraction automatically structures free-text descriptions of pet conditions, while pre-existing
+            condition detection and fraud analysis score each claim for risk assessment.
+        </p>
+
+        <div class="flow-steps">
+            <div class="flow-step">
+                <div class="step-number">1</div>
+                <div class="step-content">
+                    <h4>Vet Visit Reported</h4>
+                    <p>Pet owner contacts agent via phone, web, or mobile app to report a veterinary expense claim.</p>
+                </div>
+            </div>
+            <div class="flow-step">
+                <div class="step-number">2</div>
+                <div class="step-content">
+                    <h4>Agent Portal Entry</h4>
+                    <p>Agent enters claim details including pet condition description, policy number, date of service, and vet clinic.</p>
+                </div>
+            </div>
+            <div class="flow-step">
+                <div class="step-number">3</div>
+                <div class="step-content">
+                    <h4>AI Processing</h4>
+                    <p>GPT-4o extracts structured data: diagnosis, treatment, body part affected, severity, and urgency level.</p>
+                </div>
+            </div>
+            <div class="flow-step">
+                <div class="step-number">4</div>
+                <div class="step-content">
+                    <h4>Pre-Existing Check</h4>
+                    <p>System checks waiting periods, prior claims history, and breed-specific hereditary condition risk.</p>
+                </div>
+            </div>
+            <div class="flow-step">
+                <div class="step-number">5</div>
+                <div class="step-content">
+                    <h4>Vet Invoice OCR</h4>
+                    <p>Azure Document Intelligence extracts line items from uploaded vet invoices with 94% accuracy.</p>
+                </div>
+            </div>
+            <div class="flow-step">
+                <div class="step-number">6</div>
+                <div class="step-content">
+                    <h4>Claim Creation & Sync</h4>
+                    <p>Pet claim created in system with estimated payout and synchronized to Dynamics 365 Dataverse.</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="diagram">
+<span class="diagram-title">AI Extraction Example - Pet Insurance Claim</span>
++-------------------------------------------------------------------------------------+
+|  INPUT (Free Text)                                                                    |
+|  ---------------------------------------------------------------------------------  |
+|  "My golden retriever Max started limping yesterday after playing at the dog park.  |
+|   The vet did x-rays and diagnosed a torn CCL. They recommend TPLO surgery.         |
+|   The estimate is $4,500 including surgery, anesthesia, and post-op care."          |
++-------------------------------------------------------------------------------------+
+                                              |
+                                         GPT-4o
+                                              |
+                                              v
++-------------------------------------------------------------------------------------+
+|  OUTPUT (Structured)                                                                  |
+|  ---------------------------------------------------------------------------------  |
+|  {                                                                                    |
+|    "pet_name": "Max",                                                                |
+|    "species": "dog",                                                                 |
+|    "breed": "Golden Retriever",                                                      |
+|    "diagnosis": "Torn CCL (Cranial Cruciate Ligament)",                              |
+|    "affected_body_part": "back leg",                                                 |
+|    "condition_type": "accident",                                                     |
+|    "symptoms": ["limping", "non-weight-bearing"],                                    |
+|    "recommended_treatment": "TPLO surgery",                                          |
+|    "estimated_amount": 4500.00,                                                      |
+|    "severity": "moderate",                                                           |
+|    "urgency": "scheduled",                                                           |
+|    "hereditary_risk": "elevated",                                                    |
+|    "confidence_score": 0.94                                                          |
+|  }                                                                                    |
++-------------------------------------------------------------------------------------+</div>
+
+        <h3>Pre-Existing Condition Check</h3>
+        <table>
+            <thead>
+                <tr>
+                    <th>Check Type</th>
+                    <th>Description</th>
+                    <th>Action if Failed</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>Waiting Period</td>
+                    <td>Accident: 0-3 days, Illness: 14 days, Orthopedic: 6 months</td>
+                    <td>Deny claim with WAITING_PERIOD_NOT_MET</td>
+                </tr>
+                <tr>
+                    <td>Prior Claims</td>
+                    <td>Check for related conditions in claim history</td>
+                    <td>Flag for review, may deny as pre-existing</td>
+                </tr>
+                <tr>
+                    <td>Breed Risk</td>
+                    <td>Check hereditary conditions common for breed</td>
+                    <td>Flag for additional documentation</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <h3>Fraud Risk Levels</h3>
+        <table>
+            <thead>
+                <tr>
+                    <th>Score Range</th>
+                    <th>Risk Level</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>0% - 30%</td>
+                    <td><span class="status complete">Low</span></td>
+                    <td>Standard processing</td>
+                </tr>
+                <tr>
+                    <td>30% - 50%</td>
+                    <td><span class="status progress">Medium</span></td>
+                    <td>Request additional vet documentation</td>
+                </tr>
+                <tr>
+                    <td>50% - 100%</td>
+                    <td><span class="status pending">High</span></td>
+                    <td>Refer to Special Investigations Unit</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <h2>Pet Quote Generation Flow</h2>
+        <p>
+            The pet insurance rating engine calculates premiums based on pet characteristics (species, breed, age),
+            location, coverage selections, and applicable discounts. The system supports breed-specific risk factors
+            for 200+ dog and cat breeds.
+        </p>
+
+        <div class="diagram">
+<span class="diagram-title">Premium Calculation Breakdown - Pet Insurance</span>
++-------------------------------------------------------------------------------------+
+|  BASE RATE (Golden Retriever, Illinois)                                  $420.00    |
++-------------------------------------------------------------------------------------+
+                                              |
+                                              v
++-------------------------------------------------------------------------------------+
+|  PET FACTORS                                                                          |
+|    Species (dog):               1.00 (standard)                                      |
+|    Breed Risk (Golden):         1.15 (elevated - hip/cancer risk)                    |
+|    Size (large, 72 lbs):        1.08 (large breed surcharge)                         |
+|    Combined Breed Factor:       1.24                                                 |
++-------------------------------------------------------------------------------------+
+                                              |
+                                              v
++-------------------------------------------------------------------------------------+
+|  AGE FACTORS                                                                          |
+|    Age (5 years):               1.20 (age 4-7 bracket)                               |
+|    Age Rating Applied:          1.20                                                 |
++-------------------------------------------------------------------------------------+
+                                              |
+                                              v
++-------------------------------------------------------------------------------------+
+|  LOCATION FACTORS                                                                     |
+|    State (IL):                  1.05 (state factor)                                  |
+|    Urban (Chicago):             1.10 (urban vet costs)                               |
+|    Combined Location:           1.16                                                 |
++-------------------------------------------------------------------------------------+
+                                              |
+                                              v
++-------------------------------------------------------------------------------------+
+|  COVERAGE SELECTIONS (Accident + Illness Plan)                                        |
+|    Plan Type Factor:                                     1.00                        |
+|    Annual Limit ($10,000):                               1.00                        |
+|    Deductible ($250):                                   -$48.00 credit               |
+|    Reimbursement Rate (80%):                             1.00                        |
++-------------------------------------------------------------------------------------+
+                                              |
+                                              v
++-------------------------------------------------------------------------------------+
+|  DISCOUNTS APPLIED                                                                    |
+|    Spayed/Neutered (5%):                                 -$33.84                     |
+|    Microchipped (3%):                                    -$20.30                     |
+|    Total Discounts (8%):                                 -$54.14                     |
++-------------------------------------------------------------------------------------+
+                                              |
+                                              v
++-------------------------------------------------------------------------------------+
+|  FINAL PREMIUM                                                                        |
+|    Base with All Factors:                                $676.76                     |
+|    Less Discounts:                                       -$54.14                     |
+|    Policy Fee:                                           +$15.00                     |
+|    =========================================================================         |
+|    TOTAL ANNUAL PREMIUM:                                 $637.62                     |
+|    Monthly (if financed):                                 $53.14                     |
++-------------------------------------------------------------------------------------+</div>
+
+        <h3>Breed Risk Categories</h3>
+        <table>
+            <thead>
+                <tr>
+                    <th>Category</th>
+                    <th>Risk Factor</th>
+                    <th>Example Breeds</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>Low Risk</td>
+                    <td>0.90 - 1.00</td>
+                    <td>Mixed breeds, Beagles, Australian Shepherds</td>
+                </tr>
+                <tr>
+                    <td>Standard Risk</td>
+                    <td>1.00 - 1.15</td>
+                    <td>Labrador Retrievers, Golden Retrievers</td>
+                </tr>
+                <tr>
+                    <td>Elevated Risk</td>
+                    <td>1.15 - 1.35</td>
+                    <td>French Bulldogs, Cavalier King Charles Spaniels</td>
+                </tr>
+                <tr>
+                    <td>High Risk</td>
+                    <td>1.35 - 1.60</td>
+                    <td>English Bulldogs, Great Danes, Bernese Mountain Dogs</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <!-- API Reference -->
+    <div class="section">
+        <h1>4. API Reference</h1>
+
+        <h2>Pet Claims API (WS2)</h2>
+        <p>Base URL: <code>http://localhost:8001/api/v1</code></p>
+
+        <div class="endpoint">
+            <div class="endpoint-header">
+                <span class="endpoint-method post">POST</span>
+                <span class="endpoint-path">/claims/fnol</span>
+            </div>
+            <div class="endpoint-body">
+                <p><strong>Description:</strong> Submit a First Notice of Loss for a pet veterinary expense claim</p>
+                <h4>Request Body</h4>
+                <div class="code-block">{
+  "<span class="keyword">description</span>": "<span class="string">My golden retriever Max started limping yesterday...</span>",
+  "<span class="keyword">date_of_service</span>": "<span class="string">2024-06-15</span>",
+  "<span class="keyword">policy_number</span>": "<span class="string">PET-IL-2024-00001</span>",
+  "<span class="keyword">pet_id</span>": "<span class="string">PET-001</span>",
+  "<span class="keyword">condition_type</span>": "<span class="string">accident</span>",
+  "<span class="keyword">vet_clinic_name</span>": "<span class="string">Happy Paws Veterinary Clinic</span>",
+  "<span class="keyword">amount_billed</span>": <span class="number">4500.00</span>,
+  "<span class="keyword">contact_email</span>": "<span class="string">john.smith@example.com</span>"
+}</div>
+                <h4>Response (201 Created)</h4>
+                <div class="code-block">{
+  "<span class="keyword">claim_number</span>": "<span class="string">CLM-PET-2024-00001</span>",
+  "<span class="keyword">status</span>": "<span class="string">submitted</span>",
+  "<span class="keyword">pet_name</span>": "<span class="string">Max</span>",
+  "<span class="keyword">pet_breed</span>": "<span class="string">Golden Retriever</span>",
+  "<span class="keyword">ai_extraction</span>": {
+    "<span class="keyword">diagnosis</span>": "<span class="string">Torn CCL (Cranial Cruciate Ligament)</span>",
+    "<span class="keyword">recommended_treatment</span>": "<span class="string">TPLO surgery</span>",
+    "<span class="keyword">severity</span>": "<span class="string">moderate</span>",
+    "<span class="keyword">confidence_score</span>": <span class="number">0.94</span>
+  },
+  "<span class="keyword">pre_existing_check</span>": {
+    "<span class="keyword">status</span>": "<span class="string">passed</span>",
+    "<span class="keyword">waiting_period_met</span>": <span class="keyword">true</span>,
+    "<span class="keyword">hereditary_risk</span>": "<span class="string">elevated</span>"
+  },
+  "<span class="keyword">coverage_check</span>": {
+    "<span class="keyword">covered</span>": <span class="keyword">true</span>,
+    "<span class="keyword">annual_limit</span>": <span class="number">10000.00</span>,
+    "<span class="keyword">deductible</span>": <span class="number">250.00</span>,
+    "<span class="keyword">reimbursement_rate</span>": <span class="number">0.80</span>
+  },
+  "<span class="keyword">estimated_payout</span>": <span class="number">3400.00</span>
+}</div>
+            </div>
+        </div>
+
+        <div class="endpoint">
+            <div class="endpoint-header">
+                <span class="endpoint-method post">POST</span>
+                <span class="endpoint-path">/claims/{claim_number}/documents</span>
+            </div>
+            <div class="endpoint-body">
+                <p><strong>Description:</strong> Upload a vet invoice for OCR processing</p>
+                <p><strong>Content-Type:</strong> multipart/form-data</p>
+            </div>
+        </div>
+
+        <div class="endpoint">
+            <div class="endpoint-header">
+                <span class="endpoint-method post">POST</span>
+                <span class="endpoint-path">/claims/{claim_number}/pre-existing</span>
+            </div>
+            <div class="endpoint-body">
+                <p><strong>Description:</strong> Analyze claim for pre-existing conditions</p>
+            </div>
+        </div>
+
+        <h2>Pet Rating API (WS5)</h2>
+        <p>Base URL: <code>http://localhost:8003/api/v1</code></p>
+
+        <div class="endpoint">
+            <div class="endpoint-header">
+                <span class="endpoint-method post">POST</span>
+                <span class="endpoint-path">/rating/quote</span>
+            </div>
+            <div class="endpoint-body">
+                <p><strong>Description:</strong> Generate a pet insurance premium quote</p>
+                <h4>Request Body</h4>
+                <div class="code-block">{
+  "<span class="keyword">state</span>": "<span class="string">IL</span>",
+  "<span class="keyword">zip_code</span>": "<span class="string">60601</span>",
+  "<span class="keyword">effective_date</span>": "<span class="string">2024-07-01</span>",
+  "<span class="keyword">pet</span>": {
+    "<span class="keyword">name</span>": "<span class="string">Max</span>",
+    "<span class="keyword">species</span>": "<span class="string">dog</span>",
+    "<span class="keyword">breed</span>": "<span class="string">Golden Retriever</span>",
+    "<span class="keyword">date_of_birth</span>": "<span class="string">2019-03-15</span>",
+    "<span class="keyword">gender</span>": "<span class="string">male</span>",
+    "<span class="keyword">spayed_neutered</span>": <span class="keyword">true</span>,
+    "<span class="keyword">microchipped</span>": <span class="keyword">true</span>
+  },
+  "<span class="keyword">coverage</span>": {
+    "<span class="keyword">plan_type</span>": "<span class="string">accident_illness</span>",
+    "<span class="keyword">annual_limit</span>": <span class="number">10000</span>,
+    "<span class="keyword">deductible</span>": <span class="number">250</span>,
+    "<span class="keyword">reimbursement_pct</span>": <span class="number">80</span>
+  }
+}</div>
+            </div>
+        </div>
+
+        <div class="endpoint">
+            <div class="endpoint-header">
+                <span class="endpoint-method get">GET</span>
+                <span class="endpoint-path">/rating/breeds</span>
+            </div>
+            <div class="endpoint-body">
+                <p><strong>Description:</strong> Retrieve breed-specific rating factors</p>
+                <p><strong>Query Params:</strong> <code>species</code>, <code>breed</code></p>
+            </div>
+        </div>
+
+        <h2>EIS Integration API (WS3)</h2>
+        <p>Base URL: <code>http://localhost:8002/api/v1</code></p>
+
+        <div class="endpoint">
+            <div class="endpoint-header">
+                <span class="endpoint-method get">GET</span>
+                <span class="endpoint-path">/eis/policies</span>
+            </div>
+            <div class="endpoint-body">
+                <p><strong>Description:</strong> List all pet policies with optional filtering</p>
+                <p><strong>Query Params:</strong> <code>status</code>, <code>customer_id</code>, <code>plan_type</code>, <code>limit</code>, <code>offset</code></p>
+            </div>
+        </div>
+
+        <div class="endpoint">
+            <div class="endpoint-header">
+                <span class="endpoint-method get">GET</span>
+                <span class="endpoint-path">/eis/pets</span>
+            </div>
+            <div class="endpoint-body">
+                <p><strong>Description:</strong> List all pets with optional filtering by species, breed, or policy</p>
+            </div>
+        </div>
+
+        <div class="endpoint">
+            <div class="endpoint-header">
+                <span class="endpoint-method get">GET</span>
+                <span class="endpoint-path">/eis/customers/{customer_id}</span>
+            </div>
+            <div class="endpoint-body">
+                <p><strong>Description:</strong> Retrieve pet owner details (Customer 360)</p>
+            </div>
+        </div>
+
+        <div class="endpoint">
+            <div class="endpoint-header">
+                <span class="endpoint-method get">GET</span>
+                <span class="endpoint-path">/eis/vet-providers</span>
+            </div>
+            <div class="endpoint-body">
+                <p><strong>Description:</strong> List registered veterinary providers</p>
+            </div>
+        </div>
+
+        <h3>HTTP Status Codes</h3>
+        <table>
+            <thead>
+                <tr>
+                    <th>Code</th>
+                    <th>Meaning</th>
+                    <th>Description</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr><td>200</td><td>OK</td><td>Request successful</td></tr>
+                <tr><td>201</td><td>Created</td><td>Pet claim or quote created successfully</td></tr>
+                <tr><td>400</td><td>Bad Request</td><td>Invalid request format</td></tr>
+                <tr><td>401</td><td>Unauthorized</td><td>Authentication required</td></tr>
+                <tr><td>404</td><td>Not Found</td><td>Pet, policy, or claim not found</td></tr>
+                <tr><td>422</td><td>Validation Error</td><td>Request validation failed (e.g., invalid breed)</td></tr>
+                <tr><td>500</td><td>Server Error</td><td>Internal server error</td></tr>
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Security -->
+    <div class="section">
+        <h1>5. Security & Compliance</h1>
+
+        <h2>Authentication</h2>
+        <p>
+            The system uses OAuth 2.0 with Azure Active Directory for user authentication.
+            Service-to-service communication uses Managed Identities, eliminating the need for stored credentials.
+        </p>
+
+        <div class="card-grid">
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-icon">U</div>
+                    <div class="card-title">User Authentication</div>
+                </div>
+                <div class="card-content">
+                    OAuth 2.0 / OpenID Connect via Azure AD with MFA support
+                </div>
+            </div>
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-icon">S</div>
+                    <div class="card-title">Service Identity</div>
+                </div>
+                <div class="card-content">
+                    Azure Managed Identities for automatic credential management
+                </div>
+            </div>
+        </div>
+
+        <h2>Authorization (RBAC)</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th>Endpoint</th>
+                    <th>Agent</th>
+                    <th>Supervisor</th>
+                    <th>Admin</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td><code>POST /claims/fnol</code></td>
+                    <td>Yes</td>
+                    <td>Yes</td>
+                    <td>Yes</td>
+                </tr>
+                <tr>
+                    <td><code>GET /claims/*</code></td>
+                    <td>Own</td>
+                    <td>All</td>
+                    <td>Yes</td>
+                </tr>
+                <tr>
+                    <td><code>PUT /claims/*/approve</code></td>
+                    <td>No</td>
+                    <td>Yes</td>
+                    <td>Yes</td>
+                </tr>
+                <tr>
+                    <td><code>PUT /rating/factors</code></td>
+                    <td>No</td>
+                    <td>No</td>
+                    <td>Yes</td>
+                </tr>
+                <tr>
+                    <td><code>POST /sync/trigger</code></td>
+                    <td>No</td>
+                    <td>No</td>
+                    <td>Yes</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <h2>Data Protection</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th>Data State</th>
+                    <th>Encryption</th>
+                    <th>Key Management</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>At Rest</td>
+                    <td>AES-256</td>
+                    <td>Azure Key Vault</td>
+                </tr>
+                <tr>
+                    <td>In Transit</td>
+                    <td>TLS 1.3</td>
+                    <td>Azure-managed certificates</td>
+                </tr>
+                <tr>
+                    <td>Backups</td>
+                    <td>AES-256</td>
+                    <td>Customer-managed key (optional)</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <h3>Sensitive Data Classification</h3>
+        <div class="info-box warning">
+            <div class="info-box-title">Restricted Data Handling</div>
+            Pet owner PII (SSN, bank accounts) is encrypted, masked in logs/UI, and all access is audit logged.
+            Veterinary medical records are protected under applicable pet health privacy regulations.
+        </div>
+
+        <h2>Secrets Management</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th>Secret</th>
+                    <th>Purpose</th>
+                    <th>Rotation</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>AZURE-OPENAI-KEY</td>
+                    <td>AI service authentication</td>
+                    <td>90 days</td>
+                </tr>
+                <tr>
+                    <td>COSMOS-DB-KEY</td>
+                    <td>Breed database access</td>
+                    <td>60 days (automated)</td>
+                </tr>
+                <tr>
+                    <td>SERVICE-BUS-CONNECTION</td>
+                    <td>Message queue access</td>
+                    <td>60 days (automated)</td>
+                </tr>
+                <tr>
+                    <td>DATAVERSE-CLIENT-SECRET</td>
+                    <td>D365 authentication</td>
+                    <td>180 days</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Appendix -->
+    <div class="section">
+        <h1>6. Appendix</h1>
+
+        <h2>Glossary</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th>Term</th>
+                    <th>Definition</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td><strong>FNOL</strong></td>
+                    <td>First Notice of Loss - Initial pet claim report from pet owner</td>
+                </tr>
+                <tr>
+                    <td><strong>CCL</strong></td>
+                    <td>Cranial Cruciate Ligament - Common knee injury in dogs</td>
+                </tr>
+                <tr>
+                    <td><strong>TPLO</strong></td>
+                    <td>Tibial Plateau Leveling Osteotomy - Surgical treatment for CCL tears</td>
+                </tr>
+                <tr>
+                    <td><strong>Pre-existing</strong></td>
+                    <td>Condition present before policy effective date or during waiting period</td>
+                </tr>
+                <tr>
+                    <td><strong>Waiting Period</strong></td>
+                    <td>Time after policy start before coverage begins (varies by condition type)</td>
+                </tr>
+                <tr>
+                    <td><strong>Hereditary</strong></td>
+                    <td>Conditions common to specific breeds (e.g., hip dysplasia in large dogs)</td>
+                </tr>
+                <tr>
+                    <td><strong>EIS</strong></td>
+                    <td>Enterprise Insurance System - Core insurance platform</td>
+                </tr>
+                <tr>
+                    <td><strong>Dataverse</strong></td>
+                    <td>Microsoft's data platform underlying Dynamics 365</td>
+                </tr>
+                <tr>
+                    <td><strong>SIU</strong></td>
+                    <td>Special Investigations Unit - Fraud investigation team</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <h2>Sample Pets (Mock Data)</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th>Pet ID</th>
+                    <th>Name</th>
+                    <th>Species</th>
+                    <th>Breed</th>
+                    <th>Age</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr><td>PET-001</td><td>Max</td><td>Dog</td><td>Golden Retriever</td><td>5</td></tr>
+                <tr><td>PET-002</td><td>Whiskers</td><td>Cat</td><td>Maine Coon</td><td>4</td></tr>
+                <tr><td>PET-003</td><td>Bella</td><td>Dog</td><td>French Bulldog</td><td>3</td></tr>
+                <tr><td>PET-004</td><td>Luna</td><td>Dog</td><td>Labrador Retriever</td><td>2</td></tr>
+                <tr><td>PET-005</td><td>Charlie</td><td>Cat</td><td>Domestic Shorthair</td><td>6</td></tr>
+            </tbody>
+        </table>
+
+        <h2>Configuration Reference</h2>
+        <h3>Environment Variables</h3>
+        <div class="code-block"><span class="comment"># Azure Configuration</span>
+AZURE_SUBSCRIPTION_ID=<span class="string">your-subscription-id</span>
+AZURE_TENANT_ID=<span class="string">your-tenant-id</span>
+
+<span class="comment"># Dataverse</span>
+DATAVERSE_URL=<span class="string">https://your-org.crm.dynamics.com</span>
+DATAVERSE_CLIENT_ID=<span class="string">your-client-id</span>
+DATAVERSE_CLIENT_SECRET=<span class="string">********</span>
+
+<span class="comment"># Azure OpenAI</span>
+AZURE_OPENAI_ENDPOINT=<span class="string">https://your-openai.openai.azure.com</span>
+AZURE_OPENAI_KEY=<span class="string">********</span>
+AZURE_OPENAI_DEPLOYMENT=<span class="string">gpt-4o</span>
+
+<span class="comment"># Document Intelligence (Vet Invoice OCR)</span>
+DOCUMENT_INTELLIGENCE_ENDPOINT=<span class="string">https://your-di.cognitiveservices.azure.com</span>
+DOCUMENT_INTELLIGENCE_KEY=<span class="string">********</span>
+
+<span class="comment"># Service Bus</span>
+SERVICE_BUS_CONNECTION_STRING=<span class="string">Endpoint=sb://...</span>
+
+<span class="comment"># Environment</span>
+ENVIRONMENT=<span class="string">dev</span></div>
+
+        <h3>Service Ports</h3>
+        <table>
+            <thead>
+                <tr>
+                    <th>Service</th>
+                    <th>Port</th>
+                    <th>Health Check</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>WS2: AI Pet Claims</td>
+                    <td>8001</td>
+                    <td><code>/health</code></td>
+                </tr>
+                <tr>
+                    <td>WS3: EIS Integration</td>
+                    <td>8002</td>
+                    <td><code>/health</code></td>
+                </tr>
+                <tr>
+                    <td>WS5: Pet Rating</td>
+                    <td>8003</td>
+                    <td><code>/health</code></td>
+                </tr>
+                <tr>
+                    <td>WS4: Agent Portal</td>
+                    <td>3000</td>
+                    <td><code>/</code></td>
+                </tr>
+            </tbody>
+        </table>
+
+        <h2>Document Information</h2>
+        <table>
+            <tbody>
+                <tr>
+                    <td><strong>Version</strong></td>
+                    <td>1.0</td>
+                </tr>
+                <tr>
+                    <td><strong>Last Updated</strong></td>
+                    <td>December 2024</td>
+                </tr>
+                <tr>
+                    <td><strong>Classification</strong></td>
+                    <td>Internal</td>
+                </tr>
+                <tr>
+                    <td><strong>Author</strong></td>
+                    <td>Platform Engineering Team</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Print Button (hidden in print) -->
+<div style="position: fixed; bottom: 20px; right: 20px; z-index: 1000;" class="no-print">
+    <button onclick="window.print()" style="
+        background: var(--primary);
+        color: white;
+        border: none;
+        padding: 12px 24px;
+        border-radius: 8px;
+        font-size: 14px;
+        cursor: pointer;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    ">
+        Export to PDF
+    </button>
+</div>
+
+<style>
+    @media print {
+        .no-print {
+            display: none !important;
+        }
+    }
+</style>
+
+</body>
+</html>

@@ -1,0 +1,77 @@
+HAPPY PAWS VETERINARY CLINIC
+Laboratory Services
+123 Pet Street, Chicago, IL 60601
+
+==================================================
+           PRE-SURGICAL BLOOD PANEL
+==================================================
+
+Lab Reference #: LAB-2024-5678
+Collection Date: December 14, 2024
+Report Date: December 14, 2024
+
+PATIENT:
+--------
+Name: Max
+Species: Canine
+Breed: Golden Retriever
+Age: 5 years
+Sex: Male (Neutered)
+Owner: John Smith
+
+REFERRING VETERINARIAN: Dr. Sarah Anderson, DVM
+
+==================================================
+COMPLETE BLOOD COUNT (CBC)
+==================================================
+Test                    Result      Reference Range    Status
+------------------------------------------------------------
+WBC                     8.5         5.5-16.9 K/uL      NORMAL
+RBC                     7.2         5.5-8.5 M/uL       NORMAL
+Hemoglobin             16.5        12.0-18.0 g/dL     NORMAL
+Hematocrit             48%         37-55%             NORMAL
+Platelet Count         285         175-500 K/uL       NORMAL
+MCV                    67          60-77 fL           NORMAL
+MCH                    22.9        19.5-24.5 pg       NORMAL
+MCHC                   34.4        32-36 g/dL         NORMAL
+
+==================================================
+CHEMISTRY PANEL
+==================================================
+Test                    Result      Reference Range    Status
+------------------------------------------------------------
+BUN (Blood Urea)       18          7-27 mg/dL         NORMAL
+Creatinine             1.1         0.5-1.8 mg/dL      NORMAL
+Glucose                98          74-143 mg/dL       NORMAL
+ALT (SGPT)             45          10-125 U/L         NORMAL
+AST (SGOT)             32          0-50 U/L           NORMAL
+Alkaline Phosphatase   78          23-212 U/L         NORMAL
+Total Protein          6.8         5.2-8.2 g/dL       NORMAL
+Albumin                3.4         2.3-4.0 g/dL       NORMAL
+Globulin               3.4         2.5-4.5 g/dL       NORMAL
+Total Bilirubin        0.2         0.0-0.9 mg/dL      NORMAL
+Cholesterol            195         110-320 mg/dL      NORMAL
+Calcium                10.2        7.9-12.0 mg/dL     NORMAL
+Phosphorus             4.5         2.5-6.8 mg/dL      NORMAL
+
+==================================================
+INTERPRETATION
+==================================================
+All values within normal limits. Patient is cleared for
+anesthesia and surgical procedure.
+
+No evidence of:
+- Kidney dysfunction
+- Liver disease
+- Infection
+- Anemia
+- Coagulation disorders
+
+RECOMMENDATION: Patient approved for TPLO surgery.
+
+==================================================
+Performed by: Lab Tech Jennifer Wilson
+Reviewed by: Dr. Sarah Anderson, DVM
+==================================================
+
+Charge: $150.00

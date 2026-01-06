@@ -1,0 +1,436 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ========================================
+   CSS Custom Properties (Theme Variables)
+   ======================================== */
+:root {
+  /* Background colors */
+  --bg-primary: #f8fafc;
+  --bg-secondary: #ffffff;
+  --bg-tertiary: #f1f5f9;
+
+  /* Text colors */
+  --text-primary: #0f172a;
+  --text-secondary: #64748b;
+  --text-muted: #94a3b8;
+
+  /* Border colors */
+  --border-color: rgba(0, 0, 0, 0.08);
+  --border-hover: rgba(0, 0, 0, 0.15);
+
+  /* Brand accent (sky blue) */
+  --accent: #0ea5e9;
+  --accent-hover: #0284c7;
+  --accent-light: #f0f9ff;
+  --accent-glow: rgba(14, 165, 233, 0.25);
+
+  /* Status colors */
+  --success: #22c55e;
+  --warning: #f59e0b;
+  --danger: #ef4444;
+  --info: #3b82f6;
+
+  /* Medallion colors */
+  --bronze: #cd7f32;
+  --silver: #c0c0c0;
+  --gold: #ffd700;
+}
+
+/* Dark mode */
+.dark {
+  --bg-primary: #0f172a;
+  --bg-secondary: #1e293b;
+  --bg-tertiary: #334155;
+  --text-primary: #f8fafc;
+  --text-secondary: #94a3b8;
+  --text-muted: #64748b;
+  --border-color: rgba(255, 255, 255, 0.08);
+  --border-hover: rgba(255, 255, 255, 0.15);
+  --accent-light: rgba(14, 165, 233, 0.1);
+}
+
+/* ========================================
+   Base Styles
+   ======================================== */
+body {
+  font-family: var(--font-body, 'Plus Jakarta Sans'), system-ui, -apple-system, sans-serif;
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Headings use display font */
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-display, 'Space Grotesk'), system-ui, sans-serif;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+/* Code/monospace */
+code, pre, .font-mono {
+  font-family: var(--font-mono, 'JetBrains Mono'), monospace;
+}
+
+/* ========================================
+   Background Patterns & Gradients
+   ======================================== */
+.bg-gradient-subtle {
+  background: linear-gradient(180deg, var(--bg-primary) 0%, var(--bg-tertiary) 100%);
+}
+
+.bg-pattern-dots {
+  background-image: radial-gradient(circle, rgba(0,0,0,0.04) 1px, transparent 1px);
+  background-size: 24px 24px;
+}
+
+.dark .bg-pattern-dots {
+  background-image: radial-gradient(circle, rgba(255,255,255,0.04) 1px, transparent 1px);
+}
+
+/* ========================================
+   Component Classes
+   ======================================== */
+@layer components {
+  /* Card with hover lift */
+  .card {
+    @apply bg-white rounded-xl shadow-sm p-6
+           border border-gray-100
+           transition-all duration-200 ease-out;
+    background: var(--bg-secondary);
+    border-color: var(--border-color);
+  }
+
+  .card:hover {
+    @apply shadow-md;
+    border-color: var(--border-hover);
+    transform: translateY(-2px);
+  }
+
+  /* Primary button */
+  .btn-primary {
+    @apply bg-primary-500 text-white
+           px-4 py-2 rounded-lg
+           font-semibold
+           transition-all duration-150 ease-out;
+  }
+
+  .btn-primary:hover {
+    @apply bg-primary-600;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px var(--accent-glow);
+  }
+
+  /* Secondary button */
+  .btn-secondary {
+    @apply bg-gray-100 text-gray-700
+           px-4 py-2 rounded-lg
+           font-medium
+           transition-all duration-150 ease-out;
+  }
+
+  .btn-secondary:hover {
+    @apply bg-gray-200;
+    transform: translateY(-1px);
+  }
+
+  /* Input field */
+  .input {
+    @apply w-full px-4 py-2
+           border rounded-lg
+           outline-none
+           transition-all duration-200;
+    background: var(--bg-secondary);
+    border-color: var(--border-color);
+    color: var(--text-primary);
+  }
+
+  .input:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px var(--accent-glow);
+  }
+
+  /* Label */
+  .label {
+    @apply block text-sm font-medium mb-1;
+    color: var(--text-secondary);
+  }
+
+  /* Badge variants */
+  .badge {
+    @apply inline-flex items-center px-2.5 py-0.5
+           rounded-full text-xs font-medium;
+  }
+
+  .badge-success { @apply bg-success-50 text-success-600; }
+  .badge-warning { @apply bg-warning-50 text-warning-600; }
+  .badge-danger { @apply bg-danger-50 text-danger-600; }
+  .badge-primary { @apply bg-primary-50 text-primary-600; }
+  .badge-secondary { @apply bg-gray-100 text-gray-600; }
+
+  /* Medallion badges */
+  .badge-bronze {
+    background: rgba(205, 127, 50, 0.15);
+    color: #92400e;
+  }
+  .badge-silver {
+    background: rgba(192, 192, 192, 0.2);
+    color: #475569;
+  }
+  .badge-gold {
+    background: rgba(255, 215, 0, 0.2);
+    color: #92400e;
+  }
+
+  /* Stats card */
+  .stat-card {
+    @apply card flex flex-col gap-2;
+  }
+
+  .stat-value {
+    @apply text-3xl font-bold leading-none;
+    font-family: var(--font-display, 'Space Grotesk'), sans-serif;
+  }
+
+  .stat-label {
+    @apply text-sm uppercase tracking-wide;
+    color: var(--text-secondary);
+  }
+
+  /* Skeleton loading */
+  .skeleton {
+    background: linear-gradient(
+      90deg,
+      var(--bg-tertiary) 25%,
+      var(--bg-secondary) 50%,
+      var(--bg-tertiary) 75%
+    );
+    background-size: 200% 100%;
+    animation: shimmer 1.5s infinite;
+    @apply rounded-lg;
+  }
+}
+
+/* ========================================
+   React Flow Pipeline Styles
+   ======================================== */
+.react-flow__node-custom {
+  background: var(--bg-secondary);
+  border: 2px solid var(--border-color);
+  border-radius: 12px;
+  padding: 1rem;
+  min-width: 180px;
+  transition: all 0.2s ease;
+}
+
+.react-flow__node-custom.processing {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 4px var(--accent-glow);
+  animation: nodePulse 2s ease-in-out infinite;
+}
+
+.react-flow__node-custom.completed {
+  border-color: var(--success);
+  background: rgba(34, 197, 94, 0.05);
+}
+
+.react-flow__node-custom.error {
+  border-color: var(--danger);
+  background: rgba(239, 68, 68, 0.05);
+}
+
+/* Pipeline node badges */
+.node-badge {
+  position: absolute;
+  top: -10px;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 2px 8px;
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  border-radius: 4px;
+}
+
+.node-badge.bronze {
+  background: var(--bronze);
+  color: white;
+}
+
+.node-badge.silver {
+  background: var(--silver);
+  color: #1e293b;
+}
+
+.node-badge.gold {
+  background: var(--gold);
+  color: #1e293b;
+}
+
+/* React Flow edges */
+.react-flow__edge-path {
+  stroke: var(--border-color);
+  stroke-width: 2;
+}
+
+.react-flow__edge.animated .react-flow__edge-path {
+  stroke: var(--accent);
+  stroke-dasharray: 5;
+  animation: flow 1s linear infinite;
+}
+
+/* ========================================
+   Animations
+   ======================================== */
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slideIn {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+@keyframes shimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+@keyframes nodePulse {
+  0%, 100% { box-shadow: 0 0 0 0 var(--accent-glow); }
+  50% { box-shadow: 0 0 0 8px transparent; }
+}
+
+@keyframes flow {
+  from { stroke-dashoffset: 10; }
+  to { stroke-dashoffset: 0; }
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+/* Animation utilities */
+.animate-fade-in {
+  animation: fadeIn 0.4s ease-out forwards;
+}
+
+.animate-fade-in-up {
+  animation: fadeInUp 0.5s ease-out forwards;
+  opacity: 0;
+}
+
+.animate-slide-in {
+  animation: slideIn 0.3s ease-out;
+}
+
+.animate-shimmer {
+  animation: shimmer 1.5s infinite;
+}
+
+.animate-node-pulse {
+  animation: nodePulse 2s ease-in-out infinite;
+}
+
+/* Stagger delays */
+.stagger-1 { animation-delay: 0.1s; }
+.stagger-2 { animation-delay: 0.2s; }
+.stagger-3 { animation-delay: 0.3s; }
+.stagger-4 { animation-delay: 0.4s; }
+
+/* ========================================
+   Toast Notifications
+   ======================================== */
+.toast-container {
+  @apply fixed top-4 right-4 z-50 flex flex-col gap-2;
+}
+
+.toast {
+  @apply px-4 py-3 rounded-lg text-sm font-medium text-white
+         shadow-lg animate-slide-in;
+}
+
+.toast-success { background: var(--success); }
+.toast-warning { background: var(--warning); }
+.toast-danger { background: var(--danger); }
+.toast-info { background: var(--info); }
+
+/* ========================================
+   Reasoning Panel (Pipeline)
+   ======================================== */
+.reasoning-entry {
+  @apply p-3 rounded-lg mb-2 animate-fade-in;
+  background: var(--bg-tertiary);
+  border-left: 3px solid var(--accent);
+}
+
+.reasoning-entry.bronze { border-color: var(--bronze); }
+.reasoning-entry.silver { border-color: var(--silver); }
+.reasoning-entry.gold { border-color: var(--gold); }
+
+/* ========================================
+   Table Styles
+   ======================================== */
+table {
+  @apply w-full;
+  border-collapse: separate;
+  border-spacing: 0;
+}
+
+table th {
+  @apply px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide;
+  background: var(--bg-tertiary);
+  color: var(--text-secondary);
+}
+
+table td {
+  @apply px-4 py-3 text-sm;
+  border-bottom: 1px solid var(--border-color);
+}
+
+table tbody tr:hover td {
+  background: var(--accent-light);
+}
+
+/* ========================================
+   Scrollbar Styling
+   ======================================== */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--bg-tertiary);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--text-muted);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--text-secondary);
+}

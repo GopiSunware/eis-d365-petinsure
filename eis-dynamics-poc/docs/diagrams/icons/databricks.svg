@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
+  <rect x="8" y="8" width="48" height="48" fill="#FF3621" stroke="#CC2A1A" stroke-width="2"/>
+  <polygon points="32,16 48,32 32,48 16,32" fill="white"/>
+  <text x="32" y="60" font-family="Arial" font-size="5" fill="#FF3621" text-anchor="middle">Databricks</text>
+</svg>

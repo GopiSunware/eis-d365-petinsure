@@ -1,0 +1,129 @@
+<mxfile host="app.diagrams.net" modified="2024-01-05T00:00:00.000Z" agent="Claude" version="22.1.0">
+  <diagram name="Rules vs AI Comparison" id="comparison">
+    <mxGraphModel dx="1422" dy="900" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1200" pageHeight="700" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="title" value="Rule-Based vs AI Processing - Pet Insurance Claim" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=24;fontStyle=1" vertex="1" parent="1">
+          <mxGeometry x="300" y="20" width="550" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="input-box" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FEF3C7;strokeColor=#D97706;strokeWidth=3;" vertex="1" parent="1">
+          <mxGeometry x="400" y="80" width="300" height="110" as="geometry" />
+        </mxCell>
+        <mxCell id="input-title" value="Pet Claim: CLM-PET-2024-001" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=16;fontStyle=1" vertex="1" parent="1">
+          <mxGeometry x="420" y="90" width="260" height="25" as="geometry" />
+        </mxCell>
+        <mxCell id="input-pet" value="Golden Retriever - Max" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=13" vertex="1" parent="1">
+          <mxGeometry x="420" y="115" width="260" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="input-proc" value="CCL Tear Surgery - $4,500" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=14;fontStyle=1" vertex="1" parent="1">
+          <mxGeometry x="420" y="138" width="260" height="22" as="geometry" />
+        </mxCell>
+        <mxCell id="input-flag" value="4th claim in 12 months" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=12;fontColor=#DC2626;fontStyle=2" vertex="1" parent="1">
+          <mxGeometry x="420" y="162" width="260" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="rules-lbl" value="Traditional Rules Engine" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=18;fontStyle=1;fontColor=#1E40AF" vertex="1" parent="1">
+          <mxGeometry x="80" y="220" width="250" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="rules-box" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#DBEAFE;strokeColor=#2563EB;strokeWidth=2;" vertex="1" parent="1">
+          <mxGeometry x="80" y="260" width="250" height="190" as="geometry" />
+        </mxCell>
+        <mxCell id="r1" value="Amount &lt; $5,000 ✓" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#D1FAE5;strokeColor=#059669;strokeWidth=2;fontSize=13" vertex="1" parent="1">
+          <mxGeometry x="100" y="275" width="210" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="r2" value="Policy Active ✓" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#D1FAE5;strokeColor=#059669;strokeWidth=2;fontSize=13" vertex="1" parent="1">
+          <mxGeometry x="100" y="310" width="210" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="r3" value="Accident Coverage OK ✓" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#D1FAE5;strokeColor=#059669;strokeWidth=2;fontSize=13" vertex="1" parent="1">
+          <mxGeometry x="100" y="345" width="210" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="r4" value="Past Waiting Period ✓" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#D1FAE5;strokeColor=#059669;strokeWidth=2;fontSize=13" vertex="1" parent="1">
+          <mxGeometry x="100" y="380" width="210" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="r5" value="No Exact Duplicates ✓" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#D1FAE5;strokeColor=#059669;strokeWidth=2;fontSize=13" vertex="1" parent="1">
+          <mxGeometry x="100" y="415" width="210" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="ai-lbl" value="EIS-Dynamics AI Pipeline" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=18;fontStyle=1;fontColor=#7C3AED" vertex="1" parent="1">
+          <mxGeometry x="770" y="220" width="250" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="ai-box" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#EDE9FE;strokeColor=#7C3AED;strokeWidth=2;" vertex="1" parent="1">
+          <mxGeometry x="770" y="260" width="250" height="190" as="geometry" />
+        </mxCell>
+        <mxCell id="a1" value="Analyze Pet Medical History" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#E9D5FF;strokeColor=#9333EA;strokeWidth=2;fontSize=12" vertex="1" parent="1">
+          <mxGeometry x="790" y="275" width="210" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="a2" value="Detect Pattern: 4 Claims/Year" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FEE2E2;strokeColor=#DC2626;strokeWidth=2;fontSize=12;fontStyle=1" vertex="1" parent="1">
+          <mxGeometry x="790" y="310" width="210" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="a3" value="CCL = Breed-Prone Condition" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FEE2E2;strokeColor=#DC2626;strokeWidth=2;fontSize=12;fontStyle=1" vertex="1" parent="1">
+          <mxGeometry x="790" y="345" width="210" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="a4" value="Flag: Different Providers" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FEE2E2;strokeColor=#DC2626;strokeWidth=2;fontSize=12;fontStyle=1" vertex="1" parent="1">
+          <mxGeometry x="790" y="380" width="210" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="a5" value="Cross-Reference Timing" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#E9D5FF;strokeColor=#9333EA;strokeWidth=2;fontSize=12" vertex="1" parent="1">
+          <mxGeometry x="790" y="415" width="210" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="rules-result" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#22C55E;strokeColor=#15803D;strokeWidth=3;" vertex="1" parent="1">
+          <mxGeometry x="80" y="490" width="250" height="130" as="geometry" />
+        </mxCell>
+        <mxCell id="rules-status" value="APPROVED ✓" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=24;fontStyle=1;fontColor=#FFFFFF" vertex="1" parent="1">
+          <mxGeometry x="100" y="500" width="210" height="35" as="geometry" />
+        </mxCell>
+        <mxCell id="rules-time" value="Processing: 0.5ms" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=13;fontColor=#FFFFFF" vertex="1" parent="1">
+          <mxGeometry x="100" y="540" width="210" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="rules-fraud" value="Fraud Score: N/A" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=13;fontColor=#FFFFFF" vertex="1" parent="1">
+          <mxGeometry x="100" y="560" width="210" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="rules-payout" value="Payout: $3,600" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=15;fontStyle=1;fontColor=#FFFFFF" vertex="1" parent="1">
+          <mxGeometry x="100" y="585" width="210" height="25" as="geometry" />
+        </mxCell>
+        <mxCell id="ai-result" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F59E0B;strokeColor=#D97706;strokeWidth=3;" vertex="1" parent="1">
+          <mxGeometry x="770" y="490" width="250" height="130" as="geometry" />
+        </mxCell>
+        <mxCell id="ai-status" value="MANUAL REVIEW ⚠" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=22;fontStyle=1;fontColor=#FFFFFF" vertex="1" parent="1">
+          <mxGeometry x="790" y="500" width="210" height="35" as="geometry" />
+        </mxCell>
+        <mxCell id="ai-time" value="Processing: 45s" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=13;fontColor=#FFFFFF" vertex="1" parent="1">
+          <mxGeometry x="790" y="540" width="210" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="ai-fraud" value="Fraud Score: 0.72" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=15;fontStyle=1;fontColor=#FFFFFF" vertex="1" parent="1">
+          <mxGeometry x="790" y="560" width="210" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="ai-flags" value="Flags: breed_prone, frequency, provider" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=11;fontColor=#FFFFFF;fontStyle=2" vertex="1" parent="1">
+          <mxGeometry x="790" y="585" width="210" height="25" as="geometry" />
+        </mxCell>
+        <mxCell id="insight-box" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F3E8FF;strokeColor=#9333EA;strokeWidth=3;" vertex="1" parent="1">
+          <mxGeometry x="400" y="490" width="300" height="130" as="geometry" />
+        </mxCell>
+        <mxCell id="insight-title" value="KEY INSIGHT" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=16;fontStyle=1;fontColor=#7C3AED" vertex="1" parent="1">
+          <mxGeometry x="420" y="500" width="260" height="25" as="geometry" />
+        </mxCell>
+        <mxCell id="insight-text" value="Same claim data, different outcomes.&#xa;&#xa;AI catches fraud patterns that rules miss:&#xa;• Breed-prone conditions&#xa;• High claim frequency&#xa;• Provider rotation" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=12" vertex="1" parent="1">
+          <mxGeometry x="410" y="525" width="280" height="90" as="geometry" />
+        </mxCell>
+        <mxCell id="e1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=3;strokeColor=#2563EB;exitX=0;exitY=0.5;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="input-box" target="rules-box">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="205" y="135" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e2" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=3;strokeColor=#7C3AED;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="input-box" target="ai-box">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="895" y="135" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e3" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=3;strokeColor=#22C55E;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="rules-box" target="rules-result">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e4" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=3;strokeColor=#F59E0B;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="ai-box" target="ai-result">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

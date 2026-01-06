@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
+  <rect x="12" y="12" width="40" height="40" fill="#0078D4" stroke="#005A9E" stroke-width="2"/>
+  <rect x="18" y="18" width="28" height="8" fill="#50E6FF"/>
+  <rect x="18" y="28" width="28" height="8" fill="#50E6FF"/>
+  <rect x="18" y="38" width="28" height="8" fill="#50E6FF"/>
+  <text x="32" y="60" font-family="Arial" font-size="6" fill="#0078D4" text-anchor="middle">Storage</text>
+</svg>

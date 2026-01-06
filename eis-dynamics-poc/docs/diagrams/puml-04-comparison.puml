@@ -1,0 +1,31 @@
+@startuml
+!theme cerulean
+title Rule-Based vs AI Processing - Pet Insurance
+
+rectangle "Pet Claim: CLM-PET-2024-001\nGolden Retriever - Max\nCCL Tear Surgery $4,500\n4th claim in 12 months" as input #fff2cc
+
+rectangle "Traditional Rules Engine" as rule #3B82F6 {
+    :Amount < $5,000 ✓;
+    :Policy Active ✓;
+    :Accident Coverage OK ✓;
+    :Past Waiting Period ✓;
+    :No Exact Duplicates ✓;
+}
+
+rectangle "EIS-Dynamics AI Pipeline" as ai #7C3AED {
+    :Analyze Pet Medical History;
+    :Detect Pattern: 4 Claims/Year;
+    :CCL = Breed-Prone Condition;
+    :Flag: Different Providers;
+    :Cross-Reference Claim Timing;
+}
+
+rectangle "APPROVED ✓\nProcessing: 0.5ms\nFraud Score: N/A\nPayout: $3,600" as approve #22C55E
+
+rectangle "MANUAL REVIEW ⚠\nProcessing: 45s\nFraud Score: 0.72\nFlags: breed_prone,\nclaim_frequency,\nprovider_rotation" as review #F59E0B
+
+input --> rule
+input --> ai
+rule --> approve
+ai --> review
+@enduml

@@ -1,0 +1,54 @@
+{
+  "claim_id": "CLM-DEMO-CABD7BFD",
+  "raw_data": {
+    "claim_id": "CLM-DEMO-CABD7BFD",
+    "policy_id": "POL-2024-00567",
+    "customer_id": "CUST-001",
+    "pet_id": "PET-001",
+    "claim_type": "wellness",
+    "claim_amount": 150.0,
+    "diagnosis_code": "Z00.0",
+    "diagnosis_description": "Annual wellness exam",
+    "treatment_date": "2025-12-29",
+    "submission_date": "2025-12-29",
+    "provider_name": "City Pet Hospital",
+    "_cleaned_at": "2025-12-29T09:11:17.487670",
+    "_changes_count": 0
+  },
+  "validation": {
+    "is_valid": true,
+    "errors": [],
+    "warnings": [],
+    "fields_checked": 11,
+    "missing_required": [],
+    "missing_optional": []
+  },
+  "quality": {
+    "completeness_score": 1.0,
+    "accuracy_score": 1.0,
+    "consistency_score": 1.0,
+    "overall_score": 1.0,
+    "issues": [],
+    "recommendations": [
+      "Data quality is excellent"
+    ]
+  },
+  "anomalies": {
+    "is_anomalous": false,
+    "anomalies": [],
+    "risk_indicators": [],
+    "anomaly_score": 0.0
+  },
+  "agent": {
+    "reasoning": "This claim demonstrates exceptional data quality across all validation criteria. Schema validation passed with all 11 required and optional fields present and correctly typed. No anomalies were detected - the claim amount of $150 is reasonable for a wellness exam, dates are consistent, and no suspicious patterns were identified. Data cleaning required no changes as all fields were already properly formatted. Quality assessment shows perfect scores (1.0) for completeness, accuracy, and consistency. The diagnosis code Z00.0 correctly corresponds to the described annual wellness exam. This is a straightforward, well-documented wellness claim that meets all processing standards.",
+    "decision": "ACCEPT",
+    "confidence": 0.98,
+    "agent_name": "bronze_agent",
+    "agent_version": "1.0.0"
+  },
+  "metadata": {
+    "processed_at": "2025-12-29T09:11:30.531595",
+    "layer": "bronze",
+    "source": "agent_pipeline"
+  }
+}

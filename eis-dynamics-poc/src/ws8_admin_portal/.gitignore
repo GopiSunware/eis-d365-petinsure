@@ -1,0 +1,33 @@
+# Environment files (contain secrets)
+.env
+backend/.env
+frontend/.env.local
+frontend/.env.production.local
+
+# Keep example
+!.env.example
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+venv/
+.venv/
+*.egg-info/
+
+# Node
+node_modules/
+.next/
+out/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
