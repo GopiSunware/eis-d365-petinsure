@@ -2,6 +2,10 @@
 Insights Service - BI Analytics endpoints for Claims Data API.
 Provides customer 360, claims analytics, KPIs, segmentation, and pipeline data.
 Optimized with pre-computed indexes for fast lookups.
+
+Supports hybrid data sources:
+- Demo data (synthetic) - always available
+- Azure Gold Layer - when configured and available
 """
 
 from datetime import datetime, timedelta
@@ -13,6 +17,13 @@ import random
 from fastapi import APIRouter, Query, HTTPException
 
 from app.data_loader import get_data_store
+
+# Import data source service for hybrid support
+try:
+    from app.services.data_source_service import get_data_source_config, get_data_provider
+    DATA_SOURCE_AVAILABLE = True
+except ImportError:
+    DATA_SOURCE_AVAILABLE = False
 
 router = APIRouter()
 
@@ -283,6 +294,19 @@ async def get_summary():
     total_claims_amount = sum(c.get("claim_amount", 0) for c in claims)
     approved_claims = [c for c in claims if c.get("status") == "approved"]
 
+    # Get data source info
+    data_source_info = {
+        "source": "demo",
+        "description": "Synthetic demo data"
+    }
+    if DATA_SOURCE_AVAILABLE:
+        config = get_data_source_config()
+        data_source_info = {
+            "source": config.source.value,
+            "use_azure": config.use_azure,
+            "description": "Hybrid: Azure Gold Layer with demo fallback" if config.use_azure else "Synthetic demo data"
+        }
+
     return {
         "total_customers": len(customers) + len(DEMO_CUSTOMERS),
         "total_pets": len(pets),
@@ -298,6 +322,7 @@ async def get_summary():
         "total_claims_paid": round(total_claims_amount, 2),
         "approval_rate": round(len(approved_claims) / len(claims) * 100, 1) if claims else 0,
         "avg_claim_amount": round(total_claims_amount / len(claims), 2) if claims else 0,
+        "data_source": data_source_info,
     }
 
 
