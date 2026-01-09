@@ -5,10 +5,51 @@ Endpoints for pet registration and management
 
 import uuid
 from datetime import datetime
-from fastapi import APIRouter, Request, HTTPException
+from typing import Optional
+from fastapi import APIRouter, Request, HTTPException, Query
 from app.models.schemas import PetCreate, PetResponse
 
 router = APIRouter()
+
+
+# ============================================================================
+# CONVENIENCE ENDPOINT - List pets with query parameters
+# ============================================================================
+
+async def _list_pets_impl(
+    request: Request,
+    customer_id: Optional[str] = None,
+    limit: int = 100
+):
+    """Implementation for listing pets."""
+    insights = request.app.state.insights
+
+    if customer_id:
+        pets = insights.get_customer_pets(customer_id)
+    else:
+        pets = insights.get_all_pets(limit=limit)
+
+    return {
+        "pets": pets[:limit],
+        "count": len(pets[:limit]),
+        "filter": {"customer_id": customer_id} if customer_id else None
+    }
+
+
+@router.get("/")
+@router.get("")  # Also handle without trailing slash
+async def list_pets(
+    request: Request,
+    customer_id: Optional[str] = Query(None, description="Filter by customer ID"),
+    limit: int = Query(100, description="Max results")
+):
+    """
+    List pets with optional filtering by customer_id.
+
+    This is a convenience endpoint that accepts query parameters.
+    For specific customer pets, you can also use /customer/{customer_id}
+    """
+    return await _list_pets_impl(request, customer_id, limit)
 
 @router.post("/", response_model=PetResponse)
 async def create_pet(pet: PetCreate, request: Request):

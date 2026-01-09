@@ -5,6 +5,7 @@ import os
 from datetime import datetime, timedelta
 from uuid import uuid4
 
+from app.config import DATA_DIR
 from app.models.document import ExportFormat, ExportResult, ProcessedBatch
 
 logger = logging.getLogger(__name__)
@@ -30,7 +31,7 @@ class WordExporter:
 
         export_id = uuid4()
         filename = f"claim_{batch.batch_id}_{template}.docx"
-        output_dir = "/tmp/docgen/exports"
+        output_dir = str(DATA_DIR / "exports")
         os.makedirs(output_dir, exist_ok=True)
         output_path = os.path.join(output_dir, filename)
 
@@ -103,7 +104,7 @@ class WordExporter:
         """Simple text export when python-docx is not available."""
         export_id = uuid4()
         filename = f"claim_{batch.batch_id}_{template}.txt"
-        output_dir = "/tmp/docgen/exports"
+        output_dir = str(DATA_DIR / "exports")
         os.makedirs(output_dir, exist_ok=True)
         output_path = os.path.join(output_dir, filename)
 

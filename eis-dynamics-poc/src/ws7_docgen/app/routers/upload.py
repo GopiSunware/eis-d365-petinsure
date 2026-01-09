@@ -10,7 +10,7 @@ from uuid import uuid4
 
 from fastapi import APIRouter, File, Form, HTTPException, UploadFile, status
 
-from app.config import settings
+from app.config import settings, DATA_DIR
 from app.models.document import (
     DocumentType,
     ProcessedBatch,
@@ -25,8 +25,8 @@ logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
-# Batch storage with file persistence
-BATCHES_FILE = "/tmp/docgen/batches.json"
+# Batch storage with file persistence - Project-relative path
+BATCHES_FILE = str(DATA_DIR / "batches" / "batches.json")
 _batches: dict[str, ProcessedBatch] = {}
 
 
@@ -445,7 +445,7 @@ async def clear_all_data():
 
     # Clear upload files
     import shutil
-    upload_dir = "/tmp/docgen/storage/uploads"
+    upload_dir = os.path.join(settings.LOCAL_STORAGE_PATH, "uploads")
     if os.path.exists(upload_dir):
         shutil.rmtree(upload_dir)
         os.makedirs(upload_dir, exist_ok=True)

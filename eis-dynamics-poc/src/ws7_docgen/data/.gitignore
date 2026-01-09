@@ -1,0 +1,14 @@
+# Ignore all files in data directories except .gitignore
+*
+!.gitignore
+!.gitkeep
+
+# Keep directory structure with .gitkeep in subdirs
+!batches/
+!batches/.gitkeep
+!storage/
+!storage/.gitkeep
+!temp/
+!temp/.gitkeep
+!exports/
+!exports/.gitkeep

@@ -42,25 +42,31 @@ class CustomerCreate(BaseModel):
     first_name: str = Field(..., min_length=1, max_length=50)
     last_name: str = Field(..., min_length=1, max_length=50)
     email: EmailStr
-    phone: str = Field(..., pattern=r"^\d{10}$")
-    address_line1: str
+    phone: str = Field(..., min_length=10, max_length=20)  # Flexible phone format
+    address_line1: Optional[str] = Field(None, alias="address")  # Accept 'address' or 'address_line1'
+    address: Optional[str] = None  # Alternative field name
     city: str
     state: str = Field(..., min_length=2, max_length=2)
-    zip_code: str = Field(..., pattern=r"^\d{5}$")
+    zip_code: str = Field(..., min_length=5, max_length=10)  # Support ZIP+4
     country: str = "USA"
-    date_of_birth: date
+    date_of_birth: Optional[date] = None  # Made optional for simple registration
     preferred_contact: str = "Email"
     marketing_opt_in: bool = False
     referral_source: Optional[str] = None
 
+    def get_address(self) -> Optional[str]:
+        """Get address from either field."""
+        return self.address_line1 or self.address
+
     class Config:
+        populate_by_name = True  # Allow both field name and alias
         json_schema_extra = {
             "example": {
                 "first_name": "John",
                 "last_name": "Smith",
                 "email": "john.smith@example.com",
                 "phone": "5551234567",
-                "address_line1": "123 Main St",
+                "address": "123 Main St",
                 "city": "Austin",
                 "state": "TX",
                 "zip_code": "78701",
@@ -166,14 +172,30 @@ class ClaimCreate(BaseModel):
     pet_id: str
     customer_id: str
     provider_id: Optional[str] = None
+    provider_name: Optional[str] = None  # Allow provider name instead of ID
     claim_type: ClaimType
-    claim_category: str
+    claim_category: str = "General"  # Default category
     service_date: date
-    claim_amount: float = Field(..., gt=0)
+    claim_amount: float = Field(None, gt=0)  # Made optional, can use 'amount' alias
+    amount: Optional[float] = Field(None, gt=0)  # Alternative field name
+    diagnosis: Optional[str] = None  # Friendly alias for diagnosis_code
     diagnosis_code: Optional[str] = None
+    description: Optional[str] = None  # Alias for treatment_notes
     treatment_notes: Optional[str] = None
     invoice_number: Optional[str] = None
     is_emergency: bool = False
+
+    def get_claim_amount(self) -> float:
+        """Get claim amount from either field."""
+        return self.claim_amount or self.amount or 0.0
+
+    def get_diagnosis(self) -> Optional[str]:
+        """Get diagnosis from either field."""
+        return self.diagnosis or self.diagnosis_code
+
+    def get_notes(self) -> Optional[str]:
+        """Get notes from either field."""
+        return self.treatment_notes or self.description
 
     class Config:
         json_schema_extra = {
@@ -181,14 +203,13 @@ class ClaimCreate(BaseModel):
                 "policy_id": "POL-12345",
                 "pet_id": "PET-67890",
                 "customer_id": "CUST-12345",
-                "provider_id": "PROV-001",
+                "provider_name": "City Vet Clinic",
                 "claim_type": "Illness",
                 "claim_category": "Digestive",
                 "service_date": "2024-12-20",
                 "claim_amount": 450.00,
-                "diagnosis_code": "GI001",
-                "treatment_notes": "Treatment for stomach upset",
-                "invoice_number": "INV-2024-001",
+                "diagnosis": "Stomach upset",
+                "description": "Treatment for stomach upset",
                 "is_emergency": False
             }
         }

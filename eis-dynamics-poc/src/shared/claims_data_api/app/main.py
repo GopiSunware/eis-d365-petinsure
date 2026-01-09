@@ -4,6 +4,22 @@ Serves as the single gateway (port 8000) for all claims data services.
 Used by both EIS Dynamics POC (AI agents) and PetInsure360 (rule-based).
 """
 
+import os
+from pathlib import Path
+from dotenv import load_dotenv
+
+# Load environment variables from .env file
+env_paths = [
+    Path(__file__).parent.parent.parent.parent / ".env",  # eis-dynamics-poc/src/.env
+    Path(__file__).parent.parent.parent.parent.parent / ".env",  # eis-dynamics-poc/.env
+    Path.cwd() / ".env",
+]
+for env_path in env_paths:
+    if env_path.exists():
+        load_dotenv(env_path)
+        print(f"Loaded environment from: {env_path}")
+        break
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
@@ -19,17 +35,24 @@ from app.services import (
     billing_service,
     validation_service,
     datalake_service,
+    chat_service,
+    rating_service,
+    docgen_service,
+    ai_config_service,
+    insights_service,
+    pipeline_service,
 )
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    """Load data on startup."""
+    """Initialize API (data loaded lazily on first request)."""
     print("\n" + "=" * 60)
     print("Starting Unified Claims Data API")
-    print("=" * 60)
-    get_data_store()  # This loads all data
+    print("Data will be loaded on first request (lazy loading)")
     print("=" * 60 + "\n")
+    # Data loading moved to first request for faster startup
+    # get_data_store() will be called automatically when needed
     yield
     print("Shutting down Unified Claims Data API")
 
@@ -53,8 +76,10 @@ app = FastAPI(
     | MedicalRefService | /medical | 5 endpoints |
     | BillingService | /billing | 5 endpoints |
     | **ValidationService** | /validation | **7 endpoints** |
+    | **RatingService** | /rating | **6 endpoints** |
+    | **DocGenService** | /docgen | **8 endpoints** |
 
-    ## AI Validation (NEW)
+    ## AI Validation
 
     ValidationService provides AI-powered data quality checks:
     - Diagnosis-Treatment Mismatch detection
@@ -106,6 +131,12 @@ app.include_router(medical_service.router, prefix="/api/v1/medical", tags=["Medi
 app.include_router(billing_service.router, prefix="/api/v1/billing", tags=["BillingService"])
 app.include_router(validation_service.router, prefix="/api/v1/validation", tags=["ValidationService"])
 app.include_router(datalake_service.router, prefix="/api/v1/datalake", tags=["DataLakeService"])
+app.include_router(chat_service.router, prefix="/api/chat", tags=["ChatService"])
+app.include_router(rating_service.router, prefix="/api/v1/rating", tags=["RatingService"])
+app.include_router(docgen_service.router, prefix="/api/v1/docgen", tags=["DocGenService"])
+app.include_router(ai_config_service.router, prefix="/api/v1/claims/ai", tags=["AIConfigService"])
+app.include_router(insights_service.router, prefix="/api/insights", tags=["InsightsService"])
+app.include_router(pipeline_service.router, prefix="/api/pipeline", tags=["PipelineService"])
 
 
 @app.get("/", tags=["Health"])
@@ -135,6 +166,11 @@ async def root():
             "billing": "/api/v1/billing",
             "validation": "/api/v1/validation",
             "datalake": "/api/v1/datalake",
+            "rating": "/api/v1/rating",
+            "docgen": "/api/v1/docgen",
+            "ai_config": "/api/v1/claims/ai",
+            "insights": "/api/insights",
+            "pipeline": "/api/pipeline",
         }
     }
 

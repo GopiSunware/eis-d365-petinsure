@@ -8,6 +8,7 @@ import uuid
 import hashlib
 import aiofiles
 from datetime import datetime
+from pathlib import Path
 from typing import List, Optional
 from fastapi import APIRouter, HTTPException, UploadFile, File, Form, Request, BackgroundTasks
 from pydantic import BaseModel
@@ -18,8 +19,9 @@ router = APIRouter()
 # DocGen service URL (ws7_docgen) - EIS Dynamics DocGen Service
 DOCGEN_SERVICE_URL = os.getenv("DOCGEN_SERVICE_URL", "http://localhost:8007")
 
-# Local storage for uploads (before forwarding to DocGen)
-UPLOAD_DIR = "/tmp/petinsure360_uploads"
+# Local storage for uploads (before forwarding to DocGen) - Project-relative path
+BASE_DIR = Path(__file__).resolve().parent.parent.parent
+UPLOAD_DIR = str(BASE_DIR / "data" / "uploads")
 os.makedirs(UPLOAD_DIR, exist_ok=True)
 
 # In-memory storage for upload tracking (in production, use database)

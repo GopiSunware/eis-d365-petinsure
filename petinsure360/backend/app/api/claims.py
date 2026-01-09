@@ -7,9 +7,10 @@ import logging
 import os
 import uuid
 from datetime import datetime
+from typing import Optional
 
 import httpx
-from fastapi import APIRouter, Request, HTTPException
+from fastapi import APIRouter, Request, HTTPException, Query
 from app.models.schemas import ClaimCreate, ClaimResponse, ClaimStatusResponse
 
 logger = logging.getLogger(__name__)
@@ -118,6 +119,11 @@ async def submit_claim(claim: ClaimCreate, request: Request):
     claim_id = f"CLM-{uuid.uuid4().hex[:8].upper()}"
     claim_number = f"CLM-{datetime.utcnow().strftime('%Y%m%d')}-{uuid.uuid4().hex[:6].upper()}"
 
+    # Get values from helper methods (supports multiple field names)
+    actual_claim_amount = claim.get_claim_amount()
+    actual_diagnosis = claim.get_diagnosis()
+    actual_notes = claim.get_notes()
+
     # Prepare data for storage
     claim_data = {
         "claim_id": claim_id,
@@ -126,19 +132,20 @@ async def submit_claim(claim: ClaimCreate, request: Request):
         "pet_id": claim.pet_id,
         "customer_id": claim.customer_id,
         "provider_id": claim.provider_id,
+        "provider_name": claim.provider_name,
         "claim_type": claim.claim_type.value,
         "claim_category": claim.claim_category,
         "service_date": claim.service_date.isoformat(),
         "submitted_date": datetime.utcnow().date().isoformat(),
-        "claim_amount": claim.claim_amount,
+        "claim_amount": actual_claim_amount,
         "deductible_applied": 0.0,  # Calculated during processing
         "covered_amount": 0.0,
         "paid_amount": 0.0,
         "status": "Submitted",
         "denial_reason": None,
         "processing_days": 0,
-        "diagnosis_code": claim.diagnosis_code,
-        "treatment_notes": claim.treatment_notes,
+        "diagnosis_code": actual_diagnosis,
+        "treatment_notes": actual_notes,
         "invoice_number": claim.invoice_number,
         "is_emergency": claim.is_emergency,
         "is_recurring": False,
@@ -336,3 +343,44 @@ async def simulate_claim_processing(claim_id: str, request: Request):
         "final_status": claim["status"],
         "message": "Claim processing simulation completed"
     }
+
+
+# ============================================================================
+# CONVENIENCE ENDPOINTS (aliases for common query patterns)
+# ============================================================================
+
+async def _list_claims_impl(
+    request: Request,
+    customer_id: Optional[str] = None,
+    limit: int = 100
+):
+    """Implementation for listing claims."""
+    insights = request.app.state.insights
+
+    if customer_id:
+        claims = insights.get_customer_claims(customer_id)
+    else:
+        claims = insights.get_recent_claims(limit=limit)
+
+    return {
+        "claims": claims[:limit],
+        "count": len(claims[:limit]),
+        "filter": {"customer_id": customer_id} if customer_id else None
+    }
+
+
+@router.get("/")
+@router.get("")  # Also handle without trailing slash
+async def list_claims(
+    request: Request,
+    customer_id: Optional[str] = Query(None, description="Filter by customer ID"),
+    limit: int = Query(100, description="Max results")
+):
+    """
+    List claims with optional filtering.
+
+    Query params:
+    - customer_id: Filter by customer
+    - limit: Max results (default 100)
+    """
+    return await _list_claims_impl(request, customer_id, limit)

@@ -137,6 +137,28 @@ Located in: `eis-dynamics-poc/terraform/aws/main.tf`
 | S3 | eis-dynamics-datalake-* | Medallion data lake |
 | Secrets Manager | eis-dynamics/api-keys | API keys storage |
 
+## API Keys Location
+
+**IMPORTANT**: API keys are stored in the local `.env` files:
+
+| File | Purpose |
+|------|---------|
+| `eis-dynamics-poc/.env` | Root environment config |
+| `eis-dynamics-poc/src/.env` | Service-level config |
+
+Both files contain:
+- `ANTHROPIC_API_KEY` - For Claude AI agent processing
+- `OPENAI_API_KEY` - For OpenAI fallback
+
+**For AWS Deployment**: Copy these keys to AWS Secrets Manager:
+```bash
+# Update AWS Secrets Manager with keys from local .env
+aws secretsmanager update-secret \
+  --secret-id eis-dynamics/api-keys \
+  --secret-string '{"ANTHROPIC_API_KEY":"<from .env>","OPENAI_API_KEY":"<from .env>"}' \
+  --profile sunwaretech
+```
+
 ## Environment Variables
 
 ### Unified Claims API
@@ -150,7 +172,7 @@ Located in: `eis-dynamics-poc/terraform/aws/main.tf`
 - `LOG_LEVEL`: INFO
 - `UNIFIED_API_URL`: URL to Claims API
 - `AI_PROVIDER`: claude
-- `ANTHROPIC_API_KEY`: From Secrets Manager
+- `ANTHROPIC_API_KEY`: From `.env` locally, Secrets Manager on AWS
 
 ## Troubleshooting
 

@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { Database, Server, BarChart3, Cloud, ArrowRight, RefreshCw, CheckCircle, Clock, AlertCircle, Play, Zap, FileText, ListChecks } from 'lucide-react'
 import api from '../services/api'
-import socket, { connectSocket } from '../services/socket'
+import { connectSocket, subscribeToEvent } from '../services/socket'
 
 // Pipeline node component
 const PipelineNode = ({ label, icon: Icon, status, count, pendingCount, description, isActive, onClick, actionLabel }) => {
@@ -116,27 +116,29 @@ export default function PipelinePage() {
 
     fetchPipelineData()
 
-    // WebSocket listeners for real-time updates
-    socket.on('claim_to_bronze', (data) => {
+    // WebSocket listeners for real-time updates using subscribeToEvent
+    // subscribeToEvent returns an unsubscribe function
+    const unsubBronze = subscribeToEvent('claim_to_bronze', (data) => {
       console.log('New claim in Bronze:', data)
       fetchPendingClaims()
     })
 
-    socket.on('silver_processed', (data) => {
+    const unsubSilver = subscribeToEvent('silver_processed', (data) => {
       console.log('Silver processing complete:', data)
       fetchPendingClaims()
     })
 
-    socket.on('gold_processed', (data) => {
+    const unsubGold = subscribeToEvent('gold_processed', (data) => {
       console.log('Gold processing complete:', data)
       fetchPendingClaims()
       fetchPipelineData()
     })
 
+    // Cleanup: unsubscribe from all events
     return () => {
-      socket.off('claim_to_bronze')
-      socket.off('silver_processed')
-      socket.off('gold_processed')
+      if (unsubBronze) unsubBronze()
+      if (unsubSilver) unsubSilver()
+      if (unsubGold) unsubGold()
     }
   }, [])
 

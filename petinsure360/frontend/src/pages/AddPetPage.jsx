@@ -36,8 +36,30 @@ export default function AddPetPage({ user }) {
     }
   }, [user])
 
+  // Comprehensive breed lists for all species (matching QuotePage)
   const dogBreeds = ['Golden Retriever', 'Labrador Retriever', 'German Shepherd', 'Bulldog', 'Poodle', 'Beagle', 'Rottweiler', 'Yorkshire Terrier', 'Boxer', 'Dachshund', 'Other']
   const catBreeds = ['Persian', 'Maine Coon', 'Ragdoll', 'British Shorthair', 'Siamese', 'Bengal', 'Abyssinian', 'Sphynx', 'Scottish Fold', 'Domestic Shorthair', 'Other']
+  const birdBreeds = ['Parakeet', 'Cockatiel', 'Parrot', 'Canary', 'Finch', 'Macaw', 'Cockatoo', 'Lovebird', 'Conure', 'Other']
+  const rabbitBreeds = ['Holland Lop', 'Mini Rex', 'Netherland Dwarf', 'Lionhead', 'Flemish Giant', 'Angora', 'Dutch', 'Rex', 'Mixed Breed', 'Other']
+  const reptileBreeds = ['Bearded Dragon', 'Leopard Gecko', 'Ball Python', 'Corn Snake', 'Iguana', 'Chameleon', 'Tortoise', 'Turtle', 'Other']
+
+  // Get breeds based on selected species
+  const getBreedList = (species) => {
+    switch (species) {
+      case 'Dog':
+        return dogBreeds
+      case 'Cat':
+        return catBreeds
+      case 'Bird':
+        return birdBreeds
+      case 'Rabbit':
+        return rabbitBreeds
+      case 'Reptile':
+        return reptileBreeds
+      default:
+        return []
+    }
+  }
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target
@@ -171,8 +193,11 @@ export default function AddPetPage({ user }) {
                 required
                 className="input-field"
               >
-                <option value="Dog">Dog</option>
-                <option value="Cat">Cat</option>
+                <option value="Dog">🐕 Dog</option>
+                <option value="Cat">🐈 Cat</option>
+                <option value="Bird">🦜 Bird</option>
+                <option value="Rabbit">🐰 Rabbit</option>
+                <option value="Reptile">🦎 Reptile</option>
               </select>
             </div>
           </div>
@@ -189,7 +214,7 @@ export default function AddPetPage({ user }) {
                 className="input-field"
               >
                 <option value="">Select breed...</option>
-                {(formData.species === 'Dog' ? dogBreeds : catBreeds).map(breed => (
+                {getBreedList(formData.species).map(breed => (
                   <option key={breed} value={breed}>{breed}</option>
                 ))}
               </select>

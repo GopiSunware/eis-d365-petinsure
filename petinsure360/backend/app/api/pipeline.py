@@ -9,6 +9,7 @@ import os
 import uuid
 import logging
 from datetime import datetime
+from pathlib import Path
 from typing import List, Dict, Any, Optional
 from fastapi import APIRouter, Request, HTTPException
 from pydantic import BaseModel
@@ -22,8 +23,9 @@ AGENT_PIPELINE_URL = os.getenv("AGENT_PIPELINE_URL", "http://localhost:8006")
 # DocGen Service URL (EIS Dynamics DocGen - WS7)
 DOCGEN_SERVICE_URL = os.getenv("DOCGEN_SERVICE_URL", "http://localhost:8007")
 
-# Pipeline state persistence file
-PIPELINE_STATE_FILE = "/tmp/docgen/pipeline_state.json"
+# Pipeline state persistence file - Project-relative path
+BASE_DIR = Path(__file__).resolve().parent.parent.parent
+PIPELINE_STATE_FILE = str(BASE_DIR / "data" / "pipeline" / "pipeline_state.json")
 
 
 # =============================================================================

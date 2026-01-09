@@ -6,6 +6,7 @@ import os
 from datetime import datetime, timedelta
 from uuid import uuid4
 
+from app.config import DATA_DIR
 from app.models.document import ExportFormat, ExportResult, ProcessedBatch
 
 logger = logging.getLogger(__name__)
@@ -23,7 +24,7 @@ class CSVExporter:
         """Generate CSV export."""
         export_id = uuid4()
         filename = f"claim_{batch.batch_id}_{template}.csv"
-        output_dir = "/tmp/docgen/exports"
+        output_dir = str(DATA_DIR / "exports")
         os.makedirs(output_dir, exist_ok=True)
         output_path = os.path.join(output_dir, filename)
 

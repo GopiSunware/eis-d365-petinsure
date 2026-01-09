@@ -1,0 +1,15 @@
+# Ignore all files in data directories except .gitignore and raw sample data
+*
+!.gitignore
+!.gitkeep
+
+# Keep directory structure
+!uploads/
+!uploads/.gitkeep
+!pipeline/
+!pipeline/.gitkeep
+
+# Keep raw sample data (synthetic data)
+!raw/
+!raw/*.json
+!claim_scenarios.json

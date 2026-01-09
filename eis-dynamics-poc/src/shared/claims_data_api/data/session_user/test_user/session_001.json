@@ -1,0 +1,21 @@
+{
+  "user_id": "test_user",
+  "session_id": "session_001",
+  "created_at": "2026-01-08T07:28:23.903339",
+  "updated_at": "2026-01-08T07:28:23.903350",
+  "messages": [
+    {
+      "role": "user",
+      "content": "Hello, what can you help me with?"
+    },
+    {
+      "role": "assistant",
+      "content": "Hello! Welcome to PetInsure360. I can assist you with various tasks related to pet insurance, including:\n\n- Getting personalized insurance quotes\n- Managing your pet profiles and policies\n- Submitting claims and uploading documents\n- Tracking claim status\n- Finding out about discounts and promotions\n\nFeel free to ask about anything specific you'd like help with!"
+    }
+  ],
+  "metadata": {
+    "provider": "openai",
+    "model": "gpt-4o-mini-2024-07-18",
+    "last_response_at": "2026-01-08T07:28:23.901195"
+  }
+}

@@ -42,10 +42,15 @@ async def create_customer(customer: CustomerCreate, request: Request):
     # Generate customer ID
     customer_id = f"CUST-{uuid.uuid4().hex[:8].upper()}"
 
+    # Get address from helper method (supports both 'address' and 'address_line1')
+    actual_address = customer.get_address()
+
     # Prepare data for storage
+    customer_dict = customer.model_dump(exclude={'address'})  # Exclude duplicate
     customer_data = {
         "customer_id": customer_id,
-        **customer.model_dump(),
+        **customer_dict,
+        "address_line1": actual_address,  # Use the resolved address
         "customer_since": datetime.utcnow().date().isoformat(),
         "customer_segment": "New",
         "lifetime_value": 0.0,

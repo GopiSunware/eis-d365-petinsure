@@ -1,5 +1,13 @@
 # Claude Code Configuration
 
+## ⚠️ CRITICAL: Read First
+
+**Before writing ANY code, read:** [`CRITICAL_RULES.md`](CRITICAL_RULES.md)
+
+**🚫 NEVER use system `/tmp/` folder** - Use project-relative paths only!
+
+---
+
 ## Project Overview
 
 This workspace contains two integrated pet insurance demo projects:
@@ -195,6 +203,18 @@ ms-dynamics/
 
 ### Individual Services
 See `ARCHITECTURE.md` for detailed port configuration.
+
+### CRITICAL: Troubleshooting Reference
+**Always check `TROUBLESHOOTING.md` for common issues:**
+- WebSocket fails → Use `socket_app` not `app` for PetInsure360 backend
+- CORS errors → EIS services need `["*"]` fallback for cors_origins
+- Chat API 404 → Chat is on port **8000**, not 8003 or 8008
+- Missing services → All 12 services must run (3 PetInsure + 7 EIS backend + 2 EIS frontend)
+
+### Complete Port Reference
+**PetInsure360:** 3000 (Portal), 3001 (BI), 3002 (Backend + Socket.IO)
+**EIS Dynamics Backend:** 8000 (Claims API + Chat), 8002, 8003, 8005, 8006, 8007, 8008
+**EIS Dynamics Frontend:** 8080 (Agent Portal), 8081 (Admin Portal)
 
 ## Coding Conventions
 

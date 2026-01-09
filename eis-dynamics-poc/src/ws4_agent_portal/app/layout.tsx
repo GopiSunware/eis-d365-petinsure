@@ -4,6 +4,7 @@ import "./globals.css";
 import { Providers } from "./providers";
 import { Sidebar } from "@/components/Sidebar";
 import { Header } from "@/components/Header";
+import { ChatProvider } from "@/components/ChatProvider";
 
 const spaceGrotesk = Space_Grotesk({
   subsets: ["latin"],
@@ -37,13 +38,15 @@ export default function RootLayout({
     <html lang="en" className={`${spaceGrotesk.variable} ${plusJakarta.variable} ${jetbrainsMono.variable}`}>
       <body className="font-body antialiased">
         <Providers>
-          <div className="flex h-screen bg-gradient-subtle">
-            <Sidebar />
-            <div className="flex-1 flex flex-col overflow-hidden">
-              <Header />
-              <main className="flex-1 overflow-y-auto p-6">{children}</main>
+          <ChatProvider>
+            <div className="flex h-screen bg-gradient-subtle">
+              <Sidebar />
+              <div className="flex-1 flex flex-col overflow-hidden">
+                <Header />
+                <main id="main-content" className="flex-1 overflow-y-auto p-6">{children}</main>
+              </div>
             </div>
-          </div>
+          </ChatProvider>
         </Providers>
       </body>
     </html>

@@ -1,8 +1,14 @@
 """Configuration for DocGen Service."""
 
+import os
 from functools import lru_cache
+from pathlib import Path
 from typing import List, Optional
 from pydantic_settings import BaseSettings
+
+# Get the base directory for this service (ws7_docgen)
+BASE_DIR = Path(__file__).resolve().parent.parent
+DATA_DIR = BASE_DIR / "data"
 
 
 class Settings(BaseSettings):
@@ -34,14 +40,14 @@ class Settings(BaseSettings):
     DOCGEN_STORAGE_CONTAINER: str = "docgen-uploads"
     DOCGEN_EXPORT_CONTAINER: str = "docgen-exports"
 
-    # Local Storage (fallback)
-    LOCAL_STORAGE_PATH: str = "/tmp/docgen/storage"
+    # Local Storage (fallback) - Project-relative paths
+    LOCAL_STORAGE_PATH: str = str(DATA_DIR / "storage")
     USE_LOCAL_STORAGE: bool = True  # Set to False in production
 
     # ZIP Processing
     MAX_ZIP_SIZE_MB: int = 50
     MAX_FILES_PER_ZIP: int = 20
-    TEMP_DIR: str = "/tmp/docgen/temp"
+    TEMP_DIR: str = str(DATA_DIR / "temp")
 
     # Export
     EXPORT_URL_EXPIRY_HOURS: int = 24

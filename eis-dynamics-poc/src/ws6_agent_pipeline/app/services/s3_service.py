@@ -20,6 +20,14 @@ class S3DataLakeService:
     def __init__(self):
         self.bucket_name = os.getenv("S3_DATALAKE_BUCKET", "eis-dynamics-datalake-611670815873")
         self.region = os.getenv("AWS_REGION", "us-east-1")
+        self.use_local = os.getenv("USE_LOCAL_STORAGE", "false").lower() == "true"
+
+        # Check if local storage mode is enabled
+        if self.use_local:
+            logger.info("S3 DataLake disabled - using local storage mode")
+            self.s3_client = None
+            self.enabled = False
+            return
 
         # Initialize S3 client
         try:
@@ -27,6 +35,8 @@ class S3DataLakeService:
                 "s3",
                 region_name=self.region
             )
+            # Test if credentials work
+            self.s3_client.list_buckets()
             self.enabled = True
             logger.info(f"S3 DataLake initialized: {self.bucket_name}")
         except Exception as e:

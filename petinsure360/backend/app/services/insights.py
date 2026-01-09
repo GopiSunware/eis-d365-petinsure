@@ -475,6 +475,14 @@ class InsightsService:
         filtered = self._filter_by_customer(self._pets, customer_id)
         return clean_for_json(filtered.to_dict('records'))
 
+    # Get all pets (for convenience endpoint)
+    def get_all_pets(self, limit: int = 100) -> List[Dict[str, Any]]:
+        """Get all pets in the system."""
+        self._ensure_data()
+        if self._pets is None:
+            return []
+        return clean_for_json(self._pets.head(limit).to_dict('records'))
+
     # Get policies for a customer
     def get_customer_policies(self, customer_id: str) -> List[Dict[str, Any]]:
         """Get all policies for a specific customer."""
@@ -501,6 +509,22 @@ class InsightsService:
 
         filtered = self._filter_by_customer(self._claims, customer_id)
         return clean_for_json(filtered.to_dict('records'))
+
+    # Get recent claims (for convenience endpoint)
+    def get_recent_claims(self, limit: int = 100) -> List[Dict[str, Any]]:
+        """Get recent claims sorted by submission date."""
+        self._ensure_data()
+        if self._claims is None:
+            return []
+
+        # Sort by created_at or submitted_date descending
+        df = self._claims.copy()
+        if 'created_at' in df.columns:
+            df = df.sort_values('created_at', ascending=False)
+        elif 'submitted_date' in df.columns:
+            df = df.sort_values('submitted_date', ascending=False)
+
+        return clean_for_json(df.head(limit).to_dict('records'))
 
     # Claims Analytics
     def get_claims_analytics(

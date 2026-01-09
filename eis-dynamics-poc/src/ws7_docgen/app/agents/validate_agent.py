@@ -6,7 +6,7 @@ from datetime import datetime, timedelta
 from decimal import Decimal
 from typing import Any, Dict, List, Optional, Set, Tuple
 
-from app.config import settings
+from app.config import settings, DATA_DIR
 from app.models.document import (
     BillingCalculation,
     FraudIndicator,
@@ -865,7 +865,7 @@ class ValidateAgent:
 def _load_fingerprints():
     import json
     import os
-    fp_file = "/tmp/docgen/fingerprints.json"
+    fp_file = str(DATA_DIR / "batches" / "fingerprints.json")
     if os.path.exists(fp_file):
         try:
             with open(fp_file, "r") as f:
@@ -886,8 +886,9 @@ def _save_fingerprints():
             return obj.isoformat()
         raise TypeError(f"Object of type {type(obj)} is not JSON serializable")
 
-    os.makedirs("/tmp/docgen", exist_ok=True)
-    with open("/tmp/docgen/fingerprints.json", "w") as f:
+    fp_file = str(DATA_DIR / "batches" / "fingerprints.json")
+    os.makedirs(os.path.dirname(fp_file), exist_ok=True)
+    with open(fp_file, "w") as f:
         json.dump(_document_fingerprints, f, default=serialize)
 
 # Initialize from file

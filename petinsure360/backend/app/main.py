@@ -4,24 +4,20 @@ FastAPI application with WebSocket support for real-time updates
 Writes data to Azure Data Lake Storage Gen2
 """
 
-from fastapi import FastAPI
+from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
-import socketio
 from contextlib import asynccontextmanager
+import uuid
 
 from app.api import customers, pets, policies, claims, insights, recommendations, pipeline, scenarios, docgen
 from app.services.storage import StorageService
 from app.services.insights import InsightsService
-
-# Socket.IO server
-sio = socketio.AsyncServer(
-    async_mode='asgi',
-    cors_allowed_origins='*'
-)
+from app.services.websocket import WebSocketManager
 
 # Initialize services
 storage_service = StorageService()
 insights_service = InsightsService()
+ws_manager = WebSocketManager()
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -30,13 +26,15 @@ async def lifespan(app: FastAPI):
     print("PetInsure360 API Starting...")
     print(f"Storage configured: {storage_service.account_name}")
 
-    # Load persisted demo data from Azure Storage
-    try:
-        loaded = await insights_service.load_persisted_demo_data(storage_service)
-        if any(loaded.values()):
-            print(f"Restored demo data: {loaded['customers']} customers, {loaded['pets']} pets, {loaded['claims']} claims")
-    except Exception as e:
-        print(f"Note: Could not load persisted demo data: {e}")
+    # Load persisted demo data from Azure Storage (DISABLED for local development)
+    # IMPORTANT: This loads OLD claims from Azure that keep reappearing!
+    # To re-enable Azure data, uncomment the lines below
+    # try:
+    #     loaded = await insights_service.load_persisted_demo_data(storage_service)
+    #     if any(loaded.values()):
+    #         print(f"Restored demo data: {loaded['customers']} customers, {loaded['pets']} pets, {loaded['claims']} claims")
+    # except Exception as e:
+    #     print(f"Note: Could not load persisted demo data: {e}")
 
     # Auto-seed demo users on startup (DEMO-001, DEMO-002, DEMO-003)
     try:
@@ -72,12 +70,13 @@ async def lifespan(app: FastAPI):
     # Shutdown
     print("PetInsure360 API Shutting down...")
 
-# FastAPI app
+# FastAPI app - redirect_slashes=False to handle URLs with/without trailing slash
 app = FastAPI(
     title="PetInsure360 API",
     description="Pet Insurance Data Platform - Data Ingestion & BI Insights API",
     version="1.0.0",
     lifespan=lifespan
+    # redirect_slashes=True by default
 )
 
 # CORS middleware
@@ -88,9 +87,6 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
-# Mount Socket.IO
-socket_app = socketio.ASGIApp(sio, other_asgi_app=app)
 
 # Include routers
 app.include_router(customers.router, prefix="/api/customers", tags=["Customers"])
@@ -105,7 +101,7 @@ app.include_router(docgen.router, prefix="/api/docgen", tags=["DocGen - AI Docum
 
 # Make services available to routes
 app.state.storage = storage_service
-app.state.sio = sio
+app.state.ws_manager = ws_manager
 app.state.insights = insights_service
 
 @app.get("/", tags=["Health"])
@@ -129,31 +125,53 @@ async def health_check():
         "websocket": "enabled"
     }
 
-# Socket.IO event handlers
-@sio.event
-async def connect(sid, environ):
-    """Client connected to WebSocket."""
-    print(f"Client connected: {sid}")
-    await sio.emit('connected', {'message': 'Connected to PetInsure360 real-time updates'}, to=sid)
 
-@sio.event
-async def disconnect(sid):
-    """Client disconnected from WebSocket."""
-    print(f"Client disconnected: {sid}")
+# WebSocket endpoint
+@app.websocket("/ws")
+async def websocket_endpoint(websocket: WebSocket):
+    """Native WebSocket endpoint for real-time updates."""
+    connection_id = str(uuid.uuid4())
+    await ws_manager.connect(websocket, connection_id)
 
-@sio.event
-async def subscribe_claims(sid, data):
-    """Subscribe to claim status updates."""
-    customer_id = data.get('customer_id')
-    if customer_id:
-        await sio.enter_room(sid, f"customer_{customer_id}")
-        await sio.emit('subscribed', {'room': f"customer_{customer_id}"}, to=sid)
+    try:
+        # Send welcome message
+        await websocket.send_json({
+            "type": "connected",
+            "data": {
+                "message": "Connected to PetInsure360 real-time updates",
+                "connection_id": connection_id
+            }
+        })
 
-# Export socket app for uvicorn
-def get_application():
-    """Return the ASGI application with Socket.IO."""
-    return socket_app
+        # Keep connection alive and handle incoming messages
+        while True:
+            data = await websocket.receive_json()
+
+            # Handle different message types
+            action = data.get("action")
+
+            if action == "ping":
+                await websocket.send_json({"type": "pong", "data": {}})
+            elif action == "subscribe_claims":
+                customer_id = data.get("customer_id")
+                await websocket.send_json({
+                    "type": "subscribed",
+                    "data": {"customer_id": customer_id}
+                })
+            else:
+                # Echo back unknown actions for debugging
+                await websocket.send_json({
+                    "type": "echo",
+                    "data": data
+                })
+
+    except WebSocketDisconnect:
+        ws_manager.disconnect(connection_id)
+        print(f"Client disconnected: {connection_id}")
+    except Exception as e:
+        print(f"WebSocket error for {connection_id}: {e}")
+        ws_manager.disconnect(connection_id)
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run("app.main:socket_app", host="0.0.0.0", port=3002, reload=True)
+    uvicorn.run("app.main:app", host="0.0.0.0", port=3002, reload=True)

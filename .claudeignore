@@ -1,0 +1,29 @@
+# Files to ignore in Claude Code context
+# This helps reduce noise and focus on relevant code
+
+# Node modules
+**/node_modules/
+**/.next/
+**/dist/
+**/build/
+
+# Python cache
+**/__pycache__/
+**/*.pyc
+**/.pytest_cache/
+
+# IDE
+**/.vscode/
+**/.idea/
+
+# OS files
+**/.DS_Store
+**/Thumbs.db
+
+# Logs (but keep them searchable if needed)
+# **/*.log
+
+# IMPORTANT: System /tmp is NOT part of our project
+# All our data is in project-relative paths:
+# - eis-dynamics-poc/src/ws7_docgen/data/
+# - petinsure360/backend/data/
