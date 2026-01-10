@@ -1,6 +1,6 @@
 """
-Cost Monitoring Service - Provides mock cost data for Admin Portal.
-In production, this would connect to AWS Cost Explorer and Azure Cost Management APIs.
+Cost Monitoring Service - Connects to real Azure Cost Management and AWS Cost Explorer APIs.
+Falls back to mock data when credentials are not configured.
 """
 
 import logging
@@ -11,8 +11,15 @@ from enum import Enum
 from fastapi import APIRouter, Query
 from pydantic import BaseModel
 
+from .azure_cost_service import get_azure_cost_service
+from .aws_cost_service import get_aws_cost_service
+
 logger = logging.getLogger(__name__)
 router = APIRouter()
+
+# Initialize real cost services
+azure_cost_svc = get_azure_cost_service()
+aws_cost_svc = get_aws_cost_service()
 
 
 # ==================== ENUMS ====================
@@ -205,17 +212,42 @@ async def get_cost_dashboard():
     prev_month_end = month_start - timedelta(days=1)
     prev_month_start = prev_month_end.replace(day=1)
 
-    # Current month data
-    azure_summary = generate_mock_azure_summary(month_start, today)
-    aws_summary = generate_mock_aws_summary(month_start, today)
+    # Try real services first, fall back to mock
+    azure_real = await azure_cost_svc.get_cost_summary(month_start, today)
+    aws_real = await aws_cost_svc.get_cost_summary(month_start, today)
 
-    # Previous month data
+    # Use real data if available, otherwise mock
+    if not azure_real.is_mock_data:
+        azure_summary = CostSummary(
+            provider="azure",
+            total_cost=azure_real.total_cost,
+            period_start=azure_real.period_start,
+            period_end=azure_real.period_end,
+            by_service=azure_real.by_service,
+            is_mock_data=False,
+        )
+    else:
+        azure_summary = generate_mock_azure_summary(month_start, today)
+
+    if not aws_real.is_mock_data:
+        aws_summary = CostSummary(
+            provider="aws",
+            total_cost=aws_real.total_cost,
+            period_start=aws_real.period_start,
+            period_end=aws_real.period_end,
+            by_service=aws_real.by_service,
+            is_mock_data=False,
+        )
+    else:
+        aws_summary = generate_mock_aws_summary(month_start, today)
+
+    # Previous month data (use mock for comparison baseline)
     azure_prev = generate_mock_azure_summary(prev_month_start, prev_month_end)
     aws_prev = generate_mock_aws_summary(prev_month_start, prev_month_end)
 
     # Forecasts
-    azure_forecast = generate_mock_forecast("azure")
-    aws_forecast = generate_mock_forecast("aws")
+    azure_forecast = await azure_cost_svc.get_forecast(30)
+    aws_forecast = await aws_cost_svc.get_forecast(30)
 
     # Calculate totals
     combined_total = azure_summary.total_cost + aws_summary.total_cost
@@ -244,6 +276,10 @@ async def get_cost_dashboard():
         "AWS: AWS Bedrock": aws_summary.by_service.get("AWS Bedrock", 0),
     }
 
+    # Determine if using real or mock data
+    is_mock = azure_summary.is_mock_data and aws_summary.is_mock_data
+    forecast_is_mock = azure_forecast.is_mock_data and aws_forecast.is_mock_data
+
     return CostDashboardData(
         azure_summary=azure_summary,
         aws_summary=aws_summary,
@@ -258,11 +294,11 @@ async def get_cost_dashboard():
             forecast_period_end=today.replace(day=28) + timedelta(days=4),
             forecasted_cost=round(azure_forecast.forecasted_cost + aws_forecast.forecasted_cost, 2),
             confidence_level=0.75,
-            is_mock_data=True,
+            is_mock_data=forecast_is_mock,
         ),
         ai_ml_costs=ai_ml_costs,
         ai_ml_total=round(sum(ai_ml_costs.values()), 2),
-        is_mock_data=True,
+        is_mock_data=is_mock,
     )
 
 
@@ -278,6 +314,18 @@ async def get_azure_cost_summary(
     if not end_date:
         end_date = date.today()
 
+    # Try real service first
+    real_summary = await azure_cost_svc.get_cost_summary(start_date, end_date, granularity)
+    if not real_summary.is_mock_data:
+        return CostSummary(
+            provider="azure",
+            total_cost=real_summary.total_cost,
+            period_start=real_summary.period_start,
+            period_end=real_summary.period_end,
+            by_service=real_summary.by_service,
+            is_mock_data=False,
+        )
+
     return generate_mock_azure_summary(start_date, end_date)
 
 
@@ -292,6 +340,18 @@ async def get_aws_cost_summary(
         start_date = date.today().replace(day=1)
     if not end_date:
         end_date = date.today()
+
+    # Try real service first
+    real_summary = await aws_cost_svc.get_cost_summary(start_date, end_date, granularity)
+    if not real_summary.is_mock_data:
+        return CostSummary(
+            provider="aws",
+            total_cost=real_summary.total_cost,
+            period_start=real_summary.period_start,
+            period_end=real_summary.period_end,
+            by_service=real_summary.by_service,
+            is_mock_data=False,
+        )
 
     return generate_mock_aws_summary(start_date, end_date)
 

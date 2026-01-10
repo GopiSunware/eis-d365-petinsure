@@ -32,13 +32,19 @@ Enterprise insurance platform with AI-powered claims processing.
 ### Deployment Scripts
 
 ```bash
-./deploy-aws.sh              # Deploy all services to AWS
-./deploy-aws.sh status       # Check deployment status
-./destroy-aws.sh             # Clean up all AWS resources
-./destroy-aws.sh --dry-run   # Preview what would be deleted
+./scripts/validate-deployment.sh  # Pre-deployment validation (run first!)
+./deploy-aws.sh                   # Deploy all services to AWS
+./deploy-aws.sh status            # Check deployment status
+./destroy-aws.sh                  # Clean up all AWS resources
+./destroy-aws.sh --dry-run        # Preview what would be deleted
 ```
 
-See [AWS_DEPLOYMENT_FINAL_STATUS.md](AWS_DEPLOYMENT_FINAL_STATUS.md) for complete deployment details.
+**Before deploying:** Run validation to catch common issues:
+```bash
+./scripts/validate-deployment.sh
+```
+
+See [DEPLOYMENT_CHECKLIST.md](DEPLOYMENT_CHECKLIST.md) for known issues and [AWS_DEPLOYMENT_FINAL_STATUS.md](AWS_DEPLOYMENT_FINAL_STATUS.md) for complete deployment details.
 
 ---
 
@@ -76,6 +82,7 @@ STATE_FILE = BASE_DIR / "data" / "state.json"
 | File | Purpose |
 |------|---------|
 | **[CRITICAL_RULES.md](CRITICAL_RULES.md)** | 🚫 Never use /tmp - MUST READ |
+| **[DEPLOYMENT_CHECKLIST.md](DEPLOYMENT_CHECKLIST.md)** | Pre-deployment validation & known issues |
 | [AWS_DEPLOYMENT_FINAL_STATUS.md](AWS_DEPLOYMENT_FINAL_STATUS.md) | Current AWS deployment status |
 | [CLAUDE.md](CLAUDE.md) | Claude Code configuration & skills |
 | [ARCHITECTURE.md](ARCHITECTURE.md) | System architecture & tech stack |

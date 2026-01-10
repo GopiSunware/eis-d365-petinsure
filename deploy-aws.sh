@@ -45,7 +45,7 @@ declare -A NEXTJS_FRONTENDS=(
 # App Runner Service ARNs (update after first deployment)
 declare -A SERVICE_ARNS=(
     ["claims-data-api"]="arn:aws:apprunner:us-east-1:611670815873:service/claims-data-api/b6e7e21cdb564c78bc3e69e9cd76f61d"
-    ["agent-pipeline"]="arn:aws:apprunner:us-east-1:611670815873:service/agent-pipeline/REPLACE_WITH_ARN"
+    ["agent-pipeline"]="arn:aws:apprunner:us-east-1:611670815873:service/agent-pipeline/fd9ebd34550a4122881fc7e42f71b1be"
     ["petinsure360-backend"]="arn:aws:apprunner:us-east-1:611670815873:service/petinsure360-backend/88915082265448db85d506782d32eaaf"
 )
 
@@ -99,6 +99,34 @@ check_prerequisites() {
     fi
 
     log_success "Prerequisites check passed"
+}
+
+# =============================================================================
+# PRE-DEPLOYMENT VALIDATION
+# =============================================================================
+
+run_validation() {
+    log_info "=========================================="
+    log_info "Running Pre-Deployment Validation"
+    log_info "=========================================="
+
+    if [ -f "$SCRIPT_DIR/scripts/validate-deployment.sh" ]; then
+        if ! "$SCRIPT_DIR/scripts/validate-deployment.sh"; then
+            log_error "Validation failed! See errors above."
+            log_info "Run: ./scripts/validate-deployment.sh for details"
+            log_info "See: DEPLOYMENT_CHECKLIST.md for fixes"
+            echo ""
+            read -p "Continue anyway? (y/N): " -n 1 -r
+            echo
+            if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+                log_info "Deployment aborted. Fix issues and retry."
+                exit 1
+            fi
+            log_warning "Continuing despite validation errors..."
+        fi
+    else
+        log_warning "Validation script not found, skipping validation"
+    fi
 }
 
 ecr_login() {
@@ -555,6 +583,11 @@ show_status() {
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 check_prerequisites
+
+# Run validation for full deployments (skip for status checks)
+if [[ "${1:-all}" != "status" ]]; then
+    run_validation
+fi
 
 case "${1:-all}" in
     "all")

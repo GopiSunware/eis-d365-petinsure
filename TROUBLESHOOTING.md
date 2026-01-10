@@ -4,6 +4,33 @@ Common issues and solutions for the PetInsure360 and EIS Dynamics projects.
 
 ---
 
+## Quick Links
+
+| Document | Purpose |
+|----------|---------|
+| **[DEPLOYMENT_CHECKLIST.md](DEPLOYMENT_CHECKLIST.md)** | Pre-deployment validation & known issues |
+| [ARCHITECTURE.md](ARCHITECTURE.md) | System architecture reference |
+| [ENV_VARIABLES.md](ENV_VARIABLES.md) | Environment variable reference |
+| [PORT_CONFIG.md](PORT_CONFIG.md) | Service ports & URLs |
+
+---
+
+## Pre-Deployment Validation
+
+**Always run before deploying:**
+```bash
+./scripts/validate-deployment.sh
+```
+
+This script checks:
+- Dockerfile copies synthetic data
+- Environment files have AWS URLs (not localhost)
+- Service ARNs are configured
+- Required API services exist
+- Demo login is configured
+
+---
+
 ## CRITICAL: Complete Service List
 
 **There are 12 total services that must be running for full functionality.**
@@ -736,3 +763,57 @@ curl -s -o /dev/null -w "%{http_code}" http://petinsure360-bi-dashboard.s3-websi
 | `.env.production` | Production values | `vite build` |
 
 **Build behavior:** `.env.local` ALWAYS overrides `.env.production`!
+
+---
+
+## Deployment Issues Quick Fix Reference
+
+### Issue: Synthetic Data Missing (No Customers/Claims)
+```bash
+# Check: Does Dockerfile copy data?
+grep "COPY data/raw" petinsure360/backend/Dockerfile
+# Fix: Add to Dockerfile: COPY data/raw/ ./data/raw/
+# Rebuild & redeploy
+```
+
+### Issue: Demo Login Not Pre-filled
+```bash
+# Check: LoginPage default email
+grep "useState" petinsure360/frontend/src/pages/LoginPage.jsx | grep email
+# Fix: Change useState('') to useState('demo@demologin.com')
+```
+
+### Issue: Admin Portal 404 Errors
+```bash
+# Check: Required services exist
+ls eis-dynamics-poc/src/shared/claims_data_api/app/services/ | grep -E "admin_config|approvals|audit"
+# Fix: Create missing services, register in main.py
+```
+
+### Issue: Frontends Calling Localhost
+```bash
+# Check: .env.production has AWS URLs
+grep localhost petinsure360/frontend/.env.production
+# Fix: Update to AWS URLs, deploy script handles .env.local swap
+```
+
+### Issue: AI Providers Disabled
+```bash
+# Check: Chat providers status
+curl -s https://9wvcjmrknc.us-east-1.awsapprunner.com/api/chat/providers
+# Fix: Update App Runner env vars with API keys (see DEPLOYMENT_CHECKLIST.md)
+```
+
+### Issue: Service ARN Not Configured
+```bash
+# Check: ARN placeholders
+grep "REPLACE_WITH_ARN" deploy-aws.sh
+# Fix: Get ARNs from AWS and update deploy-aws.sh
+aws apprunner list-services --profile sunwaretech --query 'ServiceSummaryList[*].[ServiceName,ServiceArn]' --output table
+```
+
+---
+
+## Full Issue Details
+
+For comprehensive documentation of all deployment issues with root causes and prevention strategies, see **[DEPLOYMENT_CHECKLIST.md](DEPLOYMENT_CHECKLIST.md)**.
