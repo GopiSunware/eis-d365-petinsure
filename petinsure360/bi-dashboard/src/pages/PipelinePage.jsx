@@ -313,7 +313,7 @@ export default function PipelinePage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Legacy Pipeline (Rule-Based)</h1>
+          <h1 className="text-2xl font-bold text-gray-900">Rule Engine Pipeline</h1>
           <p className="text-gray-500">Traditional Medallion Lakehouse Architecture (Bronze → Silver → Gold)</p>
         </div>
         <div className="flex items-center gap-4">

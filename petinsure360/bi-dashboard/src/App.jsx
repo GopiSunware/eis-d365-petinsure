@@ -52,7 +52,7 @@ function App() {
     { path: '/customers', icon: Users, label: 'Customer 360' },
     { path: '/claims', icon: FileText, label: 'Claims Analytics' },
     { path: '/risks', icon: AlertTriangle, label: 'Risk Analysis' },
-    { path: '/pipeline', icon: Database, label: 'Legacy Pipeline' },
+    { path: '/pipeline', icon: Database, label: 'Rule Engine Pipeline' },
     { path: '/agent-pipeline', icon: Bot, label: 'Agent Pipeline' },
     { path: '/comparison', icon: GitCompare, label: 'Rule vs Agent' },
     { path: '/docgen', icon: Upload, label: 'DocGen Admin' },

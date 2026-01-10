@@ -32,7 +32,7 @@ export default function ClaimsPage() {
       let allClaims = (response.data.claims || []).map(c => ({
         ...c,
         processing_method: 'rule',
-        pipeline_source: 'Legacy Pipeline'
+        pipeline_source: 'Rule Engine Pipeline'
       }))
 
       // Fetch from pipeline pending claims (Bronze/Silver)
@@ -43,7 +43,7 @@ export default function ClaimsPage() {
         const mapPipelineClaim = (c, layer) => ({
           ...c,
           processing_method: 'rule',
-          pipeline_source: 'Legacy Pipeline',
+          pipeline_source: 'Rule Engine Pipeline',
           status: layer,
           submission_date: c.ingestion_timestamp || c.service_date
         })

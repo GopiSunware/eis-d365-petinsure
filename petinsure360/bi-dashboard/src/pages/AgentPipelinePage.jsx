@@ -337,7 +337,7 @@ export default function AgentPipelinePage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Agent Pipeline (AI-Driven)</h1>
-          <p className="text-gray-500">Claims processed by AI agents - parallel to Legacy Pipeline</p>
+          <p className="text-gray-500">Claims processed by AI agents - parallel to Rule Engine Pipeline</p>
         </div>
         <div className="flex items-center gap-4">
           <button

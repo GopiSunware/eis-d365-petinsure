@@ -102,6 +102,7 @@ app.include_router(docgen.router, prefix="/api/docgen", tags=["DocGen - AI Docum
 # Make services available to routes
 app.state.storage = storage_service
 app.state.ws_manager = ws_manager
+app.state.sio = ws_manager  # Alias for Socket.IO-style emit() calls
 app.state.insights = insights_service
 
 @app.get("/", tags=["Health"])

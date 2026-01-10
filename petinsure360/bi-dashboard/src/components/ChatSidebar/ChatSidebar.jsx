@@ -33,7 +33,7 @@ const getInitialMessage = (customerData, recentActivity, portalType = 'customer'
     content += `• 📊 Analyzing claims trends and KPIs\n`;
     content += `• 👥 Customer 360 insights\n`;
     content += `• ⚠️ Risk analysis and fraud detection\n`;
-    content += `• 🔄 Pipeline monitoring (Legacy vs Agent)\n`;
+    content += `• 🔄 Pipeline monitoring (Rule Engine vs Agent)\n`;
     content += `• ⚙️ AI model configuration\n\n`;
     content += `What would you like to explore?`;
     return { role: 'assistant', content };
