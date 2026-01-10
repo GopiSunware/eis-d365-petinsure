@@ -9,10 +9,13 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copy application code
 COPY app/ ./app/
 
-# Create data directories (but don't copy large data files)
-RUN mkdir -p data/local_storage data/pipeline data/uploads data/raw
+# Create data directories
+RUN mkdir -p data/local_storage data/pipeline data/uploads
 
-# Copy only the scenarios file (small and needed)
+# Copy synthetic demo data (customers, pets, policies, claims)
+COPY data/raw/ ./data/raw/
+
+# Copy scenarios file
 COPY data/claim_scenarios.json ./data/
 
 # Expose port

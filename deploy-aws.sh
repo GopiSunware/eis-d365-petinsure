@@ -46,7 +46,7 @@ declare -A NEXTJS_FRONTENDS=(
 declare -A SERVICE_ARNS=(
     ["claims-data-api"]="arn:aws:apprunner:us-east-1:611670815873:service/claims-data-api/b6e7e21cdb564c78bc3e69e9cd76f61d"
     ["agent-pipeline"]="arn:aws:apprunner:us-east-1:611670815873:service/agent-pipeline/REPLACE_WITH_ARN"
-    ["petinsure360-backend"]="arn:aws:apprunner:us-east-1:611670815873:service/petinsure360-backend/REPLACE_WITH_ARN"
+    ["petinsure360-backend"]="arn:aws:apprunner:us-east-1:611670815873:service/petinsure360-backend/88915082265448db85d506782d32eaaf"
 )
 
 # Colors for output
