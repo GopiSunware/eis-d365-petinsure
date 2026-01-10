@@ -5,7 +5,7 @@ import api from '../services/api'
 
 export default function LoginPage({ onLogin }) {
   const navigate = useNavigate()
-  const [email, setEmail] = useState('')
+  const [email, setEmail] = useState('demo@demologin.com')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
 
@@ -71,12 +71,12 @@ export default function LoginPage({ onLogin }) {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 className="input-field pl-10"
-                placeholder="Enter your registered email"
+                placeholder="demo@demologin.com"
                 required
               />
             </div>
             <p className="text-xs text-gray-500 mt-1">
-              Demo: Use the email you registered with
+              Demo: Use demo@demologin.com (pre-filled)
             </p>
           </div>
 

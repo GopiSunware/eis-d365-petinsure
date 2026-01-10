@@ -587,6 +587,44 @@ esac
 
 log_success "Deployment complete!"
 
+# =============================================================================
+# POST-DEPLOYMENT: SEED DEMO DATA
+# =============================================================================
+
+seed_demo_data() {
+    log_info "=========================================="
+    log_info "Seeding Demo Data"
+    log_info "=========================================="
+
+    # PetInsure360 Backend - Seed demo customers, pets, policies
+    log_info "Seeding PetInsure360 demo data..."
+    PETINSURE_URL="https://fucf3fwwwv.us-east-1.awsapprunner.com"
+
+    # Check if backend is healthy
+    if curl -s "$PETINSURE_URL/health" | grep -q "healthy"; then
+        # Seed demo data
+        SEED_RESULT=$(curl -s -X POST "$PETINSURE_URL/api/customers/seed-demo")
+        if echo "$SEED_RESULT" | grep -q "success"; then
+            log_success "Demo data seeded: $SEED_RESULT"
+        else
+            log_warning "Seed response: $SEED_RESULT"
+        fi
+    else
+        log_warning "PetInsure360 backend not healthy, skipping seed"
+    fi
+
+    echo ""
+    log_info "Demo Login Credentials:"
+    echo "  Primary:   demo@demologin.com"
+    echo "  Secondary: demo1@demologin.com"
+    echo "  Tertiary:  demo2@demologin.com"
+    echo ""
+    log_info "Each demo user has pets and policies pre-configured."
+}
+
+# Run demo data seeding
+seed_demo_data
+
 echo ""
 echo "=========================================="
 echo "DEPLOYED SERVICES"

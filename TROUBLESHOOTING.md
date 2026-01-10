@@ -362,6 +362,57 @@ Before testing, verify:
 
 ---
 
+## Demo Data & Login
+
+### Demo Login Credentials
+
+| Email | User | Description |
+|-------|------|-------------|
+| `demo@demologin.com` | Demo User | Primary demo account (default) |
+| `demo1@demologin.com` | Demo One | Secondary demo account |
+| `demo2@demologin.com` | Demo Two | Tertiary demo account |
+
+### Demo User Data
+
+Each demo user comes with pre-configured pets and policies:
+
+**DEMO-001 (demo@demologin.com)**:
+- Pets: Buddy (Golden Retriever), Whiskers (Persian Cat)
+- Policies: Premium Plus ($89.99/mo), Standard ($45.99/mo)
+
+**DEMO-002 (demo1@demologin.com)**:
+- Pets: Max (German Shepherd), Luna (Siamese Cat)
+- Policies: Premium ($79.99/mo)
+
+**DEMO-003 (demo2@demologin.com)**:
+- Pets: Charlie (Labrador)
+- Policies: Basic ($29.99/mo)
+
+### Seeding Demo Data
+
+Demo data is auto-seeded on PetInsure360 backend startup. To manually reseed:
+
+```bash
+# Seed demo data via API
+curl -X POST https://fucf3fwwwv.us-east-1.awsapprunner.com/api/customers/seed-demo
+
+# Or locally
+curl -X POST http://localhost:3002/api/customers/seed-demo
+```
+
+The deploy script automatically seeds demo data after deployment. See `deploy-aws.sh`.
+
+### Missing Demo Data After Deployment
+
+If demo users don't have pets/policies:
+1. The backend container may have restarted (in-memory data lost)
+2. Run the seed endpoint: `POST /api/customers/seed-demo`
+3. Or redeploy with `./deploy-aws.sh petinsure360-backend`
+
+**Note:** Demo users always work for login because they're defined statically in `customers.py`. However, their pets and policies need to be seeded into the insights service.
+
+---
+
 ## AWS/Azure Deployment Issues
 
 ### 1. Frontends Calling Localhost in Production
