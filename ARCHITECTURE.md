@@ -261,12 +261,54 @@ az login
 | Customer Portal | http://localhost:3000 | User claim submission |
 | BI Dashboard | http://localhost:3001 | Analytics & insights |
 | PetInsure Backend | http://localhost:3002 | API + Storage |
-| Claims Data API | http://localhost:8000 | EIS data gateway |
+| Claims Data API | http://localhost:8000 | **Unified API Gateway** |
 | AI Claims | http://localhost:8002 | Fraud detection |
 | Integration | http://localhost:8003 | Mock EIS APIs |
 | Rating Engine | http://localhost:8005 | Premium calculation |
 | Agent Pipeline | http://localhost:8006 | Medallion processing |
 | DocGen | http://localhost:8007 | Document processing |
-| Admin Backend | http://localhost:8008 | Admin API |
+| Admin Backend | http://localhost:8008 | Admin API (local only) |
 | Agent Portal | http://localhost:8080 | Claims agents UI |
 | Admin Portal | http://localhost:8081 | Admin UI |
+
+---
+
+## Claims Data API - Unified Gateway (Port 8000)
+
+The Claims Data API serves as the **single unified gateway** for all backend services in AWS deployment. It consolidates endpoints from multiple services to simplify deployment and reduce infrastructure complexity.
+
+### Registered Service Routers
+
+| Router | Prefix | Description |
+|--------|--------|-------------|
+| PolicyService | `/api/v1/policies` | Policy management (6 endpoints) |
+| CustomerService | `/api/v1/customers` | Customer data (6 endpoints) |
+| PetService | `/api/v1/pets` | Pet records (5 endpoints) |
+| ProviderService | `/api/v1/providers` | Vet provider data (5 endpoints) |
+| FraudService | `/api/v1/fraud` | Fraud detection (6 endpoints) |
+| MedicalRefService | `/api/v1/medical` | Medical codes (5 endpoints) |
+| BillingService | `/api/v1/billing` | Billing records (5 endpoints) |
+| ValidationService | `/api/v1/validation` | AI-powered validation (7 endpoints) |
+| RatingService | `/api/v1/rating` | Premium calculation (6 endpoints) |
+| DocGenService | `/api/v1/docgen` | Document generation (8 endpoints) |
+| AIConfigService | `/api/v1/claims/ai` | AI provider config (4 endpoints) |
+| InsightsService | `/api/insights` | Analytics insights |
+| PipelineService | `/api/pipeline` | Pipeline management |
+| DataSourceService | `/api/data-source` | Data source toggle |
+| **CostsService** | `/api/v1/costs` | Cloud cost monitoring (8 endpoints) |
+| **AdminConfigService** | `/api/v1/config` | Admin configuration (15+ endpoints) |
+| **ApprovalsService** | `/api/v1/approvals` | Approval workflows (6 endpoints) |
+| **AuditService** | `/api/v1/audit` | Audit logging (6 endpoints) |
+| ChatService | `/api/chat` | AI chat interface |
+| DataLakeService | `/api/v1/datalake` | Data lake operations |
+
+### AWS Deployment URLs
+
+| Service | URL | Description |
+|---------|-----|-------------|
+| Claims Data API | https://9wvcjmrknc.us-east-1.awsapprunner.com | Unified backend gateway |
+| PetInsure360 Backend | https://fucf3fwwwv.us-east-1.awsapprunner.com | Pipeline & WebSocket |
+| Agent Pipeline | https://qi2p3x5gsm.us-east-1.awsapprunner.com | LangGraph agents |
+| EIS Agent Portal | http://eis-dynamics-frontend.s3-website-us-east-1.amazonaws.com | Agent UI |
+| EIS Admin Portal | http://eis-admin-portal.s3-website-us-east-1.amazonaws.com | Admin UI |
+| BI Dashboard | http://petinsure360-bi-dashboard.s3-website-us-east-1.amazonaws.com | Analytics |

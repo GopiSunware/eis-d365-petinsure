@@ -71,7 +71,12 @@ class InsightsService:
         # Check if we should use local data or Synapse
         self.use_local_data = os.getenv('USE_LOCAL_DATA', 'true').lower() == 'true'
         self.synapse_connection = None
-        self.data_source = 'local'  # Track data source for pipeline UI
+        self.data_source = 'demo'  # Track data source for pipeline UI: 'demo', 'azure', 'synapse'
+
+        # Check if Azure ADLS is configured (separate from Synapse)
+        self.azure_storage_configured = bool(os.getenv('AZURE_STORAGE_KEY', ''))
+        if self.azure_storage_configured:
+            self.data_source = 'azure'  # We have Azure ADLS connection
 
         if data_path is None:
             # Look for data in multiple locations
@@ -102,7 +107,7 @@ class InsightsService:
             'silver_count': 0,
             'gold_count': 0,
             'last_refresh': None,
-            'data_source': 'local'
+            'data_source': self.data_source  # Use the detected data source
         }
 
         self._load_data()
@@ -205,8 +210,14 @@ class InsightsService:
 
         # Fall back to local CSV/JSON files
         print("Loading data from local files...")
-        self.data_source = 'local'
-        self._pipeline_metrics['data_source'] = 'local'
+        # Keep 'azure' if Azure ADLS is configured (data is cached locally but connected to Azure)
+        # Otherwise set to 'demo' for pure local mode
+        if not self.azure_storage_configured:
+            self.data_source = 'demo'
+            self._pipeline_metrics['data_source'] = 'demo'
+        else:
+            # Azure ADLS is configured, keep 'azure' status
+            self._pipeline_metrics['data_source'] = self.data_source
 
         try:
             # Load customers
@@ -918,7 +929,7 @@ class InsightsService:
             'data_quality': {
                 'completeness': 95.5,  # Would calculate from actual null counts
                 'accuracy': 98.2,
-                'freshness': 'Real-time' if self.data_source == 'synapse' else 'Cached'
+                'freshness': 'Real-time' if self.data_source in ('synapse', 'azure') else 'Cached'
             }
         }
 
@@ -942,7 +953,7 @@ class InsightsService:
                 {'from': 'gold', 'to': 'synapse', 'label': 'External Tables'},
                 {'from': 'synapse', 'to': 'dashboard', 'label': 'SQL Queries'}
             ],
-            'active_flow': self.data_source == 'synapse'
+            'active_flow': self.data_source in ('synapse', 'azure')
         }
 
     def refresh_data(self) -> bool:

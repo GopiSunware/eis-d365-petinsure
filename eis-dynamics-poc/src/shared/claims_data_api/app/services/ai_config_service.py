@@ -73,6 +73,15 @@ AVAILABLE_MODELS = [
     # Claude Models
     AIModelConfig(
         provider="claude",
+        model_id="claude-sonnet-4-20250514",
+        display_name="Claude Sonnet 4",
+        description="Latest Claude Sonnet with superior reasoning",
+        max_tokens=8192,
+        supports_vision=True,
+        supports_tools=True,
+    ),
+    AIModelConfig(
+        provider="claude",
         model_id="claude-3-5-sonnet-20241022",
         display_name="Claude 3.5 Sonnet",
         description="Most intelligent model, best for complex reasoning",
@@ -101,6 +110,24 @@ AVAILABLE_MODELS = [
     # OpenAI Models
     AIModelConfig(
         provider="openai",
+        model_id="gpt-4o",
+        display_name="GPT-4o",
+        description="Most capable GPT-4 with vision support",
+        max_tokens=4096,
+        supports_vision=True,
+        supports_tools=True,
+    ),
+    AIModelConfig(
+        provider="openai",
+        model_id="gpt-4o-mini",
+        display_name="GPT-4o Mini",
+        description="Fast and cost-effective GPT-4o variant",
+        max_tokens=4096,
+        supports_vision=True,
+        supports_tools=True,
+    ),
+    AIModelConfig(
+        provider="openai",
         model_id="gpt-4-turbo-preview",
         display_name="GPT-4 Turbo",
         description="Latest GPT-4 with improved performance",
@@ -115,15 +142,6 @@ AVAILABLE_MODELS = [
         description="Most capable GPT-4 model",
         max_tokens=8192,
         supports_vision=False,
-        supports_tools=True,
-    ),
-    AIModelConfig(
-        provider="openai",
-        model_id="gpt-4o",
-        display_name="GPT-4o",
-        description="Optimized GPT-4 with vision support",
-        max_tokens=4096,
-        supports_vision=True,
         supports_tools=True,
     ),
     AIModelConfig(

@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { api, AIConfig, AIModel } from "@/lib/api";
+import { api, AIConfig, AIModel, DataSourceType, DataSourceStatus } from "@/lib/api";
 import {
   Settings,
   Cpu,
@@ -13,6 +13,11 @@ import {
   Sparkles,
   Bot,
   Brain,
+  Database,
+  Cloud,
+  HardDrive,
+  RefreshCw,
+  Server,
 } from "lucide-react";
 
 export default function SettingsPage() {
@@ -24,6 +29,12 @@ export default function SettingsPage() {
   const [testResult, setTestResult] = useState<any>(null);
   const [testing, setTesting] = useState(false);
 
+  // Data source state
+  const [selectedDataSource, setSelectedDataSource] = useState<DataSourceType>("demo");
+  const [dataSourceTestResult, setDataSourceTestResult] = useState<any>(null);
+  const [testingDataSource, setTestingDataSource] = useState(false);
+  const [refreshingCache, setRefreshingCache] = useState(false);
+
   // Fetch current config
   const { data: config, isLoading: configLoading } = useQuery({
     queryKey: ["aiConfig"],
@@ -34,6 +45,20 @@ export default function SettingsPage() {
   const { data: modelsData, isLoading: modelsLoading } = useQuery({
     queryKey: ["aiModels"],
     queryFn: () => api.getAIModels(),
+  });
+
+  // Fetch data source status
+  const { data: dataSourceStatus, isLoading: dataSourceLoading } = useQuery({
+    queryKey: ["dataSourceStatus"],
+    queryFn: () => api.getDataSourceStatus(),
+  });
+
+  // Update data source mutation
+  const updateDataSource = useMutation({
+    mutationFn: (source: DataSourceType) => api.toggleDataSource(source),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["dataSourceStatus"] });
+    },
   });
 
   // Update config mutation
@@ -53,6 +78,13 @@ export default function SettingsPage() {
       setMaxTokens(config.max_tokens);
     }
   }, [config]);
+
+  // Initialize data source when status loads
+  useEffect(() => {
+    if (dataSourceStatus) {
+      setSelectedDataSource(dataSourceStatus.configuration.current_source);
+    }
+  }, [dataSourceStatus]);
 
   // Filter models by provider
   const filteredModels = modelsData?.models.filter(
@@ -87,6 +119,35 @@ export default function SettingsPage() {
       setTestResult({ status: "error", error: error.message });
     } finally {
       setTesting(false);
+    }
+  };
+
+  // Data source handlers
+  const handleDataSourceChange = async (source: DataSourceType) => {
+    setSelectedDataSource(source);
+    await updateDataSource.mutateAsync(source);
+  };
+
+  const handleTestDataSource = async () => {
+    setTestingDataSource(true);
+    setDataSourceTestResult(null);
+    try {
+      const result = await api.testDataSources();
+      setDataSourceTestResult(result);
+    } catch (error: any) {
+      setDataSourceTestResult({ error: error.message });
+    } finally {
+      setTestingDataSource(false);
+    }
+  };
+
+  const handleRefreshCache = async () => {
+    setRefreshingCache(true);
+    try {
+      await api.refreshCache();
+      queryClient.invalidateQueries({ queryKey: ["dataSourceStatus"] });
+    } finally {
+      setRefreshingCache(false);
     }
   };
 
@@ -328,6 +389,217 @@ export default function SettingsPage() {
               {testResult.error && (
                 <p className="mt-2 text-sm text-red-600">{testResult.error}</p>
               )}
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Data Source Configuration Card */}
+      <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+        <div className="bg-gradient-to-r from-purple-600 to-purple-700 px-6 py-4">
+          <div className="flex items-center space-x-3">
+            <Database className="h-6 w-6 text-white" />
+            <h2 className="text-lg font-semibold text-white">Data Source</h2>
+          </div>
+          <p className="text-purple-100 text-sm mt-1">
+            Toggle between demo data and Azure Gold Layer for claims, policies, and customer data
+          </p>
+        </div>
+
+        <div className="p-6 space-y-6">
+          {/* Data Source Selection */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-3">
+              Select Data Source
+            </label>
+            <div className="grid grid-cols-3 gap-4">
+              {/* Demo Data Option */}
+              <button
+                onClick={() => handleDataSourceChange("demo")}
+                disabled={updateDataSource.isPending}
+                className={`relative flex flex-col items-center p-4 rounded-lg border-2 transition-all ${
+                  selectedDataSource === "demo"
+                    ? "border-amber-500 bg-amber-50"
+                    : "border-gray-200 hover:border-amber-300"
+                }`}
+              >
+                <div className="h-12 w-12 rounded-lg bg-amber-100 flex items-center justify-center mb-2">
+                  <HardDrive className="h-6 w-6 text-amber-600" />
+                </div>
+                <h3 className="text-sm font-semibold text-gray-900">Demo Data</h3>
+                <p className="text-xs text-gray-500 text-center mt-1">Synthetic data for demos</p>
+                {selectedDataSource === "demo" && (
+                  <CheckCircle className="absolute top-2 right-2 h-5 w-5 text-amber-500" />
+                )}
+              </button>
+
+              {/* Azure Option */}
+              <button
+                onClick={() => handleDataSourceChange("azure")}
+                disabled={updateDataSource.isPending || !dataSourceStatus?.azure?.is_available}
+                className={`relative flex flex-col items-center p-4 rounded-lg border-2 transition-all ${
+                  selectedDataSource === "azure"
+                    ? "border-blue-500 bg-blue-50"
+                    : "border-gray-200 hover:border-blue-300"
+                } ${!dataSourceStatus?.azure?.is_available ? "opacity-50 cursor-not-allowed" : ""}`}
+              >
+                <div className="h-12 w-12 rounded-lg bg-blue-100 flex items-center justify-center mb-2">
+                  <Cloud className="h-6 w-6 text-blue-600" />
+                </div>
+                <h3 className="text-sm font-semibold text-gray-900">Azure Gold</h3>
+                <p className="text-xs text-gray-500 text-center mt-1">Production-like data</p>
+                {selectedDataSource === "azure" && (
+                  <CheckCircle className="absolute top-2 right-2 h-5 w-5 text-blue-500" />
+                )}
+                {!dataSourceStatus?.azure?.is_available && (
+                  <span className="absolute top-2 right-2 text-xs bg-red-100 text-red-600 px-2 py-0.5 rounded">
+                    Unavailable
+                  </span>
+                )}
+              </button>
+
+              {/* Hybrid Option */}
+              <button
+                onClick={() => handleDataSourceChange("hybrid")}
+                disabled={updateDataSource.isPending}
+                className={`relative flex flex-col items-center p-4 rounded-lg border-2 transition-all ${
+                  selectedDataSource === "hybrid"
+                    ? "border-green-500 bg-green-50"
+                    : "border-gray-200 hover:border-green-300"
+                }`}
+              >
+                <div className="h-12 w-12 rounded-lg bg-green-100 flex items-center justify-center mb-2">
+                  <Server className="h-6 w-6 text-green-600" />
+                </div>
+                <h3 className="text-sm font-semibold text-gray-900">Hybrid</h3>
+                <p className="text-xs text-gray-500 text-center mt-1">Azure + Demo fallback</p>
+                {selectedDataSource === "hybrid" && (
+                  <CheckCircle className="absolute top-2 right-2 h-5 w-5 text-green-500" />
+                )}
+              </button>
+            </div>
+          </div>
+
+          {/* Azure Status */}
+          {dataSourceStatus && (
+            <div className="bg-gray-50 rounded-lg p-4">
+              <h4 className="text-sm font-medium text-gray-700 mb-3">Azure Connection Status</h4>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                <div className="flex items-center">
+                  <span className={`h-2 w-2 rounded-full mr-2 ${
+                    dataSourceStatus.azure.is_available ? "bg-green-500" : "bg-red-500"
+                  }`} />
+                  <span className="text-gray-500">Status:</span>
+                  <span className={`ml-1 font-medium ${
+                    dataSourceStatus.azure.is_available ? "text-green-600" : "text-red-600"
+                  }`}>
+                    {dataSourceStatus.azure.is_available ? "Connected" : "Disconnected"}
+                  </span>
+                </div>
+                <div>
+                  <span className="text-gray-500">Storage:</span>
+                  <span className="ml-1 font-medium">{dataSourceStatus.azure.storage_account || "N/A"}</span>
+                </div>
+                <div>
+                  <span className="text-gray-500">Tables:</span>
+                  <span className="ml-1 font-medium">{dataSourceStatus.available_tables?.length || 0}</span>
+                </div>
+                <div>
+                  <span className="text-gray-500">Cache:</span>
+                  <span className="ml-1 font-medium">{dataSourceStatus.cache?.valid_entries || 0} entries</span>
+                </div>
+              </div>
+
+              {dataSourceStatus.available_tables?.length > 0 && (
+                <div className="mt-3 pt-3 border-t border-gray-200">
+                  <span className="text-xs text-gray-500">Available tables: </span>
+                  <span className="text-xs font-mono text-gray-600">
+                    {dataSourceStatus.available_tables.join(", ")}
+                  </span>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Action Buttons */}
+          <div className="flex items-center justify-between pt-4 border-t border-gray-200">
+            <div className="flex space-x-3">
+              <button
+                onClick={handleTestDataSource}
+                disabled={testingDataSource}
+                className="flex items-center px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50"
+              >
+                {testingDataSource ? (
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                ) : (
+                  <Zap className="h-4 w-4 mr-2" />
+                )}
+                Test Connection
+              </button>
+
+              <button
+                onClick={handleRefreshCache}
+                disabled={refreshingCache || !dataSourceStatus?.azure?.is_available}
+                className="flex items-center px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50"
+              >
+                {refreshingCache ? (
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                ) : (
+                  <RefreshCw className="h-4 w-4 mr-2" />
+                )}
+                Refresh Cache
+              </button>
+            </div>
+
+            {updateDataSource.isPending && (
+              <span className="text-sm text-gray-500 flex items-center">
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                Switching...
+              </span>
+            )}
+          </div>
+
+          {/* Test Result */}
+          {dataSourceTestResult && (
+            <div className={`mt-4 p-4 rounded-lg ${
+              dataSourceTestResult.azure?.health?.is_available
+                ? "bg-green-50 border border-green-200"
+                : "bg-yellow-50 border border-yellow-200"
+            }`}>
+              <div className="flex items-center mb-2">
+                {dataSourceTestResult.azure?.health?.is_available ? (
+                  <CheckCircle className="h-5 w-5 text-green-500 mr-2" />
+                ) : (
+                  <XCircle className="h-5 w-5 text-yellow-500 mr-2" />
+                )}
+                <span className="font-medium text-gray-700">Data Source Test Results</span>
+              </div>
+              <div className="grid grid-cols-2 gap-4 text-sm">
+                <div>
+                  <span className="text-gray-500">Azure:</span>
+                  <span className={`ml-2 font-medium ${
+                    dataSourceTestResult.azure?.health?.is_available ? "text-green-600" : "text-red-600"
+                  }`}>
+                    {dataSourceTestResult.azure?.health?.is_available ? "Available" : "Unavailable"}
+                  </span>
+                  {dataSourceTestResult.azure?.sample_data?.customer_360 && (
+                    <span className="ml-2 text-gray-400">
+                      ({dataSourceTestResult.azure.sample_data.customer_360.count} customers)
+                    </span>
+                  )}
+                </div>
+                <div>
+                  <span className="text-gray-500">Demo:</span>
+                  <span className="ml-2 font-medium text-green-600">
+                    {dataSourceTestResult.demo?.available ? "Available" : "Unavailable"}
+                  </span>
+                  {dataSourceTestResult.demo?.sample_data?.customers && (
+                    <span className="ml-2 text-gray-400">
+                      ({dataSourceTestResult.demo.sample_data.customers.count} customers)
+                    </span>
+                  )}
+                </div>
+              </div>
             </div>
           )}
         </div>

@@ -13,7 +13,7 @@ Features:
 
 import os
 import logging
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Dict, List, Any, Optional
 from enum import Enum
 
@@ -56,7 +56,7 @@ class DataSourceConfig:
         else:
             self._source = DataSourceType.DEMO
 
-        self._last_toggle = datetime.utcnow()
+        self._last_toggle = datetime.now(timezone.utc)
         self._toggle_count = 0
 
     @property
@@ -66,7 +66,7 @@ class DataSourceConfig:
     @source.setter
     def source(self, value: DataSourceType):
         self._source = value
-        self._last_toggle = datetime.utcnow()
+        self._last_toggle = datetime.now(timezone.utc)
         self._toggle_count += 1
         logger.info(f"Data source changed to: {value}")
 
@@ -119,6 +119,7 @@ class DataProvider:
             Dict with customers list and metadata
         """
         source_used = "demo"
+        azure_data = None  # Initialize to avoid NameError
 
         if self.config.use_azure:
             # Try Azure first
@@ -174,6 +175,7 @@ class DataProvider:
             Dict with claims list and metadata
         """
         source_used = "demo"
+        azure_data = None  # Initialize to avoid NameError
 
         if self.config.use_azure:
             azure_data = self.azure_service.read_parquet_table("claims_analytics")
@@ -196,21 +198,20 @@ class DataProvider:
                     "description": "Claims analytics from Azure Gold Layer"
                 }
 
-        # Fallback to demo
-        if self.config.use_demo or source_used == "demo":
-            store = get_data_store()
-            claims = store.get_claims()
+        # Fallback to demo data (Azure failed or not configured)
+        store = get_data_store()
+        claims = store.get_claims()
 
-            if status:
-                claims = [c for c in claims if c.get("status") == status]
+        if status:
+            claims = [c for c in claims if c.get("status") == status]
 
-            return {
-                "claims": claims[:limit],
-                "count": len(claims[:limit]),
-                "total": len(claims),
-                "source": "demo",
-                "description": "Claims from demo synthetic data"
-            }
+        return {
+            "claims": claims[:limit],
+            "count": len(claims[:limit]),
+            "total": len(claims),
+            "source": "demo",
+            "description": "Claims from demo synthetic data"
+        }
 
     def get_kpis(self, limit: int = 12) -> Dict:
         """
@@ -235,19 +236,18 @@ class DataProvider:
                     "description": "Monthly KPIs from Azure Gold Layer"
                 }
 
-        # Fallback to demo
-        if self.config.use_demo or source_used == "demo":
-            from app.services.insights_service import generate_monthly_kpis
-            store = get_data_store()
-            claims = store.get_claims()
-            customers = store.get_customers()
+        # Fallback to demo data (Azure failed or not configured)
+        from app.services.insights_service import generate_monthly_kpis
+        store = get_data_store()
+        claims = store.get_claims()
+        customers = store.get_customers()
 
-            kpis = generate_monthly_kpis(claims, customers, limit=limit)
-            return {
-                "kpis": kpis,
-                "source": "demo",
-                "description": "Monthly KPIs from demo synthetic data"
-            }
+        kpis = generate_monthly_kpis(claims, customers, limit=limit)
+        return {
+            "kpis": kpis,
+            "source": "demo",
+            "description": "Monthly KPIs from demo synthetic data"
+        }
 
     def get_risk_scores(self, limit: int = 100) -> Dict:
         """
@@ -281,42 +281,41 @@ class DataProvider:
                     "description": "Risk scores from Azure Gold Layer"
                 }
 
-        # Fallback to demo
-        if self.config.use_demo or source_used == "demo":
-            from app.services.insights_service import (
-                calculate_customer_metrics_fast,
-                _build_indexes
-            )
-            _build_indexes()
+        # Fallback to demo data (Azure failed or not configured)
+        from app.services.insights_service import (
+            calculate_customer_metrics_fast,
+            _build_indexes
+        )
+        _build_indexes()
 
-            store = get_data_store()
-            customers = store.get_customers()
+        store = get_data_store()
+        customers = store.get_customers()
 
-            risks = []
-            for customer in customers[:limit]:
-                metrics = calculate_customer_metrics_fast(customer)
-                risks.append({
-                    "customer_id": customer.get("customer_id"),
-                    "name": metrics.get("name"),
-                    "risk_category": metrics.get("customer_risk_score"),
-                    "loss_ratio": metrics.get("loss_ratio"),
-                    "total_claims": metrics.get("total_claims"),
-                    "claim_frequency": round(metrics.get("total_claims", 0) / 12, 2),
-                    "risk_factors": [],
-                })
+        risks = []
+        for customer in customers[:limit]:
+            metrics = calculate_customer_metrics_fast(customer)
+            risks.append({
+                "customer_id": customer.get("customer_id"),
+                "name": metrics.get("name"),
+                "risk_category": metrics.get("customer_risk_score"),
+                "loss_ratio": metrics.get("loss_ratio"),
+                "total_claims": metrics.get("total_claims"),
+                "claim_frequency": round(metrics.get("total_claims", 0) / 12, 2),
+                "risk_factors": [],
+            })
 
-            distribution = {}
-            for r in risks:
-                cat = r.get("risk_category", "Unknown")
-                distribution[cat] = distribution.get(cat, 0) + 1
+        distribution = {}
+        for r in risks:
+            cat = r.get("risk_category", "Unknown")
+            distribution[cat] = distribution.get(cat, 0) + 1
 
-            return {
-                "risk_scores": risks,
-                "distribution": distribution,
-                "count": len(risks),
-                "source": "demo",
-                "description": "Risk scores from demo synthetic data"
-            }
+        return {
+            "risk_scores": risks,
+            "distribution": distribution,
+            "count": len(risks),
+            "source": "demo",
+            "description": "Risk scores from demo synthetic data"
+        }
 
     def get_providers(self, limit: int = 50) -> Dict:
         """

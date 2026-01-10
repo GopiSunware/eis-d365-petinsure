@@ -2,9 +2,15 @@
 
 **Purpose:** Quick orientation for new Claude sessions.
 
-**Last Updated:** 2026-01-09
+**Last Updated:** 2026-01-10 (Pipeline Page Fixes)
 
 **Status:** Hybrid AWS (Compute) + Azure (Data Platform) - DEPLOYED
+
+**Recent Changes (Jan 2026):**
+- Fixed Pipeline Page showing "Demo Mode" even with Azure connected
+- Added Demo/Azure toggle switch UI
+- Fixed reset pipeline not persisting after refresh
+- Fixed BI Dashboard calling wrong backend (was claims-data-api, now petinsure360-backend)
 
 ---
 
@@ -65,6 +71,13 @@ Current deployment URLs:
 ./deploy-aws.sh status       # Check deployment status
 ./destroy-aws.sh             # Clean up all AWS resources
 ./destroy-aws.sh --dry-run   # Preview what would be deleted
+
+# Post-deployment
+cd petinsure360/scripts
+./update-ai-keys.sh          # Update AI provider keys in App Runner
+./update-ai-keys.sh --check  # Check AI provider status
+./test-aws.sh                # Run all endpoint tests
+./test-aws.sh pipeline       # Test pipeline endpoints only
 ```
 
 ### AWS Configuration
@@ -125,6 +138,17 @@ Use skills:
 | CORS errors | EIS services need `["*"]` fallback |
 | WebSocket fails | Use `socket_app` not `app` for PetInsure360 |
 | Data lost on restart | Never use /tmp - use project paths |
+| Pipeline shows Demo Mode | BI Dashboard must call `petinsure360-backend` (fucf3fwwwv), NOT `claims-data-api` |
+| Pipeline reset not persisting | Fixed: clear_pipeline no longer reloads from CSV |
+| AI providers disabled | Run `./update-ai-keys.sh` after backend deploy |
+| Frontend calls localhost | Use `deploy-aws.sh` which handles .env.local swap |
+
+### API URL Reference (Critical!)
+```
+petinsure360-backend (Pipeline, Insights): https://fucf3fwwwv.us-east-1.awsapprunner.com
+claims-data-api (Chat, EIS Integration):   https://9wvcjmrknc.us-east-1.awsapprunner.com
+agent-pipeline (LangGraph Agents):         https://qi2p3x5gsm.us-east-1.awsapprunner.com
+```
 
 ---
 

@@ -118,13 +118,24 @@ ms-dynamics/
 | 3000 | Customer Portal | Customer-facing portal |
 | 3001 | BI Dashboard | Executive analytics |
 | 3002 | PetInsure360 Backend | FastAPI + Socket.IO |
-| 8000 | Claims Data API | Unified data API |
+| 8000 | **Claims Data API** | **Unified API Gateway** (20+ routers) |
 | 8006 | Agent Pipeline | LangGraph claims agents |
 | 8007 | DocGen | Document AI service |
 | 8080 | Agent Portal | React Flow visualization |
 | 8081 | EIS Admin Portal | Admin dashboard |
 
-See [PORT_CONFIG.md](PORT_CONFIG.md) for details.
+### Claims Data API Endpoints (Port 8000)
+
+The unified API includes:
+- `/api/v1/config/*` - Admin configuration (AI, claims, policies, rating)
+- `/api/v1/approvals/*` - Approval workflows (stats, pending, actions)
+- `/api/v1/audit/*` - Audit logging (events, timeline, compliance)
+- `/api/v1/costs/*` - Cost monitoring (AWS, Azure, AI usage)
+- `/api/chat/*` - AI chat interface
+- `/api/pipeline/*` - Pipeline management
+- Plus 15+ more service routers
+
+See [PORT_CONFIG.md](PORT_CONFIG.md) and [ARCHITECTURE.md](ARCHITECTURE.md) for details.
 
 ## Data Storage ⚠️
 

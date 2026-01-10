@@ -42,6 +42,10 @@ from app.services import (
     insights_service,
     pipeline_service,
     data_source_service,
+    costs_service,
+    admin_config_service,
+    approvals_service,
+    audit_service,
 )
 
 
@@ -139,6 +143,10 @@ app.include_router(ai_config_service.router, prefix="/api/v1/claims/ai", tags=["
 app.include_router(insights_service.router, prefix="/api/insights", tags=["InsightsService"])
 app.include_router(pipeline_service.router, prefix="/api/pipeline", tags=["PipelineService"])
 app.include_router(data_source_service.router, prefix="/api/data-source", tags=["DataSourceService"])
+app.include_router(costs_service.router, prefix="/api/v1/costs", tags=["CostsService"])
+app.include_router(admin_config_service.router, prefix="/api/v1/config", tags=["AdminConfigService"])
+app.include_router(approvals_service.router, prefix="/api/v1/approvals", tags=["ApprovalsService"])
+app.include_router(audit_service.router, prefix="/api/v1/audit", tags=["AuditService"])
 
 
 @app.get("/", tags=["Health"])
@@ -174,6 +182,10 @@ async def root():
             "insights": "/api/insights",
             "pipeline": "/api/pipeline",
             "data_source": "/api/data-source",
+            "costs": "/api/v1/costs",
+            "config": "/api/v1/config",
+            "approvals": "/api/v1/approvals",
+            "audit": "/api/v1/audit",
         }
     }
 

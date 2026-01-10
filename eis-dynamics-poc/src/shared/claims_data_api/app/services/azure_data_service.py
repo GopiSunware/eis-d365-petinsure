@@ -14,7 +14,8 @@ Features:
 import os
 import io
 import logging
-from datetime import datetime, timedelta
+import threading
+from datetime import datetime, timedelta, timezone
 from typing import Dict, List, Any, Optional
 from functools import lru_cache
 import json
@@ -48,7 +49,7 @@ class AzureConfig:
 
     def __init__(self):
         self.storage_account = os.getenv("AZURE_STORAGE_ACCOUNT", "petinsud7i43")
-        self.sas_token = os.getenv("AZURE_STORAGE_SAS_TOKEN", "")
+        self.sas_token = os.getenv("AZURE_STORAGE_SAS_TOKEN")  # None if not set
         self.gold_container = os.getenv("AZURE_GOLD_CONTAINER", "gold")
         self.cache_ttl = int(os.getenv("DATA_CACHE_TTL", "300"))  # 5 minutes default
 
@@ -81,51 +82,57 @@ _config = AzureConfig()
 # =============================================================================
 
 class DataCache:
-    """Simple in-memory cache with TTL."""
+    """Thread-safe in-memory cache with TTL."""
 
     def __init__(self, default_ttl: int = 300):
         self._cache: Dict[str, Dict] = {}
         self._default_ttl = default_ttl
+        self._lock = threading.RLock()  # Thread-safe reentrant lock
 
     def get(self, key: str) -> Optional[Any]:
         """Get value from cache if not expired."""
-        if key not in self._cache:
-            return None
+        with self._lock:
+            if key not in self._cache:
+                return None
 
-        entry = self._cache[key]
-        if datetime.utcnow() > entry["expires_at"]:
-            del self._cache[key]
-            return None
+            entry = self._cache[key]
+            if datetime.now(timezone.utc) > entry["expires_at"]:
+                del self._cache[key]
+                return None
 
-        return entry["value"]
+            return entry["value"]
 
     def set(self, key: str, value: Any, ttl: Optional[int] = None) -> None:
         """Set value in cache with TTL."""
-        expires_at = datetime.utcnow() + timedelta(seconds=ttl or self._default_ttl)
-        self._cache[key] = {
-            "value": value,
-            "expires_at": expires_at,
-            "cached_at": datetime.utcnow().isoformat()
-        }
+        with self._lock:
+            expires_at = datetime.now(timezone.utc) + timedelta(seconds=ttl or self._default_ttl)
+            self._cache[key] = {
+                "value": value,
+                "expires_at": expires_at,
+                "cached_at": datetime.now(timezone.utc).isoformat()
+            }
 
     def invalidate(self, key: str) -> None:
         """Remove item from cache."""
-        if key in self._cache:
-            del self._cache[key]
+        with self._lock:
+            if key in self._cache:
+                del self._cache[key]
 
     def clear(self) -> None:
         """Clear all cache entries."""
-        self._cache.clear()
+        with self._lock:
+            self._cache.clear()
 
     def stats(self) -> Dict:
         """Get cache statistics."""
-        now = datetime.utcnow()
-        valid_entries = {k: v for k, v in self._cache.items() if now < v["expires_at"]}
-        return {
-            "total_entries": len(self._cache),
-            "valid_entries": len(valid_entries),
-            "keys": list(valid_entries.keys())
-        }
+        with self._lock:
+            now = datetime.now(timezone.utc)
+            valid_entries = {k: v for k, v in self._cache.items() if now < v["expires_at"]}
+            return {
+                "total_entries": len(self._cache),
+                "valid_entries": len(valid_entries),
+                "keys": list(valid_entries.keys())
+            }
 
 
 # Global cache instance
@@ -155,7 +162,7 @@ class AzureDataService:
             return False
         if not self.config.is_configured:
             return False
-        if self._circuit_break_until and datetime.utcnow() < self._circuit_break_until:
+        if self._circuit_break_until and datetime.now(timezone.utc) < self._circuit_break_until:
             return False
         return True
 
@@ -184,12 +191,12 @@ class AzureDataService:
 
         if self._connection_failures >= self._max_failures_before_circuit_break:
             # Circuit breaker: stop trying for 5 minutes
-            self._circuit_break_until = datetime.utcnow() + timedelta(minutes=5)
+            self._circuit_break_until = datetime.now(timezone.utc) + timedelta(minutes=5)
             logger.warning(f"Azure circuit breaker activated until {self._circuit_break_until}")
 
     def _record_success(self) -> None:
         """Record a successful read."""
-        self._last_successful_read = datetime.utcnow()
+        self._last_successful_read = datetime.now(timezone.utc)
         self._connection_failures = 0
         self._circuit_break_until = None
         self._last_error = None
@@ -205,7 +212,7 @@ class AzureDataService:
             "last_successful_read": self._last_successful_read.isoformat() if self._last_successful_read else None,
             "last_error": self._last_error,
             "connection_failures": self._connection_failures,
-            "circuit_breaker_active": self._circuit_break_until is not None and datetime.utcnow() < self._circuit_break_until,
+            "circuit_breaker_active": self._circuit_break_until is not None and datetime.now(timezone.utc) < self._circuit_break_until,
             "circuit_breaker_until": self._circuit_break_until.isoformat() if self._circuit_break_until else None,
         }
 
@@ -271,10 +278,13 @@ class AzureDataService:
                 records = table.to_pydict()
 
                 # Convert to list of dicts
-                num_rows = len(list(records.values())[0]) if records else 0
-                for i in range(num_rows):
-                    record = {k: v[i] for k, v in records.items()}
-                    all_records.append(record)
+                # Safe check: records must have at least one column with values
+                if records and len(records) > 0:
+                    first_col = next(iter(records.values()), [])
+                    num_rows = len(first_col) if first_col else 0
+                    for i in range(num_rows):
+                        record = {k: v[i] for k, v in records.items()}
+                        all_records.append(record)
 
             # Cache the results
             _cache.set(cache_key, all_records)
@@ -462,20 +472,13 @@ class GoldLayerData:
 # SINGLETON INSTANCE
 # =============================================================================
 
-# Global service instance
-_azure_service: Optional[AzureDataService] = None
-
-
+@lru_cache(maxsize=1)
 def get_azure_service() -> AzureDataService:
-    """Get the global Azure data service instance."""
-    global _azure_service
-    if _azure_service is None:
-        _azure_service = AzureDataService()
-    return _azure_service
+    """Get the global Azure data service instance (thread-safe via lru_cache)."""
+    return AzureDataService()
 
 
 def reset_azure_service() -> None:
     """Reset the Azure service (for testing)."""
-    global _azure_service
-    _azure_service = None
+    get_azure_service.cache_clear()
     _cache.clear()

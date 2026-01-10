@@ -25,6 +25,7 @@ _pipeline_state = {
     "last_bronze_process": None,
     "last_silver_process": None,
     "last_gold_process": None,
+    "is_cleared": False,  # Track if pipeline was cleared (hide demo data)
 }
 
 
@@ -90,6 +91,20 @@ def _generate_demo_pending_claims() -> Dict[str, List[Dict]]:
 @router.get("/pending")
 async def get_pending_claims():
     """Get all claims pending in each layer."""
+    # If pipeline was cleared, return empty data
+    if _pipeline_state.get("is_cleared", False):
+        return {
+            "bronze": [],
+            "silver": [],
+            "gold": [],
+            "counts": {
+                "bronze": 0,
+                "silver": 0,
+                "gold": 0,
+            },
+            "status": "cleared"
+        }
+
     pending = _generate_demo_pending_claims()
 
     return {
@@ -100,7 +115,8 @@ async def get_pending_claims():
             "bronze": len(pending["bronze"]),
             "silver": len(pending["silver"]),
             "gold": len(pending["gold"]),
-        }
+        },
+        "status": "demo"
     }
 
 
@@ -183,14 +199,55 @@ async def get_pipeline_flow():
 @router.get("/status")
 async def get_pipeline_status():
     """Get current pipeline status with claim counts at each layer."""
-    pending = _generate_demo_pending_claims()
+    is_cleared = _pipeline_state.get("is_cleared", False)
     store = get_data_store()
     claims = store.get_claims()
-
     now = datetime.utcnow()
+
+    # If cleared, show empty pending counts
+    if is_cleared:
+        return {
+            "status": "healthy",
+            "mode": "cleared",
+            "layers": {
+                "bronze": {
+                    "status": "idle",
+                    "record_count": len(claims),
+                    "pending": 0,
+                    "last_update": now.isoformat(),
+                },
+                "silver": {
+                    "status": "idle",
+                    "record_count": len(claims),
+                    "pending": 0,
+                    "last_update": now.isoformat(),
+                },
+                "gold": {
+                    "status": "idle",
+                    "record_count": len(claims),
+                    "pending": 0,
+                    "last_update": now.isoformat(),
+                }
+            },
+            "pending_claims": {
+                "bronze": 0,
+                "silver": 0,
+                "gold": 0,
+            },
+            "processing_log": [],
+            "last_processes": {
+                "bronze": None,
+                "silver": None,
+                "gold": None,
+            }
+        }
+
+    # Normal demo mode with pending claims
+    pending = _generate_demo_pending_claims()
 
     return {
         "status": "healthy",
+        "mode": "demo",
         "layers": {
             "bronze": {
                 "status": "active",
@@ -245,11 +302,33 @@ async def clear_pipeline():
         "last_bronze_process": None,
         "last_silver_process": None,
         "last_gold_process": None,
+        "is_cleared": True,  # Mark as cleared - /pending will return empty
     }
     return {
         "message": "Pipeline cleared",
         "status": "success",
         "cleared_at": datetime.utcnow().isoformat()
+    }
+
+
+@router.post("/refresh")
+async def refresh_pipeline():
+    """Refresh pipeline by reloading demo data."""
+    global _pipeline_state
+    _pipeline_state = {
+        "pending_claims": [],
+        "silver_claims": [],
+        "gold_claims": [],
+        "processing_log": [],
+        "last_bronze_process": None,
+        "last_silver_process": None,
+        "last_gold_process": None,
+        "is_cleared": False,  # Reload demo data on next /pending call
+    }
+    return {
+        "message": "Pipeline refreshed - demo data reloaded",
+        "status": "success",
+        "refreshed_at": datetime.utcnow().isoformat()
     }
 
 
@@ -304,6 +383,7 @@ async def process_silver_to_gold():
 @router.get("/metrics")
 async def get_pipeline_metrics():
     """Get detailed pipeline metrics for monitoring."""
+    is_cleared = _pipeline_state.get("is_cleared", False)
     store = get_data_store()
     claims = store.get_claims()
     customers = store.get_customers()
@@ -311,9 +391,23 @@ async def get_pipeline_metrics():
 
     approved = len([c for c in claims if c.get("status") == "approved"])
     total = len(claims)
+    now = datetime.utcnow()
+
+    # Respect cleared state for pending counts
+    if is_cleared:
+        pending_counts = {"bronze": 0, "silver": 0, "gold": 0}
+        layer_status = "idle"
+    else:
+        pending_counts = {
+            "bronze": random.randint(5, 15),
+            "silver": random.randint(3, 10),
+            "gold": random.randint(2, 8),
+        }
+        layer_status = "active"
 
     return {
         "data_source": "synthetic",
+        "mode": "cleared" if is_cleared else "demo",
         "record_counts": {
             "claims": total,
             "customers": len(customers),
@@ -329,26 +423,22 @@ async def get_pipeline_metrics():
             "avg_processing_time_hours": round(random.uniform(2, 24), 1),
             "claims_per_hour": random.randint(50, 150),
         },
-        "pending_counts": {
-            "bronze": random.randint(5, 15),
-            "silver": random.randint(3, 10),
-            "gold": random.randint(2, 8),
-        },
+        "pending_counts": pending_counts,
         "layers": {
             "bronze": {
-                "status": "active",
+                "status": layer_status,
                 "count": total,
-                "last_update": datetime.utcnow().isoformat(),
+                "last_update": now.isoformat(),
             },
             "silver": {
-                "status": "active",
-                "count": total - random.randint(10, 50),
-                "last_update": (datetime.utcnow() - timedelta(minutes=10)).isoformat(),
+                "status": layer_status,
+                "count": total - random.randint(10, 50) if not is_cleared else total,
+                "last_update": (now - timedelta(minutes=10)).isoformat() if not is_cleared else now.isoformat(),
             },
             "gold": {
-                "status": "active",
+                "status": layer_status,
                 "count": approved,
-                "last_update": (datetime.utcnow() - timedelta(minutes=20)).isoformat(),
+                "last_update": (now - timedelta(minutes=20)).isoformat() if not is_cleared else now.isoformat(),
             }
         }
     }

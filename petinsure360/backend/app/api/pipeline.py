@@ -774,21 +774,45 @@ async def clear_pipeline(request: Request, include_demo_data: bool = True):
     _save_pipeline_state()
 
     demo_cleared = False
+    claims_cleared = 0
     if include_demo_data:
         try:
             storage = request.app.state.storage
             await storage.clear_demo_data()  # Clear all demo data from ADLS
             demo_cleared = True
 
-            # Also refresh insights to remove demo data from in-memory state
+            # Clear in-memory claims that were added via pipeline (DEMO- prefixed or CLM- prefixed)
+            # DO NOT call refresh_data() as it reloads from CSV files which brings everything back!
             insights = request.app.state.insights
-            insights.refresh_data()
+            if insights._claims is not None and len(insights._claims) > 0:
+                # Remove only claims added through the pipeline
+                original_count = len(insights._claims)
+                insights._claims = insights._claims[
+                    ~(insights._claims['customer_id'].astype(str).str.startswith('DEMO-') |
+                      insights._claims['claim_id'].astype(str).str.startswith('CLM-'))
+                ]
+                claims_cleared = original_count - len(insights._claims)
+                print(f"Cleared {claims_cleared} pipeline claims from in-memory data")
+
+            # Also clear demo customers and pets added via pipeline
+            if insights._customers is not None and len(insights._customers) > 0:
+                insights._customers = insights._customers[
+                    ~insights._customers['customer_id'].astype(str).str.startswith('DEMO-')
+                ]
+            if insights._pets is not None and len(insights._pets) > 0:
+                insights._pets = insights._pets[
+                    ~insights._pets['customer_id'].astype(str).str.startswith('DEMO-')
+                ]
+
         except Exception as e:
             print(f"Error clearing demo data: {e}")
+            import traceback
+            traceback.print_exc()
 
     return {
         "success": True,
-        "message": f"Pipeline cleared{' and demo data removed' if demo_cleared else ''}"
+        "message": f"Pipeline cleared{' and demo data removed' if demo_cleared else ''}",
+        "claims_cleared": claims_cleared
     }
 
 

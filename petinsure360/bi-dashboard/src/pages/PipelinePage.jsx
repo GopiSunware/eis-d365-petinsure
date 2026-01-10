@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Database, Server, BarChart3, Cloud, ArrowRight, RefreshCw, CheckCircle, Clock, AlertCircle, Play, Zap, FileText, ListChecks } from 'lucide-react'
+import { Database, Server, BarChart3, Cloud, ArrowRight, RefreshCw, CheckCircle, Clock, AlertCircle, Play, Zap, FileText, ListChecks, ToggleLeft, ToggleRight } from 'lucide-react'
 import api from '../services/api'
 import { connectSocket, subscribeToEvent } from '../services/socket'
 
@@ -109,6 +109,11 @@ export default function PipelinePage() {
   const [processingLog, setProcessingLog] = useState([])
   const [refreshing, setRefreshing] = useState(false)
   const [processing, setProcessing] = useState({ bronzeToSilver: false, silverToGold: false })
+  const [showResetConfirm, setShowResetConfirm] = useState(false)
+  const [resetting, setResetting] = useState(false)
+  const [resetError, setResetError] = useState(null)
+  const [dataMode, setDataMode] = useState('demo') // 'demo' or 'azure'
+  const [togglingMode, setTogglingMode] = useState(false)
 
   useEffect(() => {
     // Connect WebSocket for real-time updates
@@ -152,6 +157,10 @@ export default function PipelinePage() {
       setPipelineFlow(flowRes.data)
       setProcessingLog(statusRes.data.processing_log || [])
 
+      // Update data mode from backend response
+      const source = statusRes.data.data_source
+      setDataMode(source === 'azure' || source === 'synapse' ? 'azure' : 'demo')
+
       // Also fetch pending claims
       await fetchPendingClaims()
     } catch (err) {
@@ -160,6 +169,22 @@ export default function PipelinePage() {
       setDemoData()
     } finally {
       setLoading(false)
+    }
+  }
+
+  const handleToggleMode = async () => {
+    setTogglingMode(true)
+    try {
+      // Toggle between demo and azure modes
+      const newMode = dataMode === 'demo' ? 'azure' : 'demo'
+      // Note: Backend toggle API would be at /api/data-source/toggle
+      // For now, we just refresh to get current state
+      await api.post('/api/pipeline/refresh')
+      await fetchPipelineData()
+    } catch (err) {
+      console.error('Error toggling mode:', err)
+    } finally {
+      setTogglingMode(false)
     }
   }
 
@@ -219,19 +244,24 @@ export default function PipelinePage() {
   }
 
   const handleClearPipeline = async () => {
-    if (!confirm('Clear all pending claims in pipeline? This is for demo reset only.')) return
+    setResetting(true)
+    setResetError(null)
     try {
       await api.delete('/api/pipeline/clear')
       await fetchPendingClaims()
       await fetchPipelineData()
+      setShowResetConfirm(false)
     } catch (err) {
       console.error('Error clearing pipeline:', err)
+      setResetError('Failed to clear pipeline. Please try again.')
+    } finally {
+      setResetting(false)
     }
   }
 
   const setDemoData = () => {
     setPipelineStatus({
-      data_source: 'local',
+      data_source: 'demo',
       layers: {
         bronze: { status: 'active', record_count: 15000, description: 'Raw data ingestion', last_update: new Date().toISOString() },
         silver: { status: 'active', record_count: 14500, description: 'Cleaned & validated', last_update: new Date().toISOString() },
@@ -255,12 +285,14 @@ export default function PipelinePage() {
       edges: [],
       active_flow: false
     })
+    setDataMode('demo')
   }
 
   const layers = pipelineStatus?.layers || {}
   const metrics = pipelineStatus?.metrics || {}
   const quality = pipelineStatus?.data_quality || {}
-  const isLive = pipelineStatus?.data_source === 'synapse'
+  // Check if connected to Azure (either ADLS or Synapse)
+  const isLive = pipelineStatus?.data_source === 'synapse' || pipelineStatus?.data_source === 'azure'
   const pendingCounts = pipelineStatus?.pending_claims || { bronze: 0, silver: 0, gold: 0 }
 
   const hasBronzePending = pendingClaims.bronze.length > 0
@@ -285,17 +317,83 @@ export default function PipelinePage() {
           <p className="text-gray-500">Traditional Medallion Lakehouse Architecture (Bronze → Silver → Gold)</p>
         </div>
         <div className="flex items-center gap-4">
+          {/* Data Mode Toggle Switch */}
+          <div className="flex items-center gap-2 px-3 py-2 bg-gray-100 rounded-lg">
+            <span className={`text-sm font-medium ${dataMode === 'demo' ? 'text-yellow-700' : 'text-gray-400'}`}>
+              Demo
+            </span>
+            <button
+              onClick={handleToggleMode}
+              disabled={togglingMode}
+              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${
+                isLive ? 'bg-green-500' : 'bg-gray-300'
+              } ${togglingMode ? 'opacity-50 cursor-not-allowed' : ''}`}
+              title={isLive ? 'Connected to Azure - Click to refresh' : 'Demo Mode - Azure not configured'}
+            >
+              <span
+                className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                  isLive ? 'translate-x-6' : 'translate-x-1'
+                }`}
+              />
+            </button>
+            <span className={`text-sm font-medium ${isLive ? 'text-green-700' : 'text-gray-400'}`}>
+              Azure
+            </span>
+          </div>
+          {/* Status Badge */}
           <div className={`px-3 py-1 rounded-full text-sm ${
             isLive ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'
           }`}>
-            {isLive ? 'Connected to Synapse' : 'Demo Mode (In-Memory)'}
+            {isLive ? (pipelineStatus?.data_source === 'synapse' ? 'Connected to Synapse' : 'Connected to Azure ADLS') : 'Demo Mode (In-Memory)'}
           </div>
-          <button
-            onClick={handleClearPipeline}
-            className="px-3 py-2 text-sm text-red-600 hover:bg-red-50 rounded-lg"
-          >
-            Reset Pipeline
-          </button>
+          {showResetConfirm ? (
+            <div className="flex items-center gap-2 px-3 py-2 bg-red-50 border border-red-200 rounded-lg">
+              {resetError ? (
+                <>
+                  <AlertCircle className="h-4 w-4 text-red-600" />
+                  <span className="text-sm text-red-700">{resetError}</span>
+                  <button
+                    onClick={() => { setResetError(null); setShowResetConfirm(false); }}
+                    className="px-3 py-1 text-sm bg-gray-200 text-gray-700 rounded hover:bg-gray-300"
+                  >
+                    Dismiss
+                  </button>
+                </>
+              ) : (
+                <>
+                  <span className="text-sm text-red-700">Clear all pending claims?</span>
+                  <button
+                    onClick={handleClearPipeline}
+                    disabled={resetting}
+                    className="px-3 py-1 text-sm bg-red-600 text-white rounded hover:bg-red-700 disabled:opacity-50 flex items-center gap-1"
+                  >
+                    {resetting ? (
+                      <>
+                        <RefreshCw className="h-3 w-3 animate-spin" />
+                        Clearing...
+                      </>
+                    ) : (
+                      'Yes, Clear'
+                    )}
+                  </button>
+                  <button
+                    onClick={() => setShowResetConfirm(false)}
+                    disabled={resetting}
+                    className="px-3 py-1 text-sm bg-gray-200 text-gray-700 rounded hover:bg-gray-300 disabled:opacity-50"
+                  >
+                    Cancel
+                  </button>
+                </>
+              )}
+            </div>
+          ) : (
+            <button
+              onClick={() => setShowResetConfirm(true)}
+              className="px-3 py-2 text-sm text-red-600 hover:bg-red-50 rounded-lg border border-red-200"
+            >
+              Reset Pipeline
+            </button>
+          )}
           <button
             onClick={handleRefresh}
             disabled={refreshing}

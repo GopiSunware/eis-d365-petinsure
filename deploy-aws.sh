@@ -267,21 +267,56 @@ create_s3_bucket() {
 build_and_deploy_frontend() {
     local bucket_name=$1
     local frontend_path=$2
+    local build_success=false
 
     log_info "Building and deploying $bucket_name..."
 
     cd "$SCRIPT_DIR/$frontend_path"
 
-    # Install dependencies and build
-    npm install
-    npm run build
+    # CRITICAL: Swap .env.local with .env.production for build
+    # .env.local ALWAYS overrides .env.production, even in production builds!
+    if [ -f ".env.local" ]; then
+        log_info "Swapping .env.local -> .env.local.bak (using .env.production for build)"
+        mv .env.local .env.local.bak
+    fi
 
-    # Upload to S3
-    log_info "Uploading to S3..."
-    aws s3 sync dist s3://$bucket_name --delete --profile $AWS_PROFILE
+    # CRITICAL: Check .env.production exists
+    if [ ! -f ".env.production" ]; then
+        log_error ".env.production not found in $frontend_path!"
+        log_error "Build would use wrong environment variables (localhost instead of AWS URLs)"
+        # Restore backup
+        [ -f ".env.local.bak" ] && mv .env.local.bak .env.local
+        cd "$SCRIPT_DIR"
+        return 1
+    fi
+    cp .env.production .env.local
 
-    log_success "Deployed $bucket_name"
-    log_info "URL: http://$bucket_name.s3-website-$AWS_REGION.amazonaws.com"
+    # Install dependencies and build with error handling
+    if npm install && npm run build; then
+        build_success=true
+    else
+        log_error "Build failed for $bucket_name"
+    fi
+
+    # ALWAYS restore .env.local for local development (even on failure)
+    if [ -f ".env.local.bak" ]; then
+        log_info "Restoring .env.local for local development"
+        mv .env.local.bak .env.local
+    else
+        rm -f .env.local  # Remove the copy we made
+    fi
+
+    # Only upload if build succeeded
+    if [ "$build_success" = true ]; then
+        log_info "Uploading to S3..."
+        aws s3 sync dist s3://$bucket_name --delete --profile $AWS_PROFILE
+        log_success "Deployed $bucket_name"
+        log_info "URL: http://$bucket_name.s3-website-$AWS_REGION.amazonaws.com"
+    else
+        log_error "Skipping S3 upload due to build failure"
+        cd "$SCRIPT_DIR"
+        return 1
+    fi
 
     cd "$SCRIPT_DIR"
 }
@@ -289,23 +324,56 @@ build_and_deploy_frontend() {
 build_and_deploy_nextjs_frontend() {
     local bucket_name=$1
     local frontend_path=$2
+    local build_success=false
 
     log_info "Building and deploying Next.js app: $bucket_name..."
 
     cd "$SCRIPT_DIR/$frontend_path"
 
-    # Install dependencies
-    npm install
+    # CRITICAL: Swap .env.local with .env.production for build
+    # .env.local ALWAYS overrides .env.production, even in production builds!
+    if [ -f ".env.local" ]; then
+        log_info "Swapping .env.local -> .env.local.bak (using .env.production for build)"
+        mv .env.local .env.local.bak
+    fi
 
-    # Build with static export enabled
-    STATIC_EXPORT=true npm run build
+    # CRITICAL: Check .env.production exists
+    if [ ! -f ".env.production" ]; then
+        log_error ".env.production not found in $frontend_path!"
+        log_error "Build would use wrong environment variables (localhost instead of AWS URLs)"
+        # Restore backup
+        [ -f ".env.local.bak" ] && mv .env.local.bak .env.local
+        cd "$SCRIPT_DIR"
+        return 1
+    fi
+    cp .env.production .env.local
 
-    # Upload to S3 (Next.js static export goes to 'out' directory)
-    log_info "Uploading to S3..."
-    aws s3 sync out s3://$bucket_name --delete --profile $AWS_PROFILE
+    # Install dependencies and build with error handling
+    if npm install && STATIC_EXPORT=true npm run build; then
+        build_success=true
+    else
+        log_error "Build failed for $bucket_name"
+    fi
 
-    log_success "Deployed $bucket_name"
-    log_info "URL: http://$bucket_name.s3-website-$AWS_REGION.amazonaws.com"
+    # ALWAYS restore .env.local for local development (even on failure)
+    if [ -f ".env.local.bak" ]; then
+        log_info "Restoring .env.local for local development"
+        mv .env.local.bak .env.local
+    else
+        rm -f .env.local  # Remove the copy we made
+    fi
+
+    # Only upload if build succeeded
+    if [ "$build_success" = true ]; then
+        log_info "Uploading to S3..."
+        aws s3 sync out s3://$bucket_name --delete --profile $AWS_PROFILE
+        log_success "Deployed $bucket_name"
+        log_info "URL: http://$bucket_name.s3-website-$AWS_REGION.amazonaws.com"
+    else
+        log_error "Skipping S3 upload due to build failure"
+        cd "$SCRIPT_DIR"
+        return 1
+    fi
 
     cd "$SCRIPT_DIR"
 }
