@@ -243,18 +243,21 @@ class MedallionPipeline:
             # Update stage
             await state_manager.update_stage(state.run_id, PipelineStage.GOLD)
 
-            # Calculate processing time so far
+            # Calculate processing time so far (with defensive type checking)
             processing_time_so_far = 0.0
-            if state.bronze_output:
+            if state.bronze_output and isinstance(state.bronze_output, dict):
                 processing_time_so_far += state.bronze_output.get("processing_time_ms", 0)
-            if state.silver_output:
+            if state.silver_output and isinstance(state.silver_output, dict):
                 processing_time_so_far += state.silver_output.get("processing_time_ms", 0)
+
+            # Ensure silver_data is a dict (defensive)
+            silver_data = state.silver_output if isinstance(state.silver_output, dict) else {}
 
             # Run gold agent
             result = await gold_agent.process(
                 run_id=state.run_id,
                 claim_id=state.claim_id,
-                silver_data=state.silver_output or {},
+                silver_data=silver_data,
                 total_processing_time_ms=processing_time_so_far,
             )
 

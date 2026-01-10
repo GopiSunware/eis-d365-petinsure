@@ -4,6 +4,8 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, Responsive
 import api from '../services/api'
 
 const DOCGEN_URL = import.meta.env.VITE_DOCGEN_URL || 'http://localhost:8007'
+// Agent Pipeline URL - VITE_PIPELINE_URL has /api suffix, we need base URL for /api/v1/pipeline/recent
+const AGENT_PIPELINE_URL = (import.meta.env.VITE_PIPELINE_URL || 'http://localhost:8006/api').replace(/\/api$/, '')
 
 const COLORS = ['#3b82f6', '#22c55e', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4', '#ec4899', '#14b8a6', '#6366f1']
 
@@ -53,12 +55,12 @@ export default function ClaimsPage() {
         console.log('Pipeline data not available')
       }
 
-      // Fetch from Agent Pipeline (DocGen batches)
+      // Fetch from DocGen batches (AI document processing)
       try {
-        const agentRes = await fetch(`${DOCGEN_URL}/api/v1/docgen/batches?limit=100`)
-        if (agentRes.ok) {
-          const agentData = await agentRes.json()
-          const agentClaims = (agentData.batches || []).map(b => ({
+        const docgenRes = await fetch(`${DOCGEN_URL}/api/v1/docgen/batches?limit=100`)
+        if (docgenRes.ok) {
+          const docgenData = await docgenRes.json()
+          const docgenClaims = (docgenData.batches || []).map(b => ({
             claim_id: b.batch_id,
             claim_number: b.claim_number || b.claim_data?.claim_number,
             claim_type: b.claim_type || b.claim_data?.claim_type || 'Unknown',
@@ -73,14 +75,52 @@ export default function ClaimsPage() {
             submission_date: b.created_at,
             service_date: b.created_at,
             processing_method: 'agent',
-            pipeline_source: 'Agent Pipeline',
+            pipeline_source: 'DocGen Pipeline',
             ai_confidence: b.ai_confidence,
             ai_reasoning: b.ai_reasoning
           }))
-          allClaims = [...allClaims, ...agentClaims]
+          allClaims = [...allClaims, ...docgenClaims]
         }
       } catch (e) {
-        console.log('Agent pipeline data not available')
+        console.log('DocGen data not available')
+      }
+
+      // Fetch from Agent Pipeline (WS6 - LangGraph medallion pipeline)
+      try {
+        const agentPipelineRes = await fetch(`${AGENT_PIPELINE_URL}/api/v1/pipeline/recent?limit=100`)
+        if (agentPipelineRes.ok) {
+          const agentPipelineData = await agentPipelineRes.json()
+          const agentPipelineClaims = (agentPipelineData.runs || []).map(run => {
+            const claimData = run.claim_data || {}
+            const goldOutput = run.gold_output || {}
+            const silverOutput = run.silver_output || {}
+            return {
+              claim_id: run.claim_id,
+              claim_number: claimData.claim_number || run.claim_id,
+              claim_type: claimData.claim_type || 'Unknown',
+              claim_category: claimData.claim_category || claimData.category || '-',
+              claim_amount: claimData.claim_amount || 0,
+              customer_id: claimData.customer_id,
+              customer_name: claimData.customer_name || '-',
+              pet_id: claimData.pet_id,
+              pet_name: claimData.pet_name || '-',
+              paid_amount: silverOutput.estimated_reimbursement || 0,
+              status: goldOutput.decision || goldOutput.final_decision || run.status || 'Processing',
+              submission_date: run.started_at,
+              service_date: claimData.service_date,
+              processing_method: 'agent',
+              pipeline_source: 'Agent Pipeline (LangGraph)',
+              ai_confidence: goldOutput.confidence,
+              ai_reasoning: goldOutput.reasoning,
+              risk_level: goldOutput.risk_level,
+              agent_run_id: run.run_id,
+              processing_time_ms: run.total_processing_time_ms
+            }
+          })
+          allClaims = [...allClaims, ...agentPipelineClaims]
+        }
+      } catch (e) {
+        console.log('Agent Pipeline (WS6) data not available:', e.message)
       }
 
       // Deduplicate by claim_number (prefer rule-based if both exist)

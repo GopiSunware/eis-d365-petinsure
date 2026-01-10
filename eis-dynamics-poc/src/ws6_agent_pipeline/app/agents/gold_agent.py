@@ -356,7 +356,14 @@ Provide comprehensive analysis and a final recommendation for this claim."""
         silver_data: dict[str, Any],
     ) -> dict[str, Any]:
         """Extract structured results from the agent's final state."""
+        # Defensive: ensure state is a dict
+        if not isinstance(state, dict):
+            state = {"messages": []}
         messages = state.get("messages", [])
+
+        # Defensive: ensure silver_data is a dict
+        if not isinstance(silver_data, dict):
+            silver_data = {}
 
         # Default result
         result = {
