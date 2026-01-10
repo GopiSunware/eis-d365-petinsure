@@ -83,7 +83,11 @@ class AIUsageSummary(BaseModel):
     period_start: date
     period_end: date
     total_tokens: int
+    total_input_tokens: int = 0
+    total_output_tokens: int = 0
+    total_requests: int = 0
     total_cost: float
+    avg_cost_per_request: float = 0.0
     by_provider: dict
     by_model: dict
     daily_usage: List[dict] = []
@@ -365,11 +369,35 @@ async def get_cost_forecast(
     result = {"forecasts": []}
 
     if provider in [CloudProvider.ALL, CloudProvider.AZURE]:
-        azure_forecast = generate_mock_forecast("azure", days)
+        # Try real service first
+        azure_real = await azure_cost_svc.get_forecast(days)
+        if not azure_real.is_mock_data:
+            azure_forecast = CostForecast(
+                provider="azure",
+                forecast_period_start=azure_real.forecast_period_start,
+                forecast_period_end=azure_real.forecast_period_end,
+                forecasted_cost=azure_real.forecasted_cost,
+                confidence_level=azure_real.confidence_level,
+                is_mock_data=False,
+            )
+        else:
+            azure_forecast = generate_mock_forecast("azure", days)
         result["forecasts"].append(azure_forecast)
 
     if provider in [CloudProvider.ALL, CloudProvider.AWS]:
-        aws_forecast = generate_mock_forecast("aws", days)
+        # Try real service first
+        aws_real = await aws_cost_svc.get_forecast(days)
+        if not aws_real.is_mock_data:
+            aws_forecast = CostForecast(
+                provider="aws",
+                forecast_period_start=aws_real.forecast_period_start,
+                forecast_period_end=aws_real.forecast_period_end,
+                forecasted_cost=aws_real.forecasted_cost,
+                confidence_level=aws_real.confidence_level,
+                is_mock_data=False,
+            )
+        else:
+            aws_forecast = generate_mock_forecast("aws", days)
         result["forecasts"].append(aws_forecast)
 
     if provider == CloudProvider.ALL:
@@ -395,21 +423,34 @@ async def get_ai_usage(
     # Mock token usage
     daily_tokens_anthropic = 15000
     daily_tokens_openai = 8000
+    daily_requests = 150  # ~150 requests/day
+
+    total_tokens = (daily_tokens_anthropic + daily_tokens_openai) * days
+    total_input = int(total_tokens * 0.7)  # ~70% input tokens
+    total_output = total_tokens - total_input
+    total_requests = daily_requests * days
+    total_cost = round(days * 2.50, 2)
 
     return AIUsageSummary(
         period_start=start_date,
         period_end=end_date,
-        total_tokens=(daily_tokens_anthropic + daily_tokens_openai) * days,
-        total_cost=round(days * 2.50, 2),  # ~$2.50/day for AI
+        total_tokens=total_tokens,
+        total_input_tokens=total_input,
+        total_output_tokens=total_output,
+        total_requests=total_requests,
+        total_cost=total_cost,
+        avg_cost_per_request=round(total_cost / total_requests, 4) if total_requests > 0 else 0,
         by_provider={
             "anthropic": {
                 "tokens": daily_tokens_anthropic * days,
                 "cost": round(days * 1.80, 2),
+                "requests": int(daily_requests * 0.6 * days),
                 "models": ["claude-sonnet-4-20250514"],
             },
             "openai": {
                 "tokens": daily_tokens_openai * days,
                 "cost": round(days * 0.70, 2),
+                "requests": int(daily_requests * 0.4 * days),
                 "models": ["gpt-4o-mini"],
             },
         },
@@ -417,10 +458,12 @@ async def get_ai_usage(
             "claude-sonnet-4-20250514": {
                 "tokens": daily_tokens_anthropic * days,
                 "cost": round(days * 1.80, 2),
+                "requests": int(daily_requests * 0.6 * days),
             },
             "gpt-4o-mini": {
                 "tokens": daily_tokens_openai * days,
                 "cost": round(days * 0.70, 2),
+                "requests": int(daily_requests * 0.4 * days),
             },
         },
         daily_usage=[
@@ -428,6 +471,7 @@ async def get_ai_usage(
                 "date": (start_date + timedelta(days=i)).isoformat(),
                 "tokens": daily_tokens_anthropic + daily_tokens_openai,
                 "cost": 2.50,
+                "requests": daily_requests,
             }
             for i in range(days)
         ],

@@ -422,6 +422,226 @@ class MedallionPipeline:
                 "error": error_msg,
             }
 
+    # =========================================================================
+    # STEP-BY-STEP PROCESSING METHODS (for manual trigger flow)
+    # =========================================================================
+
+    async def process_through_bronze(self, run_id: str) -> dict[str, Any]:
+        """
+        Process a pending claim through Router and Bronze stages only.
+
+        This is used for manual step-by-step processing.
+        After completion, claim waits for user to trigger Silver.
+        """
+        try:
+            # Get existing pipeline state
+            state = await state_manager.get_pipeline_state(run_id)
+            if not state:
+                raise ValueError(f"Pipeline run {run_id} not found")
+
+            claim_id = state.claim_id
+            claim_data = state.claim_data
+
+            # Update status to running
+            await state_manager.update_pipeline_state(
+                run_id,
+                status=PipelineStatus.RUNNING,
+            )
+
+            # Publish pipeline started
+            await event_publisher.publish_pipeline_started(
+                run_id=run_id,
+                claim_id=claim_id,
+                claim_data=claim_data,
+            )
+
+            # Create graph state
+            graph_state = MedallionPipelineState(
+                run_id=run_id,
+                claim_id=claim_id,
+                claim_data=claim_data,
+                started_at=datetime.utcnow(),
+            )
+
+            # Run Router
+            router_result = await self._router_node(graph_state)
+            graph_state.router_output = router_result.get("router_output")
+            graph_state.complexity = router_result.get("complexity", "medium")
+
+            # Run Bronze
+            bronze_result = await self._bronze_node(graph_state)
+            bronze_output = bronze_result.get("bronze_output")
+
+            # Update state - paused after bronze
+            await state_manager.update_pipeline_state(
+                run_id,
+                current_stage=PipelineStage.BRONZE,
+                status=PipelineStatus.PENDING,  # Back to pending, waiting for Silver
+                bronze_output=bronze_output,
+                complexity=graph_state.complexity,
+            )
+
+            logger.info(f"Bronze complete for {run_id}, waiting for Silver trigger")
+
+            return {
+                "success": True,
+                "run_id": run_id,
+                "claim_id": claim_id,
+                "status": "pending_silver",
+                "current_stage": "bronze",
+                "bronze_output": bronze_output,
+                "next_action": "process_silver",
+            }
+
+        except Exception as e:
+            logger.error(f"process_through_bronze error: {e}")
+            await state_manager.fail_pipeline(run_id, str(e))
+            return {"success": False, "error": str(e)}
+
+    async def process_silver_only(self, run_id: str) -> dict[str, Any]:
+        """
+        Process Silver stage only for a claim that completed Bronze.
+
+        After completion, claim waits for user to trigger Gold.
+        """
+        try:
+            # Get existing pipeline state
+            state = await state_manager.get_pipeline_state(run_id)
+            if not state:
+                raise ValueError(f"Pipeline run {run_id} not found")
+
+            claim_id = state.claim_id
+
+            # Update status to running
+            await state_manager.update_pipeline_state(
+                run_id,
+                status=PipelineStatus.RUNNING,
+            )
+
+            # Create graph state with existing data
+            graph_state = MedallionPipelineState(
+                run_id=run_id,
+                claim_id=claim_id,
+                claim_data=state.claim_data,
+                bronze_output=state.bronze_output,
+            )
+
+            # Run Silver
+            silver_result = await self._silver_node(graph_state)
+            silver_output = silver_result.get("silver_output")
+
+            # Update state - paused after silver
+            await state_manager.update_pipeline_state(
+                run_id,
+                current_stage=PipelineStage.SILVER,
+                status=PipelineStatus.PENDING,  # Back to pending, waiting for Gold
+                silver_output=silver_output,
+            )
+
+            logger.info(f"Silver complete for {run_id}, waiting for Gold trigger")
+
+            return {
+                "success": True,
+                "run_id": run_id,
+                "claim_id": claim_id,
+                "status": "pending_gold",
+                "current_stage": "silver",
+                "silver_output": silver_output,
+                "next_action": "process_gold",
+            }
+
+        except Exception as e:
+            logger.error(f"process_silver_only error: {e}")
+            await state_manager.fail_pipeline(run_id, str(e))
+            return {"success": False, "error": str(e)}
+
+    async def process_gold_only(self, run_id: str) -> dict[str, Any]:
+        """
+        Process Gold stage only for a claim that completed Silver.
+
+        After completion, pipeline is fully complete.
+        """
+        try:
+            # Get existing pipeline state
+            state = await state_manager.get_pipeline_state(run_id)
+            if not state:
+                raise ValueError(f"Pipeline run {run_id} not found")
+
+            claim_id = state.claim_id
+            start_time = state.started_at or datetime.utcnow()
+
+            # Update status to running
+            await state_manager.update_pipeline_state(
+                run_id,
+                status=PipelineStatus.RUNNING,
+            )
+
+            # Create graph state with existing data
+            graph_state = MedallionPipelineState(
+                run_id=run_id,
+                claim_id=claim_id,
+                claim_data=state.claim_data,
+                bronze_output=state.bronze_output,
+                silver_output=state.silver_output,
+            )
+
+            # Run Gold
+            gold_result = await self._gold_node(graph_state)
+            gold_output = gold_result.get("gold_output")
+
+            # Calculate total processing time
+            end_time = datetime.utcnow()
+            total_time_ms = (end_time - start_time).total_seconds() * 1000
+
+            # Complete pipeline
+            final_decision = gold_output.get("final_decision", "unknown") if gold_output else "unknown"
+            fraud_score = gold_output.get("fraud_score", 0.0) if gold_output else 0.0
+            risk_level = gold_output.get("risk_level", "unknown") if gold_output else "unknown"
+            insights = gold_output.get("insights", []) if gold_output else []
+
+            await state_manager.complete_pipeline(
+                run_id=run_id,
+                final_decision=final_decision,
+                fraud_score=fraud_score,
+                risk_level=risk_level,
+                insights=insights,
+            )
+
+            # Store gold output
+            await state_manager.set_layer_output(run_id, "gold", gold_output)
+
+            # Publish pipeline completed
+            await event_publisher.publish_pipeline_completed(
+                run_id=run_id,
+                claim_id=claim_id,
+                processing_time_ms=total_time_ms,
+                final_decision=final_decision,
+                summary={
+                    "fraud_score": fraud_score,
+                    "risk_level": risk_level,
+                },
+            )
+
+            logger.info(f"Pipeline complete for {run_id}: {final_decision}")
+
+            return {
+                "success": True,
+                "run_id": run_id,
+                "claim_id": claim_id,
+                "status": "completed",
+                "current_stage": "gold",
+                "gold_output": gold_output,
+                "final_decision": final_decision,
+                "fraud_score": fraud_score,
+                "risk_level": risk_level,
+                "total_processing_time_ms": total_time_ms,
+            }
+
+        except Exception as e:
+            logger.error(f"process_gold_only error: {e}")
+            await state_manager.fail_pipeline(run_id, str(e))
+            return {"success": False, "error": str(e)}
+
 
 # Create singleton instance
 medallion_pipeline = MedallionPipeline()

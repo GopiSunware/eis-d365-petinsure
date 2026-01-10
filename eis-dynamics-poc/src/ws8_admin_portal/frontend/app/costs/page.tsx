@@ -23,7 +23,10 @@ import { ServiceCostTable } from '@/components/costs/ServiceCostTable';
 
 type TabType = 'overview' | 'azure' | 'aws' | 'ai-usage' | 'budgets';
 
-function formatNumber(num: number): string {
+function formatNumber(num: number | undefined | null): string {
+  if (num === undefined || num === null) {
+    return '0';
+  }
   if (num >= 1000000) {
     return (num / 1000000).toFixed(1) + 'M';
   }

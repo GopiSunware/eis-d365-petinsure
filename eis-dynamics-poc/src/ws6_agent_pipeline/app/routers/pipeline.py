@@ -243,6 +243,156 @@ async def trigger_demo_claim(
     }
 
 
+# =============================================================================
+# MANUAL STEP-BY-STEP PROCESSING ENDPOINTS
+# =============================================================================
+
+@router.post("/ingest")
+async def ingest_claim(request: TriggerRequest):
+    """
+    Ingest a claim into the pipeline without processing.
+
+    The claim will be placed in 'pending' status, waiting for manual
+    trigger to start Bronze processing. This allows step-by-step
+    processing similar to the Rule Engine Pipeline.
+    """
+    run_id = f"RUN-{uuid4().hex[:8].upper()}"
+
+    logger.info(f"Ingesting claim for manual processing: run={run_id}, claim={request.claim_id}")
+
+    # Initialize pipeline state without starting processing
+    await state_manager.initialize_pending_run(
+        run_id=run_id,
+        claim_id=request.claim_id,
+        claim_data=request.claim_data,
+    )
+
+    return {
+        "run_id": run_id,
+        "claim_id": request.claim_id,
+        "status": "pending",
+        "current_stage": "ingested",
+        "message": "Claim ingested. Click 'Process Bronze' to start validation.",
+        "next_action": "process_bronze",
+    }
+
+
+@router.post("/run/{run_id}/process/bronze")
+async def process_bronze(run_id: str, background_tasks: BackgroundTasks):
+    """
+    Manually trigger Bronze layer processing for a pending claim.
+
+    Runs the Router and Bronze agents, then pauses for user action.
+    """
+    state = await state_manager.get_pipeline_state(run_id)
+
+    if not state:
+        raise HTTPException(status_code=404, detail=f"Pipeline run {run_id} not found")
+
+    # Check if already processed Bronze
+    if state.bronze_output and state.bronze_state and state.bronze_state.get("status") == "completed":
+        raise HTTPException(status_code=400, detail="Bronze already processed. Use process_silver next.")
+
+    logger.info(f"Manually triggering Bronze for run {run_id}")
+
+    # Process Router + Bronze in background
+    background_tasks.add_task(
+        medallion_pipeline.process_through_bronze,
+        run_id=run_id,
+    )
+
+    return {
+        "run_id": run_id,
+        "status": "processing",
+        "current_stage": "bronze",
+        "message": "Bronze processing started. Poll /run/{run_id} for status.",
+    }
+
+
+@router.post("/run/{run_id}/process/silver")
+async def process_silver(run_id: str, background_tasks: BackgroundTasks):
+    """
+    Manually trigger Silver layer processing.
+
+    Requires Bronze to be completed first.
+    """
+    state = await state_manager.get_pipeline_state(run_id)
+
+    if not state:
+        raise HTTPException(status_code=404, detail=f"Pipeline run {run_id} not found")
+
+    # Check if Bronze is completed
+    if not state.bronze_output or not state.bronze_state or state.bronze_state.get("status") != "completed":
+        raise HTTPException(status_code=400, detail="Bronze not yet completed. Process Bronze first.")
+
+    # Check if Silver already processed
+    if state.silver_output and state.silver_state and state.silver_state.get("status") == "completed":
+        raise HTTPException(status_code=400, detail="Silver already processed. Use process_gold next.")
+
+    logger.info(f"Manually triggering Silver for run {run_id}")
+
+    # Process Silver in background
+    background_tasks.add_task(
+        medallion_pipeline.process_silver_only,
+        run_id=run_id,
+    )
+
+    return {
+        "run_id": run_id,
+        "status": "processing",
+        "current_stage": "silver",
+        "message": "Silver processing started. Poll /run/{run_id} for status.",
+    }
+
+
+@router.post("/run/{run_id}/process/gold")
+async def process_gold(run_id: str, background_tasks: BackgroundTasks):
+    """
+    Manually trigger Gold layer processing.
+
+    Requires Silver to be completed first.
+    """
+    state = await state_manager.get_pipeline_state(run_id)
+
+    if not state:
+        raise HTTPException(status_code=404, detail=f"Pipeline run {run_id} not found")
+
+    # Check if Silver is completed
+    if not state.silver_output or not state.silver_state or state.silver_state.get("status") != "completed":
+        raise HTTPException(status_code=400, detail="Silver not yet completed. Process Silver first.")
+
+    # Check if Gold already processed
+    if state.gold_output and state.gold_state and state.gold_state.get("status") == "completed":
+        raise HTTPException(status_code=400, detail="Gold already processed. Pipeline complete.")
+
+    logger.info(f"Manually triggering Gold for run {run_id}")
+
+    # Process Gold in background
+    background_tasks.add_task(
+        medallion_pipeline.process_gold_only,
+        run_id=run_id,
+    )
+
+    return {
+        "run_id": run_id,
+        "status": "processing",
+        "current_stage": "gold",
+        "message": "Gold processing started. Poll /run/{run_id} for status.",
+    }
+
+
+@router.get("/pending")
+async def get_pending_runs():
+    """
+    Get all pipeline runs waiting for manual processing.
+    """
+    runs = await state_manager.get_pending_runs()
+    return {
+        "pending_runs": [run.model_dump() for run in runs],
+        "count": len(runs),
+    }
+
+
 @router.post("/run/{run_id}/summary")
 async def generate_run_summary(run_id: str):
     """

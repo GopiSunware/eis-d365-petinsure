@@ -22,17 +22,24 @@ AGENT_PIPELINE_URL = os.getenv("AGENT_PIPELINE_URL", "http://localhost:8006")
 DOCGEN_SERVICE_URL = os.getenv("DOCGEN_SERVICE_URL", "http://localhost:8007")
 
 
-async def trigger_agent_pipeline(claim_data: dict) -> dict | None:
+async def trigger_agent_pipeline(claim_data: dict, auto_process: bool = False) -> dict | None:
     """
-    Trigger the EIS Dynamics Agent Pipeline for claim processing.
+    Ingest claim into EIS Dynamics Agent Pipeline for manual processing.
 
-    This sends the claim to the agent-driven medallion architecture for
-    intelligent processing through Bronze, Silver, and Gold layers.
+    By default, claims are ingested and wait for manual trigger (like Rule Engine).
+    Set auto_process=True for automatic full pipeline processing.
+
+    This sends the claim to the agent-driven medallion architecture.
+    User must manually trigger: Bronze → Silver → Gold
     """
     try:
         async with httpx.AsyncClient(timeout=10.0) as client:
+            # Use ingest for manual step-by-step processing (default)
+            # Use trigger for automatic full pipeline processing
+            endpoint = "trigger" if auto_process else "ingest"
+
             response = await client.post(
-                f"{AGENT_PIPELINE_URL}/api/v1/pipeline/trigger",
+                f"{AGENT_PIPELINE_URL}/api/v1/pipeline/{endpoint}",
                 json={
                     "event_type": "claim.submitted",
                     "source": "petinsure360",
@@ -43,18 +50,18 @@ async def trigger_agent_pipeline(claim_data: dict) -> dict | None:
             response.raise_for_status()
             result = response.json()
             logger.info(
-                f"Agent pipeline triggered for claim {claim_data['claim_id']}: "
-                f"run_id={result.get('run_id')}"
+                f"Agent pipeline {'triggered' if auto_process else 'ingested'} for claim {claim_data['claim_id']}: "
+                f"run_id={result.get('run_id')}, status={result.get('status')}"
             )
             return result
     except httpx.HTTPError as e:
         logger.warning(
-            f"Failed to trigger agent pipeline for claim {claim_data['claim_id']}: {e}"
+            f"Failed to ingest to agent pipeline for claim {claim_data['claim_id']}: {e}"
         )
         return None
     except Exception as e:
         logger.error(
-            f"Error triggering agent pipeline for claim {claim_data['claim_id']}: {e}"
+            f"Error ingesting to agent pipeline for claim {claim_data['claim_id']}: {e}"
         )
         return None
 

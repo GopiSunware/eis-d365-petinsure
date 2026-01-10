@@ -352,6 +352,47 @@ class PipelineStateManager:
             has_errors=True,
         )
 
+    async def initialize_pending_run(
+        self,
+        run_id: str,
+        claim_id: str,
+        claim_data: dict[str, Any],
+    ) -> PipelineState:
+        """
+        Initialize a pipeline run in 'pending' status for manual processing.
+
+        The run will wait for user action to start Bronze processing.
+        """
+        state = PipelineState(
+            run_id=run_id,
+            claim_id=claim_id,
+            status=PipelineStatus.PENDING,
+            current_stage=PipelineStage.TRIGGER,
+            started_at=datetime.utcnow(),
+            claim_data=claim_data,
+            complexity="pending",  # Will be determined by router
+        )
+
+        async with self._lock:
+            self._states[run_id] = state
+            if self._use_redis and self._redis:
+                await self._redis.set(
+                    f"pipeline:state:{run_id}",
+                    state.model_dump_json(),
+                    ex=86400,
+                )
+
+        logger.info(f"Created pending pipeline state for run {run_id}")
+        return state
+
+    async def get_pending_runs(self) -> list[PipelineState]:
+        """Get all pipeline runs waiting for manual processing."""
+        async with self._lock:
+            return [
+                state for state in self._states.values()
+                if state.status == PipelineStatus.PENDING
+            ]
+
     async def get_all_active_runs(self) -> list[PipelineState]:
         """Get all currently active pipeline runs."""
         async with self._lock:

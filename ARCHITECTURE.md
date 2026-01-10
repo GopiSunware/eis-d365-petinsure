@@ -3,6 +3,298 @@
 ## System Overview
 
 ```
+
+Azure Bronze Layer Architecture
+
+  1. Data Flow Overview
+
+  ┌──────────────────────────────────────────────────────────────────────────────────┐
+  │                           Azure Medallion Architecture                             │
+  ├────────────────┬──────────────────┬──────────────────┬───────────────────────────┤
+  │   RAW DATA     │   BRONZE LAYER   │   SILVER LAYER   │      GOLD LAYER           │
+  │  (ADLS Gen2)   │ (Delta Tables)   │  (Delta Tables)  │   (Delta/Parquet)         │
+  ├────────────────┼──────────────────┼──────────────────┼───────────────────────────┤
+  │ customers.csv  │ customers_raw    │ customers_clean  │ customer_360              │
+  │ pets.csv       │ pets_raw         │ pets_clean       │ claims_analytics          │
+  │ policies.csv   │ policies_raw     │ policies_clean   │ monthly_kpis              │
+  │ claims.jsonl   │ claims_raw       │ claims_validated │ risk_scoring              │
+  │ providers.csv  │ vet_providers_raw│ providers_clean  │ provider_performance      │
+  └────────────────┴──────────────────┴──────────────────┴───────────────────────────┘
+
+  2. Bronze Layer Processing (Databricks)
+
+  The Bronze layer is processed by Azure Databricks notebook 01_bronze_ingestion.py:
+
+  Storage Location:
+  abfss://bronze@petinsud7i43.dfs.core.windows.net/
+
+  What Bronze Does:
+  1. Raw Ingestion - Reads CSV/JSON from raw container
+  2. Schema Enforcement - Applies predefined schemas
+  3. Metadata Addition - Adds 3 columns:
+    - _ingestion_timestamp - When data was ingested
+    - _source_file - Original file path
+    - _batch_id - Batch identifier (YYYYMMDDHHMMSS)
+  4. Delta Write - Saves as Delta tables in petinsure_bronze database
+
+  Bronze Tables Created:
+  ┌───────────────────┬───────────────┬─────────┐
+  │       Table       │ Source Format │ Records │
+  ├───────────────────┼───────────────┼─────────┤
+  │ customers_raw     │ CSV           │ ~5,000  │
+  ├───────────────────┼───────────────┼─────────┤
+  │ pets_raw          │ CSV           │ ~6,500  │
+  ├───────────────────┼───────────────┼─────────┤
+  │ policies_raw      │ CSV           │ ~6,000  │
+  ├───────────────────┼───────────────┼─────────┤
+  │ claims_raw        │ JSONL         │ ~15,000 │
+  ├───────────────────┼───────────────┼─────────┤
+  │ vet_providers_raw │ CSV           │ ~200    │
+  └───────────────────┴───────────────┴─────────┘
+  ---
+  3. How to Monitor Bronze Layer
+
+  A. BI Dashboard (AWS-Hosted)
+
+  URL: http://petinsure360-bi-dashboard.s3-website-us-east-1.amazonaws.com
+
+  Navigate to "Rule Engine Pipeline" page:
+
+  ┌─────────────────────────────────────────────────────────────────┐
+  │  Rule Engine Pipeline                                           │
+  ├─────────────┬─────────────┬─────────────┬───────────────────────┤
+  │   SOURCE    │   BRONZE    │   SILVER    │   GOLD                │
+  │   (API)     │  Ingestion  │  Validation │   Analytics           │
+  │             │  15,000     │   5,003     │   5,003               │
+  │             │  7 pending  │  5 pending  │   3 pending           │
+  └─────────────┴─────────────┴─────────────┴───────────────────────┘
+
+  Features:
+  - Pending Claims Count - Shows claims waiting at each layer
+  - Process Buttons - Manually trigger Bronze→Silver, Silver→Gold
+  - Processing Log - Recent processing events
+  - Real-time Updates - WebSocket notifications on claim movement
+
+  B. API Endpoints (Direct Monitoring)
+
+  # Pipeline Status - Shows counts at each layer
+  curl https://fucf3fwwwv.us-east-1.awsapprunner.com/api/pipeline/status
+
+  # Pipeline Flow - Layer statistics
+  curl https://fucf3fwwwv.us-east-1.awsapprunner.com/api/pipeline/flow
+
+  # Pending Claims - Claims at each layer
+  curl https://fucf3fwwwv.us-east-1.awsapprunner.com/api/pipeline/pending
+
+  # Pipeline Metrics - Detailed stats
+  curl https://fucf3fwwwv.us-east-1.awsapprunner.com/api/pipeline/metrics
+
+  C. Azure Portal / Databricks Monitoring
+
+  For the actual Azure Bronze layer:
+
+  1. Azure Portal → Storage Account → Containers
+    - raw - Source files
+    - bronze - Delta tables
+  2. Databricks Workspace → Data
+  -- Check Bronze table counts
+  SELECT 'customers_raw' as table_name, COUNT(*) as cnt FROM petinsure_bronze.customers_raw
+  UNION ALL
+  SELECT 'claims_raw', COUNT(*) FROM petinsure_bronze.claims_raw
+  3. Databricks → Jobs - Monitor scheduled notebook runs
+
+  D. Azure Data Service Health Check
+
+  # Check Azure connectivity from AWS
+  curl https://9wvcjmrknc.us-east-1.awsapprunner.com/api/v1/azure/health
+
+  Returns:
+  {
+    "is_available": true,
+    "storage_account": "petinsud7i43",
+    "last_successful_read": "2026-01-10T13:30:00Z",
+    "connection_failures": 0,
+    "circuit_breaker_active": false
+  }
+
+  ---
+  4. Manual Pipeline Operations
+  ┌───────────────────────┬─────────────────────────────────────────────┬───────────────────────────────────┐
+  │        Action         │                  Endpoint                   │            Description            │
+  ├───────────────────────┼─────────────────────────────────────────────┼───────────────────────────────────┤
+  │ Process Bronze→Silver │ POST /api/pipeline/process/bronze-to-silver │ Move claims from Bronze to Silver │
+  ├───────────────────────┼─────────────────────────────────────────────┼───────────────────────────────────┤
+  │ Process Silver→Gold   │ POST /api/pipeline/process/silver-to-gold   │ Move claims from Silver to Gold   │
+  ├───────────────────────┼─────────────────────────────────────────────┼───────────────────────────────────┤
+  │ Refresh Pipeline      │ POST /api/pipeline/refresh                  │ Reload demo data                  │
+  ├───────────────────────┼─────────────────────────────────────────────┼───────────────────────────────────┤
+  │ Clear Pipeline        │ DELETE /api/pipeline/clear                  │ Clear all pending claims          │
+  └───────────────────────┴─────────────────────────────────────────────┴───────────────────────────────────┘
+  ---
+  Summary
+
+  The Bronze layer is the raw data landing zone:
+  - Azure Databricks runs 01_bronze_ingestion.py to create Delta tables
+  - AWS reads the processed Gold layer data via AzureDataService
+  - BI Dashboard shows pending claims at each layer with real-time WebSocket updates
+  - Monitor via: BI Dashboard UI, API endpoints, Azure Portal, or Databricks SQL
+
+
+Databricks SQL Queries
+
+  Run these in Azure Databricks → SQL Editor or a notebook:
+
+  -- ============================================
+  -- BRONZE LAYER - Raw Ingested Data
+  -- ============================================
+
+  -- View all Bronze tables
+  SHOW TABLES IN petinsure_bronze;
+
+  -- Count records in all Bronze tables
+  SELECT 'customers_raw' as table_name, COUNT(*) as record_count FROM petinsure_bronze.customers_raw
+  UNION ALL SELECT 'pets_raw', COUNT(*) FROM petinsure_bronze.pets_raw
+  UNION ALL SELECT 'policies_raw', COUNT(*) FROM petinsure_bronze.policies_raw
+  UNION ALL SELECT 'claims_raw', COUNT(*) FROM petinsure_bronze.claims_raw
+  UNION ALL SELECT 'vet_providers_raw', COUNT(*) FROM petinsure_bronze.vet_providers_raw;
+
+  -- Sample customers (Bronze)
+  SELECT customer_id, first_name, last_name, email, customer_segment,
+         _ingestion_timestamp, _batch_id
+  FROM petinsure_bronze.customers_raw LIMIT 10;
+
+  -- Sample claims (Bronze)
+  SELECT claim_id, customer_id, pet_id, claim_type, claim_amount, status,
+         _ingestion_timestamp, _source_file
+  FROM petinsure_bronze.claims_raw LIMIT 10;
+
+  -- ============================================
+  -- SILVER LAYER - Cleaned & Validated
+  -- ============================================
+
+  SHOW TABLES IN petinsure_silver;
+
+  SELECT 'customers_clean' as table_name, COUNT(*) as record_count FROM petinsure_silver.customers_clean
+  UNION ALL SELECT 'pets_clean', COUNT(*) FROM petinsure_silver.pets_clean
+  UNION ALL SELECT 'policies_clean', COUNT(*) FROM petinsure_silver.policies_clean
+  UNION ALL SELECT 'claims_validated', COUNT(*) FROM petinsure_silver.claims_validated
+  UNION ALL SELECT 'providers_clean', COUNT(*) FROM petinsure_silver.providers_clean;
+
+  -- ============================================
+  -- GOLD LAYER - Business Analytics
+  -- ============================================
+
+  SHOW TABLES IN petinsure_gold;
+
+  -- Customer 360 view
+  SELECT customer_id, full_name, customer_segment, value_tier, risk_category,
+         total_claims, total_annual_premium, loss_ratio, churn_risk
+  FROM petinsure_gold.customer_360 LIMIT 10;
+
+  -- Claims Analytics
+  SELECT claim_id, customer_id, claim_amount, status, claim_category,
+         processing_days, fraud_score, auto_adjudicated
+  FROM petinsure_gold.claims_analytics LIMIT 10;
+
+  -- Monthly KPIs
+  SELECT month, total_claims, approved_claims, denied_claims,
+         approval_rate, total_claim_amount, loss_ratio
+  FROM petinsure_gold.monthly_kpis ORDER BY month DESC LIMIT 12;
+
+  -- Risk Scoring
+  SELECT customer_id, risk_category, risk_score, loss_ratio, claim_frequency
+  FROM petinsure_gold.risk_scoring WHERE risk_category = 'High' LIMIT 10;
+
+  ---
+  2. Where Data Displays in Dashboard
+  ┌─────────────────────────────────────┬──────────────────────┬───────────────────────────────────────┐
+  │          Databricks Table           │    Dashboard Page    │              UI Section               │
+  ├─────────────────────────────────────┼──────────────────────┼───────────────────────────────────────┤
+  │ petinsure_gold.customer_360         │ Customer 360         │ Customer cards, segments, value tiers │
+  ├─────────────────────────────────────┼──────────────────────┼───────────────────────────────────────┤
+  │ petinsure_gold.claims_analytics     │ Claims Analytics     │ Claims table, status charts           │
+  ├─────────────────────────────────────┼──────────────────────┼───────────────────────────────────────┤
+  │ petinsure_gold.monthly_kpis         │ Executive Dashboard  │ KPI cards, trend charts               │
+  ├─────────────────────────────────────┼──────────────────────┼───────────────────────────────────────┤
+  │ petinsure_gold.risk_scoring         │ Risk Analysis        │ Risk distribution, high-risk list     │
+  ├─────────────────────────────────────┼──────────────────────┼───────────────────────────────────────┤
+  │ petinsure_gold.provider_performance │ Risk Analysis        │ Provider fraud scores                 │
+  ├─────────────────────────────────────┼──────────────────────┼───────────────────────────────────────┤
+  │ petinsure_bronze.* / silver.*       │ Rule Engine Pipeline │ Pending claims at each layer          │
+  └─────────────────────────────────────┴──────────────────────┴───────────────────────────────────────┘
+  Dashboard URL: http://petinsure360-bi-dashboard.s3-website-us-east-1.amazonaws.com
+
+  ---
+  3. Azure Storage Account Location
+
+  The storage account name is: petinsud7i43
+
+  To navigate in Azure Portal:
+
+  1. Go to: https://portal.azure.com
+  2. Search for: petinsud7i43 in the top search bar
+  3. Or navigate: Home → Storage accounts → petinsud7i43
+
+  Containers in this storage account:
+  petinsud7i43.dfs.core.windows.net/
+  ├── raw/          ← Source files (CSV, JSONL)
+  ├── bronze/       ← Delta tables (raw + metadata)
+  ├── silver/       ← Delta tables (cleaned)
+  ├── gold/         ← Delta/Parquet (analytics)
+  │   └── exports/  ← Parquet files for API consumption
+  │       ├── customer_360/
+  │       ├── claims_analytics/
+  │       ├── monthly_kpis/
+  │       ├── risk_scoring/
+  │       └── provider_performance/
+  └── checkpoints/  ← Streaming checkpoints
+
+  Direct ADLS Gen2 URLs:
+  # Raw data
+  abfss://raw@petinsud7i43.dfs.core.windows.net/
+
+  # Bronze layer
+  abfss://bronze@petinsud7i43.dfs.core.windows.net/
+
+  # Gold exports (what API reads)
+  abfss://gold@petinsud7i43.dfs.core.windows.net/exports/
+
+3. Azure Storage Account Location
+
+  The storage account name is: petinsud7i43
+
+  To navigate in Azure Portal:
+
+  1. Go to: https://portal.azure.com
+  2. Search for: petinsud7i43 in the top search bar
+  3. Or navigate: Home → Storage accounts → petinsud7i43
+
+  Containers in this storage account:
+  petinsud7i43.dfs.core.windows.net/
+  ├── raw/          ← Source files (CSV, JSONL)
+  ├── bronze/       ← Delta tables (raw + metadata)
+  ├── silver/       ← Delta tables (cleaned)
+  ├── gold/         ← Delta/Parquet (analytics)
+  │   └── exports/  ← Parquet files for API consumption
+  │       ├── customer_360/
+  │       ├── claims_analytics/
+  │       ├── monthly_kpis/
+  │       ├── risk_scoring/
+  │       └── provider_performance/
+  └── checkpoints/  ← Streaming checkpoints
+
+  Direct ADLS Gen2 URLs:
+  # Raw data
+  abfss://raw@petinsud7i43.dfs.core.windows.net/
+
+  # Bronze layer
+  abfss://bronze@petinsud7i43.dfs.core.windows.net/
+
+  # Gold exports (what API reads)
+  abfss://gold@petinsud7i43.dfs.core.windows.net/exports/
+
+
+
 ┌─────────────────────────────────────────────────────────────────────────────┐
 │                         PETINSURE360 (Rule-Based)                           │
 │                           Ports 3000-3099                                   │
