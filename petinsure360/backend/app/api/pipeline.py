@@ -1018,15 +1018,9 @@ async def clear_pipeline(request: Request, include_demo_data: bool = True):
                 claims_cleared = original_count - len(insights._claims)
                 print(f"Cleared {claims_cleared} pipeline claims from in-memory data")
 
-            # Also clear demo customers and pets added via pipeline
-            if insights._customers is not None and len(insights._customers) > 0:
-                insights._customers = insights._customers[
-                    ~insights._customers['customer_id'].astype(str).str.startswith('DEMO-')
-                ]
-            if insights._pets is not None and len(insights._pets) > 0:
-                insights._pets = insights._pets[
-                    ~insights._pets['customer_id'].astype(str).str.startswith('DEMO-')
-                ]
+            # NOTE: Do NOT clear demo customers and pets - they are base demo data
+            # Only clear claims that were submitted through the pipeline
+            # Demo users (DEMO-001, DEMO-002, DEMO-003) and their pets should persist
 
         except Exception as e:
             print(f"Error clearing demo data: {e}")
