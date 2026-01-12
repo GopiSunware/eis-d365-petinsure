@@ -900,10 +900,10 @@ export default function AgentPipelinePage() {
             </div>
           </div>
           <div className="flex items-center gap-3">
-            <span className="px-2 py-1 bg-yellow-100 text-yellow-700 text-xs rounded">{pipelinePending} pending</span>
-            <span className="px-2 py-1 bg-blue-100 text-blue-700 text-xs rounded">{pipelineRunning} running</span>
-            <span className="px-2 py-1 bg-green-100 text-green-700 text-xs rounded">{pipelineCompleted} completed</span>
-            <span className="px-2 py-1 bg-red-100 text-red-700 text-xs rounded">{pipelineFailed} failed</span>
+            <span className="px-2 py-1 bg-yellow-100 text-yellow-700 text-xs rounded">{pendingCount} pending</span>
+            <span className="px-2 py-1 bg-blue-100 text-blue-700 text-xs rounded">{processingCount} running</span>
+            <span className="px-2 py-1 bg-green-100 text-green-700 text-xs rounded">{completedCount} completed</span>
+            <span className="px-2 py-1 bg-red-100 text-red-700 text-xs rounded">{failedCount} failed</span>
             <span className="text-sm text-gray-500">{pipelineRuns.length} total</span>
           </div>
         </div>
