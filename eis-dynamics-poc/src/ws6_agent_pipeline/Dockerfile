@@ -10,6 +10,9 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY app/ ./app/
 COPY data/ ./data/
 
+# Set default AI provider to OpenAI (can be overridden by env var)
+ENV AI_PROVIDER=openai
+
 # Expose port
 EXPOSE 8080
 
