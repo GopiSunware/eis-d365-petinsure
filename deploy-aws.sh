@@ -27,6 +27,7 @@ ECR_REGISTRY="${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com"
 declare -A SERVICES=(
     ["claims-data-api"]="eis-dynamics-poc/src/shared/claims_data_api"
     ["agent-pipeline"]="eis-dynamics-poc/src/ws6_agent_pipeline"
+    ["docgen-service"]="eis-dynamics-poc/src/ws7_docgen"
     ["petinsure360-backend"]="petinsure360/backend"
 )
 
@@ -46,6 +47,7 @@ declare -A NEXTJS_FRONTENDS=(
 declare -A SERVICE_ARNS=(
     ["claims-data-api"]="arn:aws:apprunner:us-east-1:611670815873:service/claims-data-api/b6e7e21cdb564c78bc3e69e9cd76f61d"
     ["agent-pipeline"]="arn:aws:apprunner:us-east-1:611670815873:service/agent-pipeline/fd9ebd34550a4122881fc7e42f71b1be"
+    ["docgen-service"]="arn:aws:apprunner:us-east-1:611670815873:service/docgen-service/91f9a2ca228f4daea724b516643ac8ce"
     ["petinsure360-backend"]="arn:aws:apprunner:us-east-1:611670815873:service/petinsure360-backend/88915082265448db85d506782d32eaaf"
 )
 
