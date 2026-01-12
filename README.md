@@ -83,6 +83,8 @@ STATE_FILE = BASE_DIR / "data" / "state.json"
 |------|---------|
 | **[CRITICAL_RULES.md](CRITICAL_RULES.md)** | 🚫 Never use /tmp - MUST READ |
 | **[DEPLOYMENT_CHECKLIST.md](DEPLOYMENT_CHECKLIST.md)** | Pre-deployment validation & known issues |
+| **[SESSION_CHANGELOG.md](SESSION_CHANGELOG.md)** | Recent changes & fixes (what was done) |
+| **[STATE_MACHINE_DIAGRAM.md](STATE_MACHINE_DIAGRAM.md)** | Complete state machine & architecture diagrams |
 | [AWS_DEPLOYMENT_FINAL_STATUS.md](AWS_DEPLOYMENT_FINAL_STATUS.md) | Current AWS deployment status |
 | [CLAUDE.md](CLAUDE.md) | Claude Code configuration & skills |
 | [ARCHITECTURE.md](ARCHITECTURE.md) | System architecture & tech stack |

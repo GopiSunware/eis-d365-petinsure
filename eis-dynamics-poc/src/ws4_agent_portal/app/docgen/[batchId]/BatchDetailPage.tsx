@@ -229,7 +229,7 @@ export default function BatchDetailPage() {
           href="/docgen"
           className="text-blue-600 hover:text-blue-700 mt-4 inline-block"
         >
-          ← Back to DocGen
+          ← Back to Doc Processing
         </Link>
       </div>
     );

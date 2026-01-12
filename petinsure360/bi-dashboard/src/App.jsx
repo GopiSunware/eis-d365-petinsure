@@ -34,7 +34,7 @@ function App() {
     if (path === '/pipeline') return 'legacy-pipeline'
     if (path === '/agent-pipeline') return 'agent-pipeline'
     if (path === '/comparison') return 'rule-vs-agent'
-    if (path === '/docgen') return 'docgen-admin'
+    if (path === '/docgen') return 'doc-processing'
     if (path === '/settings') return 'ai-settings'
     return 'dashboard'
   }, [location.pathname])
@@ -55,7 +55,7 @@ function App() {
     { path: '/pipeline', icon: Database, label: 'Rule Engine Pipeline' },
     { path: '/agent-pipeline', icon: Bot, label: 'Agent Pipeline' },
     { path: '/comparison', icon: GitCompare, label: 'Rule vs Agent' },
-    { path: '/docgen', icon: Upload, label: 'DocGen Admin' },
+    { path: '/docgen', icon: Upload, label: 'Doc Processing' },
     { path: '/settings', icon: Settings, label: 'AI Settings' },
   ]
 

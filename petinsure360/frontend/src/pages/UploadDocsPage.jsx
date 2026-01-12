@@ -197,9 +197,9 @@ export default function UploadDocsPage({ user, addNotification }) {
         )
       case 'failed':
         return (
-          <span className="flex items-center gap-1 px-2 py-1 bg-red-100 text-red-700 text-xs font-medium rounded-full">
-            <XCircle className="w-3 h-3" />
-            Failed
+          <span className="flex items-center gap-1 px-2 py-1 bg-amber-100 text-amber-700 text-xs font-medium rounded-full">
+            <Clock className="w-3 h-3" />
+            In Review
           </span>
         )
       case 'processing':
@@ -251,16 +251,16 @@ export default function UploadDocsPage({ user, addNotification }) {
           {/* Service Status */}
           <div className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-sm ${
             serviceStatus === 'connected' ? 'bg-green-100 text-green-700' :
-            serviceStatus === 'unavailable' ? 'bg-red-100 text-red-700' :
+            serviceStatus === 'unavailable' ? 'bg-amber-100 text-amber-700' :
             'bg-gray-100 text-gray-500'
           }`}>
             <span className={`w-2 h-2 rounded-full ${
               serviceStatus === 'connected' ? 'bg-green-500' :
-              serviceStatus === 'unavailable' ? 'bg-red-500' :
+              serviceStatus === 'unavailable' ? 'bg-amber-500' :
               'bg-gray-400'
             }`} />
             {serviceStatus === 'connected' && 'AI Service Ready'}
-            {serviceStatus === 'unavailable' && 'AI Service Offline'}
+            {serviceStatus === 'unavailable' && 'AI Queued Mode'}
             {!serviceStatus && 'Checking...'}
           </div>
           <button
@@ -405,9 +405,9 @@ export default function UploadDocsPage({ user, addNotification }) {
           <div className="mt-4">
             <button
               onClick={handleUpload}
-              disabled={uploading || serviceStatus === 'unavailable' || !formData.policy_id || !formData.pet_id}
+              disabled={uploading || !formData.policy_id || !formData.pet_id}
               className={`btn-primary w-full md:w-auto flex items-center justify-center gap-2 ${
-                (uploading || serviceStatus === 'unavailable' || !formData.policy_id || !formData.pet_id)
+                (uploading || !formData.policy_id || !formData.pet_id)
                   ? 'opacity-50 cursor-not-allowed'
                   : ''
               }`}
@@ -425,7 +425,9 @@ export default function UploadDocsPage({ user, addNotification }) {
               )}
             </button>
             <p className="text-xs text-gray-500 mt-2">
-              Your documents will be processed by AI. You'll be notified when complete.
+              {serviceStatus === 'unavailable'
+                ? 'Documents will be queued and processed when AI service is available.'
+                : 'Your documents will be processed by AI. You\'ll be notified when complete.'}
             </p>
           </div>
         )}
@@ -487,13 +489,17 @@ export default function UploadDocsPage({ user, addNotification }) {
                       <div className="mt-2 p-2 bg-green-50 rounded text-sm">
                         <CheckCircle className="inline w-4 h-4 text-green-500 mr-1" />
                         <span className="text-green-700">
-                          Claim created: <strong>{upload.claim_number}</strong>
+                          {upload.user_message || (
+                            <>
+                              Claim created: <strong>{upload.claim_number}</strong>
+                              {upload.ai_decision && (
+                                <span className="ml-2 text-green-600">
+                                  Decision: {upload.ai_decision}
+                                </span>
+                              )}
+                            </>
+                          )}
                         </span>
-                        {upload.ai_decision && (
-                          <span className="ml-2 text-green-600">
-                            Decision: {upload.ai_decision}
-                          </span>
-                        )}
                       </div>
                     )}
 
@@ -501,16 +507,25 @@ export default function UploadDocsPage({ user, addNotification }) {
                       <div className="mt-2 p-2 bg-yellow-50 rounded text-sm">
                         <AlertCircle className="inline w-4 h-4 text-yellow-500 mr-1" />
                         <span className="text-yellow-700">
-                          Decision: {upload.ai_decision}
+                          {upload.user_message || `Decision: ${upload.ai_decision}`}
                         </span>
                       </div>
                     )}
 
                     {upload.status === 'failed' && (
-                      <div className="mt-2 p-2 bg-red-50 rounded text-sm">
-                        <XCircle className="inline w-4 h-4 text-red-500 mr-1" />
-                        <span className="text-red-700">
-                          {upload.error_message || 'Processing failed'}
+                      <div className="mt-2 p-2 bg-amber-50 rounded text-sm">
+                        <Clock className="inline w-4 h-4 text-amber-500 mr-1" />
+                        <span className="text-amber-700">
+                          {upload.user_message || "Your claim is being reviewed by our team. We'll notify you once processing is complete."}
+                        </span>
+                      </div>
+                    )}
+
+                    {upload.status === 'queued' && (
+                      <div className="mt-2 p-2 bg-blue-50 rounded text-sm">
+                        <Clock className="inline w-4 h-4 text-blue-500 mr-1" />
+                        <span className="text-blue-700">
+                          {upload.user_message || "Your documents have been saved and will be processed shortly."}
                         </span>
                       </div>
                     )}

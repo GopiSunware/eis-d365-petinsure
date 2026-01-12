@@ -621,42 +621,181 @@ esac
 log_success "Deployment complete!"
 
 # =============================================================================
-# POST-DEPLOYMENT: SEED DEMO DATA
+# POST-DEPLOYMENT: INITIALIZE CLEAN STATE
 # =============================================================================
 
-seed_demo_data() {
+# Service URLs
+PETINSURE_URL="https://fucf3fwwwv.us-east-1.awsapprunner.com"
+AGENT_PIPELINE_URL="https://qi2p3x5gsm.us-east-1.awsapprunner.com"
+CLAIMS_API_URL="https://9wvcjmrknc.us-east-1.awsapprunner.com"
+
+# -----------------------------------------------------------------------------
+# Step 1: Wait for all services to be healthy
+# -----------------------------------------------------------------------------
+wait_for_services() {
     log_info "=========================================="
-    log_info "Seeding Demo Data"
+    log_info "Step 1: Waiting for Services to be Healthy"
     log_info "=========================================="
 
-    # PetInsure360 Backend - Seed demo customers, pets, policies
-    log_info "Seeding PetInsure360 demo data..."
-    PETINSURE_URL="https://fucf3fwwwv.us-east-1.awsapprunner.com"
+    local max_attempts=30
+    local attempt=1
 
-    # Check if backend is healthy
-    if curl -s "$PETINSURE_URL/health" | grep -q "healthy"; then
-        # Seed demo data
-        SEED_RESULT=$(curl -s -X POST "$PETINSURE_URL/api/customers/seed-demo")
-        if echo "$SEED_RESULT" | grep -q "success"; then
-            log_success "Demo data seeded: $SEED_RESULT"
-        else
-            log_warning "Seed response: $SEED_RESULT"
+    # Wait for PetInsure360 Backend
+    log_info "Checking PetInsure360 Backend..."
+    while [ $attempt -le $max_attempts ]; do
+        if curl -s "$PETINSURE_URL/health" | grep -q "healthy"; then
+            log_success "PetInsure360 Backend is healthy"
+            break
         fi
+        echo "  Attempt $attempt/$max_attempts - waiting..."
+        sleep 5
+        ((attempt++))
+    done
+
+    # Wait for Agent Pipeline
+    attempt=1
+    log_info "Checking Agent Pipeline..."
+    while [ $attempt -le $max_attempts ]; do
+        if curl -s "$AGENT_PIPELINE_URL/health" | grep -q "healthy"; then
+            log_success "Agent Pipeline is healthy"
+            break
+        fi
+        echo "  Attempt $attempt/$max_attempts - waiting..."
+        sleep 5
+        ((attempt++))
+    done
+
+    # Wait for Claims API
+    attempt=1
+    log_info "Checking Claims Data API..."
+    while [ $attempt -le $max_attempts ]; do
+        if curl -s "$CLAIMS_API_URL/" | grep -q "claims"; then
+            log_success "Claims Data API is healthy"
+            break
+        fi
+        echo "  Attempt $attempt/$max_attempts - waiting..."
+        sleep 5
+        ((attempt++))
+    done
+
+    echo ""
+}
+
+# -----------------------------------------------------------------------------
+# Step 2: Clear old pipeline data (start fresh)
+# -----------------------------------------------------------------------------
+clear_pipeline_data() {
+    log_info "=========================================="
+    log_info "Step 2: Clearing Old Pipeline Data"
+    log_info "=========================================="
+
+    # Clear Agent Pipeline runs (CLM-* claims)
+    log_info "Clearing Agent Pipeline runs..."
+    CLEAR_RESULT=$(curl -s -X DELETE "$AGENT_PIPELINE_URL/clear" 2>/dev/null)
+    if echo "$CLEAR_RESULT" | grep -q '"success":true'; then
+        RUNS_CLEARED=$(echo "$CLEAR_RESULT" | grep -o '"runs_cleared":[0-9]*' | cut -d: -f2)
+        log_success "Agent Pipeline cleared: ${RUNS_CLEARED:-0} runs removed"
     else
-        log_warning "PetInsure360 backend not healthy, skipping seed"
+        log_warning "Agent Pipeline clear response: $CLEAR_RESULT"
+    fi
+
+    # Clear PetInsure360 Pipeline data
+    log_info "Clearing PetInsure360 Pipeline data..."
+    CLEAR_RESULT=$(curl -s -X DELETE "$PETINSURE_URL/api/pipeline/clear?include_demo_data=true" 2>/dev/null)
+    if echo "$CLEAR_RESULT" | grep -q '"success":true'; then
+        CLAIMS_CLEARED=$(echo "$CLEAR_RESULT" | grep -o '"claims_cleared":[0-9]*' | cut -d: -f2)
+        UPLOADS_CLEARED=$(echo "$CLEAR_RESULT" | grep -o '"uploads_cleared":[0-9]*' | cut -d: -f2)
+        log_success "PetInsure360 Pipeline cleared: ${CLAIMS_CLEARED:-0} claims, ${UPLOADS_CLEARED:-0} uploads"
+    else
+        log_warning "PetInsure360 Pipeline clear response: $CLEAR_RESULT"
     fi
 
     echo ""
-    log_info "Demo Login Credentials:"
-    echo "  Primary:   demo@demologin.com"
-    echo "  Secondary: demo1@demologin.com"
-    echo "  Tertiary:  demo2@demologin.com"
-    echo ""
-    log_info "Each demo user has pets and policies pre-configured."
 }
 
-# Run demo data seeding
-seed_demo_data
+# -----------------------------------------------------------------------------
+# Step 3: Seed demo data (users, pets, policies)
+# -----------------------------------------------------------------------------
+seed_demo_data() {
+    log_info "=========================================="
+    log_info "Step 3: Seeding Demo Data"
+    log_info "=========================================="
+
+    # PetInsure360 Backend - Seed demo customers, pets, policies
+    log_info "Seeding demo users, pets, and policies..."
+
+    SEED_RESULT=$(curl -s -X POST "$PETINSURE_URL/api/customers/seed-demo" 2>/dev/null)
+    if echo "$SEED_RESULT" | grep -q '"success":true'; then
+        CUSTOMERS=$(echo "$SEED_RESULT" | grep -o '"customers":[0-9]*' | cut -d: -f2)
+        PETS=$(echo "$SEED_RESULT" | grep -o '"pets":[0-9]*' | cut -d: -f2)
+        POLICIES=$(echo "$SEED_RESULT" | grep -o '"policies":[0-9]*' | cut -d: -f2)
+        log_success "Demo data seeded: ${CUSTOMERS:-0} customers, ${PETS:-0} pets, ${POLICIES:-0} policies"
+    else
+        log_warning "Seed response: $SEED_RESULT"
+    fi
+
+    echo ""
+}
+
+# -----------------------------------------------------------------------------
+# Step 4: Verify clean state
+# -----------------------------------------------------------------------------
+verify_clean_state() {
+    log_info "=========================================="
+    log_info "Step 4: Verifying Clean State"
+    log_info "=========================================="
+
+    # Check Agent Pipeline metrics
+    log_info "Agent Pipeline Status:"
+    METRICS=$(curl -s "$AGENT_PIPELINE_URL/metrics" 2>/dev/null)
+    TOTAL_RUNS=$(echo "$METRICS" | grep -o '"total_runs":[0-9]*' | cut -d: -f2)
+    echo "  Total pipeline runs: ${TOTAL_RUNS:-0}"
+
+    # Check PetInsure360 data
+    log_info "PetInsure360 Demo Data:"
+    
+    # Check demo user pets
+    DEMO_PETS=$(curl -s "$PETINSURE_URL/api/pets?customer_id=DEMO-001" 2>/dev/null)
+    DEMO_PET_COUNT=$(echo "$DEMO_PETS" | grep -o '"count":[0-9]*' | cut -d: -f2)
+    echo "  Demo user (DEMO-001) pets: ${DEMO_PET_COUNT:-0}"
+
+    DEMO1_PETS=$(curl -s "$PETINSURE_URL/api/pets?customer_id=DEMO-002" 2>/dev/null)
+    DEMO1_PET_COUNT=$(echo "$DEMO1_PETS" | grep -o '"count":[0-9]*' | cut -d: -f2)
+    echo "  Demo1 user (DEMO-002) pets: ${DEMO1_PET_COUNT:-0}"
+
+    # Validation
+    if [ "${TOTAL_RUNS:-0}" -eq 0 ] && [ "${DEMO_PET_COUNT:-0}" -ge 1 ] && [ "${DEMO1_PET_COUNT:-0}" -ge 1 ]; then
+        log_success "Clean state verified - ready for demo!"
+    else
+        log_warning "State may need attention - check values above"
+    fi
+
+    echo ""
+}
+
+# -----------------------------------------------------------------------------
+# Run all post-deployment steps in order
+# -----------------------------------------------------------------------------
+run_post_deployment() {
+    log_info "=========================================="
+    log_info "Running Post-Deployment Initialization"
+    log_info "=========================================="
+    echo ""
+
+    wait_for_services
+    clear_pipeline_data
+    seed_demo_data
+    verify_clean_state
+
+    log_info "Demo Login Credentials:"
+    echo "  Primary:   demo@demologin.com   (2 pets: Buddy, Whiskers)"
+    echo "  Secondary: demo1@demologin.com  (2 pets: Max, Luna)"
+    echo "  Tertiary:  demo2@demologin.com  (1 pet: Charlie)"
+    echo ""
+}
+
+# Run post-deployment initialization
+run_post_deployment
 
 echo ""
 echo "=========================================="

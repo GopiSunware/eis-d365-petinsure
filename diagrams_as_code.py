@@ -1,3 +1,6 @@
+import os
+os.environ["PATH"] += os.pathsep + r"C:\Program Files\Graphviz\bin"
+
 from diagrams import Cluster, Diagram, Edge
 from diagrams.aws.compute import AppRunner
 from diagrams.aws.storage import S3

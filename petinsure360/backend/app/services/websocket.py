@@ -55,10 +55,11 @@ class WebSocketManager:
         for connection_id in disconnected:
             self.disconnect(connection_id)
 
-    async def emit(self, event: str, data: dict):
+    async def emit(self, event: str, data: dict, room: str = None):
         """
         Emit an event to all connected clients.
         Mimics Socket.IO's emit() API for easier migration.
+        Note: room parameter is accepted but ignored (broadcasts to all)
         """
         message = {
             "type": event,

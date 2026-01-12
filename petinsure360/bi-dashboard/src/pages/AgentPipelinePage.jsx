@@ -1,6 +1,12 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { Bot, FileText, CheckCircle, XCircle, Clock, Loader2, RefreshCw, Play, AlertTriangle, Zap, Activity, Brain, Database } from 'lucide-react'
 import api from '../services/api'
+
+// localStorage keys for progress persistence
+const STORAGE_KEYS = {
+  ACTIVE_RUN_ID: 'petinsure360_activeAgentRunId',
+  ACTIVE_RUN_DATA: 'petinsure360_activeAgentRunData'
+}
 
 // Agent step component
 const AgentStep = ({ step }) => {
@@ -220,9 +226,187 @@ const BatchCard = ({ batch, onProcess, onView, isProcessing }) => {
   )
 }
 
+// AI-Driven Layer Card Component - Renders from card_display
+const LayerCard = ({ layer, icon: Icon, state, output, fallbackTitle, fallbackSubtitle, accentColor }) => {
+  const isCompleted = state?.status === 'completed'
+  const cardDisplay = output?.card_display
+
+  // Color mappings for each layer
+  const colorMap = {
+    amber: {
+      border: 'border-amber-400',
+      bg: 'bg-amber-50',
+      iconBg: 'bg-amber-500',
+      title: 'text-amber-900',
+      subtitle: 'text-amber-700',
+      accent: 'text-amber-700',
+      progressBg: 'bg-amber-200',
+      progressFill: 'bg-amber-500',
+    },
+    slate: {
+      border: 'border-gray-400',
+      bg: 'bg-slate-50',
+      iconBg: 'bg-slate-500',
+      title: 'text-slate-900',
+      subtitle: 'text-slate-600',
+      accent: 'text-slate-700',
+      progressBg: 'bg-slate-200',
+      progressFill: 'bg-slate-500',
+    },
+    green: {
+      border: 'border-green-400',
+      bg: 'bg-green-50',
+      iconBg: 'bg-green-500',
+      title: 'text-green-900',
+      subtitle: 'text-green-700',
+      accent: 'text-green-700',
+      progressBg: 'bg-green-200',
+      progressFill: 'bg-green-500',
+    },
+  }
+
+  const colors = colorMap[accentColor] || colorMap.slate
+
+  // Get status color from card_display or fallback
+  const getStatusColor = (statusColor) => {
+    const statusColorMap = {
+      green: 'bg-green-100 text-green-700',
+      red: 'bg-red-100 text-red-700',
+      yellow: 'bg-yellow-100 text-yellow-700',
+      orange: 'bg-orange-100 text-orange-700',
+      blue: 'bg-blue-100 text-blue-700',
+    }
+    return statusColorMap[statusColor] || 'bg-gray-100 text-gray-700'
+  }
+
+  // Title and subtitle from AI or fallback
+  const title = cardDisplay?.title || fallbackTitle
+  const subtitle = cardDisplay?.subtitle || fallbackSubtitle
+
+  return (
+    <div className={`p-4 rounded-xl border-2 ${isCompleted ? `${colors.border} ${colors.bg}` : 'border-gray-200 bg-gray-50'}`}>
+      {/* Header */}
+      <div className="flex items-center gap-2 mb-3">
+        <div className={`w-8 h-8 rounded-full ${colors.iconBg} flex items-center justify-center`}>
+          <Icon className="w-4 h-4 text-white" />
+        </div>
+        <div>
+          <h4 className={`font-semibold ${colors.title}`}>{title}</h4>
+          <p className={`text-xs ${colors.subtitle}`}>{subtitle}</p>
+        </div>
+      </div>
+
+      {/* Content - AI Generated or Fallback */}
+      {isCompleted && cardDisplay ? (
+        <div className="space-y-2">
+          {/* Primary Metric */}
+          {cardDisplay.primary_metric && (
+            <div className="flex justify-between items-center">
+              <span className="text-xs text-gray-600">{cardDisplay.primary_metric.label}</span>
+              <span className={`text-sm font-bold ${colors.accent}`}>{cardDisplay.primary_metric.value}</span>
+            </div>
+          )}
+
+          {/* Amount Display (for Silver/Gold) */}
+          {cardDisplay.amount !== undefined && cardDisplay.amount !== null && (
+            <div className="bg-green-100 rounded-lg p-2 text-center">
+              <p className="text-xs text-green-600">{cardDisplay.amount_label || 'Amount'}</p>
+              <p className="text-lg font-bold text-green-700">${Number(cardDisplay.amount).toLocaleString()}</p>
+            </div>
+          )}
+
+          {/* Status/Decision Badge */}
+          {(cardDisplay.status || cardDisplay.decision) && (
+            <div className={`text-center py-2 rounded-lg ${getStatusColor(cardDisplay.status_color || cardDisplay.decision_color)}`}>
+              <p className="text-sm font-bold">{cardDisplay.decision || cardDisplay.status}</p>
+            </div>
+          )}
+
+          {/* Secondary Metrics */}
+          {cardDisplay.secondary_metrics?.length > 0 && (
+            <div className={`grid grid-cols-${Math.min(cardDisplay.secondary_metrics.length, 2)} gap-2 text-xs`}>
+              {cardDisplay.secondary_metrics.slice(0, 2).map((metric, idx) => (
+                <div key={idx} className="bg-white rounded p-1.5 text-center">
+                  <p className="text-gray-500">{metric.label}</p>
+                  <p className="font-bold">{metric.value}</p>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Summary */}
+          {cardDisplay.summary && (
+            <p className="text-xs text-gray-600 italic line-clamp-2">{cardDisplay.summary}</p>
+          )}
+        </div>
+      ) : isCompleted ? (
+        // Fallback for completed without card_display (legacy data)
+        <div className="space-y-2">
+          {layer === 'bronze' && output.quality_score !== undefined && (
+            <>
+              <div className="flex justify-between items-center">
+                <span className="text-xs text-gray-600">Data Quality</span>
+                <span className={`text-sm font-bold ${colors.accent}`}>{Math.round((output.quality_score || 0) * 100)}%</span>
+              </div>
+              <div className={`w-full ${colors.progressBg} rounded-full h-2`}>
+                <div className={`${colors.progressFill} h-2 rounded-full`} style={{width: `${Math.round((output.quality_score || 0) * 100)}%`}}></div>
+              </div>
+            </>
+          )}
+          {layer === 'silver' && (
+            <>
+              <div className="flex items-center gap-2">
+                {output.is_covered ? (
+                  <CheckCircle className="w-4 h-4 text-green-500" />
+                ) : (
+                  <XCircle className="w-4 h-4 text-red-500" />
+                )}
+                <span className="text-sm font-medium">{output.is_covered ? 'Coverage Verified' : 'Not Covered'}</span>
+              </div>
+              {output.expected_reimbursement && (
+                <div className="bg-green-100 rounded-lg p-2 text-center">
+                  <p className="text-xs text-green-600">Expected Reimbursement</p>
+                  <p className="text-lg font-bold text-green-700">${output.expected_reimbursement?.toLocaleString()}</p>
+                </div>
+              )}
+            </>
+          )}
+          {layer === 'gold' && output.final_decision && (
+            <>
+              <div className={`text-center py-2 rounded-lg ${
+                output.final_decision === 'approve' || output.final_decision === 'auto_approve'
+                  ? 'bg-green-100'
+                  : output.final_decision === 'deny'
+                    ? 'bg-red-100'
+                    : 'bg-yellow-100'
+              }`}>
+                <p className="text-lg font-bold capitalize">
+                  {output.final_decision === 'auto_approve' ? 'Approved' : output.final_decision}
+                </p>
+              </div>
+              <div className="grid grid-cols-2 gap-2 text-xs">
+                <div className="bg-white rounded p-1.5 text-center">
+                  <p className="text-gray-500">Amount</p>
+                  <p className="font-bold">${(output.approved_amount || output.silver_reference?.expected_reimbursement || 0).toLocaleString()}</p>
+                </div>
+                <div className="bg-white rounded p-1.5 text-center">
+                  <p className="text-gray-500">Confidence</p>
+                  <p className="font-bold">{Math.round((output.confidence || 0) * 100)}%</p>
+                </div>
+              </div>
+            </>
+          )}
+        </div>
+      ) : (
+        <p className="text-xs text-gray-500 italic">Awaiting AI processing</p>
+      )}
+    </div>
+  )
+}
+
 // Pipeline Run Card component for LangGraph Agent Pipeline
-const PipelineRunCard = ({ run, onProcessBronze, onProcessSilver, onProcessGold, isProcessing }) => {
-  const [expanded, setExpanded] = useState(false)
+const PipelineRunCard = ({ run, onProcessBronze, onProcessSilver, onProcessGold, isProcessing, isFirst = false }) => {
+  const [expanded, setExpanded] = useState(isFirst) // First card expands by default
 
   // Determine which process button to show
   const getNextAction = () => {
@@ -378,52 +562,141 @@ const PipelineRunCard = ({ run, onProcessBronze, onProcessSilver, onProcessGold,
       </div>
 
       {expanded && (
-        <div className="mt-4 pt-4 border-t space-y-3">
-          {/* Bronze Output */}
-          {bronzeOutput.reasoning && (
-            <div className="p-3 bg-amber-50 rounded-lg">
-              <div className="flex items-center gap-2 mb-2">
-                <Database className="w-4 h-4 text-amber-600" />
-                <span className="text-sm font-medium text-amber-900">Bronze Layer</span>
-                <span className="text-xs text-amber-700">Quality: {Math.round((bronzeOutput.quality_score || 0) * 100)}%</span>
+        <div className="mt-4 pt-4 border-t">
+          {/* Executive Summary Header - AI-Driven Cards */}
+          <div className="grid grid-cols-3 gap-4 mb-4">
+            {/* Bronze Layer Card - AI Generated */}
+            <LayerCard
+              layer="bronze"
+              icon={Database}
+              state={run.bronze_state}
+              output={bronzeOutput}
+              fallbackTitle="Bronze Layer"
+              fallbackSubtitle="AI Data Validation Agent"
+              accentColor="amber"
+            />
+
+            {/* Silver Layer Card - AI Generated */}
+            <LayerCard
+              layer="silver"
+              icon={Activity}
+              state={run.silver_state}
+              output={silverOutput}
+              fallbackTitle="Silver Layer"
+              fallbackSubtitle="AI Enrichment Agent"
+              accentColor="slate"
+            />
+
+            {/* Gold Layer Card - AI Generated */}
+            <LayerCard
+              layer="gold"
+              icon={Brain}
+              state={run.gold_state}
+              output={goldOutput}
+              fallbackTitle="Gold Layer"
+              fallbackSubtitle="AI Decision Agent"
+              accentColor="green"
+            />
+          </div>
+
+          {/* Detailed Analysis (Expanded by default) */}
+          {(bronzeOutput.reasoning || silverOutput.enrichment_notes || goldOutput.reasoning) && (
+            <details open className="bg-gray-50 rounded-lg p-3">
+              <summary className="text-sm font-medium text-gray-700 cursor-pointer hover:text-gray-900">
+                View Detailed Analysis
+              </summary>
+              <div className="mt-3 space-y-3 text-xs text-gray-600">
+                {/* Bronze Analysis */}
+                {bronzeOutput.reasoning && (
+                  <details open className="p-2 bg-amber-50 rounded border-l-2 border-amber-400">
+                    <summary className="font-medium text-amber-800 cursor-pointer hover:text-amber-900">
+                      Bronze Analysis
+                    </summary>
+                    <div className="mt-2 space-y-2">
+                      <p className="whitespace-pre-wrap text-amber-900">{bronzeOutput.reasoning}</p>
+                      {/* Bronze Output Data */}
+                      {bronzeOutput.cleaned_data && (
+                        <details className="mt-2 p-2 bg-amber-100/50 rounded">
+                          <summary className="text-xs font-medium text-amber-700 cursor-pointer">
+                            View Output Data
+                          </summary>
+                          <div className="mt-2 grid grid-cols-2 gap-2 text-xs">
+                            <div><span className="text-amber-600">Claim ID:</span> {bronzeOutput.cleaned_data.claim_id}</div>
+                            <div><span className="text-amber-600">Amount:</span> ${bronzeOutput.cleaned_data.claim_amount?.toLocaleString()}</div>
+                            <div><span className="text-amber-600">Customer:</span> {bronzeOutput.cleaned_data.customer_name}</div>
+                            <div><span className="text-amber-600">Pet:</span> {bronzeOutput.cleaned_data.pet_name}</div>
+                            <div><span className="text-amber-600">Type:</span> {bronzeOutput.cleaned_data.claim_type}</div>
+                            <div><span className="text-amber-600">Category:</span> {bronzeOutput.cleaned_data.claim_category}</div>
+                            <div className="col-span-2"><span className="text-amber-600">Diagnosis:</span> {bronzeOutput.cleaned_data.diagnosis}</div>
+                            <div><span className="text-amber-600">Quality Score:</span> {(bronzeOutput.quality_score * 100).toFixed(0)}%</div>
+                            <div><span className="text-amber-600">Decision:</span> {bronzeOutput.decision}</div>
+                          </div>
+                        </details>
+                      )}
+                    </div>
+                  </details>
+                )}
+                {/* Silver Enrichment */}
+                {silverOutput.enrichment_notes && (
+                  <details open className="p-2 bg-slate-50 rounded border-l-2 border-slate-400">
+                    <summary className="font-medium text-slate-800 cursor-pointer hover:text-slate-900">
+                      Silver Enrichment
+                    </summary>
+                    <div className="mt-2 space-y-2">
+                      <p className="whitespace-pre-wrap text-slate-900">{silverOutput.enrichment_notes}</p>
+                      {/* Silver Output Data */}
+                      <details className="mt-2 p-2 bg-slate-100/50 rounded">
+                        <summary className="text-xs font-medium text-slate-700 cursor-pointer">
+                          View Output Data
+                        </summary>
+                        <div className="mt-2 grid grid-cols-2 gap-2 text-xs">
+                          <div><span className="text-slate-600">Coverage:</span> {silverOutput.is_covered ? 'Yes' : 'No'}</div>
+                          <div><span className="text-slate-600">Coverage %:</span> {silverOutput.coverage_percentage}%</div>
+                          <div><span className="text-slate-600">Expected Reimbursement:</span> ${silverOutput.expected_reimbursement?.toLocaleString()}</div>
+                          <div><span className="text-slate-600">Quality Score:</span> {(silverOutput.quality_score * 100).toFixed(0)}%</div>
+                        </div>
+                      </details>
+                    </div>
+                  </details>
+                )}
+                {/* Gold Decision */}
+                {goldOutput.reasoning && (
+                  <details open className="p-2 bg-green-50 rounded border-l-2 border-green-400">
+                    <summary className="font-medium text-green-800 cursor-pointer hover:text-green-900">
+                      Gold Decision Rationale
+                    </summary>
+                    <div className="mt-2 space-y-2">
+                      <p className="whitespace-pre-wrap text-green-900">{goldOutput.reasoning}</p>
+                      {/* Gold Output Data */}
+                      <details className="mt-2 p-2 bg-green-100/50 rounded">
+                        <summary className="text-xs font-medium text-green-700 cursor-pointer">
+                          View Output Data
+                        </summary>
+                        <div className="mt-2 grid grid-cols-2 gap-2 text-xs">
+                          <div><span className="text-green-600">Final Decision:</span> <span className="font-semibold">{goldOutput.final_decision?.replace('_', ' ').toUpperCase()}</span></div>
+                          <div><span className="text-green-600">Approved Amount:</span> ${goldOutput.approved_amount?.toLocaleString()}</div>
+                          <div><span className="text-green-600">Fraud Score:</span> {(goldOutput.fraud_score * 100).toFixed(1)}%</div>
+                          <div><span className="text-green-600">Risk Level:</span> {goldOutput.risk_level?.toUpperCase()}</div>
+                          <div><span className="text-green-600">Confidence:</span> {(goldOutput.confidence * 100).toFixed(0)}%</div>
+                          <div><span className="text-green-600">Processing Time:</span> {(goldOutput.total_pipeline_time_ms / 1000).toFixed(1)}s</div>
+                        </div>
+                      </details>
+                    </div>
+                  </details>
+                )}
               </div>
-              <p className="text-xs text-amber-800 line-clamp-3">{bronzeOutput.reasoning?.slice(0, 300)}...</p>
-            </div>
+            </details>
           )}
-          {/* Silver Output */}
-          {silverOutput.enrichment_notes && (
-            <div className="p-3 bg-gray-100 rounded-lg">
-              <div className="flex items-center gap-2 mb-2">
-                <Activity className="w-4 h-4 text-gray-600" />
-                <span className="text-sm font-medium text-gray-900">Silver Layer</span>
-                {silverOutput.is_covered && <span className="text-xs text-green-700">Covered: ${silverOutput.expected_reimbursement?.toLocaleString()}</span>}
-              </div>
-              <p className="text-xs text-gray-700 line-clamp-3">{silverOutput.enrichment_notes?.slice(0, 300)}...</p>
-            </div>
-          )}
-          {/* Gold Output */}
-          {goldOutput.final_decision && (
-            <div className="p-3 bg-green-50 rounded-lg">
-              <div className="flex items-center gap-2 mb-2">
-                <Brain className="w-4 h-4 text-green-600" />
-                <span className="text-sm font-medium text-green-900">Gold Layer - Final Decision</span>
-              </div>
-              <div className="grid grid-cols-3 gap-2 text-xs">
-                <div><span className="text-gray-500">Decision:</span> <span className="font-medium">{goldOutput.final_decision}</span></div>
-                <div><span className="text-gray-500">Amount:</span> <span className="font-medium">${goldOutput.approved_amount?.toLocaleString() || 0}</span></div>
-                <div><span className="text-gray-500">Confidence:</span> <span className="font-medium">{Math.round((goldOutput.confidence || 0) * 100)}%</span></div>
-              </div>
-            </div>
-          )}
+
           {/* Errors */}
           {run.errors?.length > 0 && (
-            <div className="p-3 bg-red-50 rounded-lg">
+            <div className="mt-3 p-3 bg-red-50 rounded-lg border border-red-200">
               <div className="flex items-center gap-2 mb-2">
                 <XCircle className="w-4 h-4 text-red-600" />
-                <span className="text-sm font-medium text-red-900">Errors</span>
+                <span className="text-sm font-medium text-red-900">Processing Errors</span>
               </div>
               {run.errors.map((err, idx) => (
-                <p key={idx} className="text-xs text-red-700">{err}</p>
+                <p key={idx} className="text-xs text-red-700">• {err}</p>
               ))}
             </div>
           )}
@@ -441,11 +714,42 @@ export default function AgentPipelinePage() {
   const [selectedBatch, setSelectedBatch] = useState(null)
   const [serviceStatus, setServiceStatus] = useState(null)
   const [pipelineStatus, setPipelineStatus] = useState(null)
+  const [expandedRunId, setExpandedRunId] = useState(null) // Track which run is expanded
 
   // DocGen service URL (EIS Dynamics DocGen Service)
   const DOCGEN_URL = import.meta.env.VITE_DOCGEN_URL || 'http://localhost:8007'
   // Agent Pipeline URL (EIS Dynamics LangGraph Pipeline)
   const PIPELINE_URL = (import.meta.env.VITE_PIPELINE_URL || 'http://localhost:8006/api').replace(/\/api$/, '')
+
+  // Restore active run from localStorage on mount
+  useEffect(() => {
+    const savedRunId = localStorage.getItem(STORAGE_KEYS.ACTIVE_RUN_ID)
+    const savedRunData = localStorage.getItem(STORAGE_KEYS.ACTIVE_RUN_DATA)
+    
+    if (savedRunId) {
+      console.log('Restoring active run from localStorage:', savedRunId)
+      // Restore processing state
+      setProcessing(prev => ({ ...prev, [savedRunId]: true }))
+      setExpandedRunId(savedRunId)
+      
+      // If we have saved run data, use it immediately for UI
+      if (savedRunData) {
+        try {
+          const runData = JSON.parse(savedRunData)
+          setPipelineRuns(prev => {
+            const exists = prev.some(r => r.run_id === savedRunId)
+            if (!exists) return [runData, ...prev]
+            return prev
+          })
+        } catch (e) {
+          console.error('Error parsing saved run data:', e)
+        }
+      }
+      
+      // Resume polling for this run
+      pollPipelineRunWithStorage(savedRunId)
+    }
+  }, [])
 
   useEffect(() => {
     checkServiceHealth()
@@ -625,9 +929,13 @@ export default function AgentPipelinePage() {
     }
   }
 
-  const pollPipelineRun = async (runId) => {
+  // Poll pipeline run WITH localStorage persistence
+  const pollPipelineRunWithStorage = async (runId) => {
+    // Save to localStorage when polling starts
+    localStorage.setItem(STORAGE_KEYS.ACTIVE_RUN_ID, runId)
+    
     let attempts = 0
-    const maxAttempts = 120 // 2 minutes max
+    const maxAttempts = 180 // 3 minutes max
 
     while (attempts < maxAttempts) {
       await new Promise(resolve => setTimeout(resolve, 1000))
@@ -637,11 +945,19 @@ export default function AgentPipelinePage() {
           const data = await response.json()
           setPipelineRuns(data.runs || [])
 
-          // Check if this run is no longer running
           const run = (data.runs || []).find(r => r.run_id === runId)
-          if (run && run.status !== 'running') {
-            setProcessing(prev => ({ ...prev, [runId]: false }))
-            return
+          if (run) {
+            // Save current run data to localStorage for restoration
+            localStorage.setItem(STORAGE_KEYS.ACTIVE_RUN_DATA, JSON.stringify(run))
+            
+            // Check if run is complete
+            if (run.status !== 'running' && run.status !== 'in_progress') {
+              // Clear localStorage on completion
+              localStorage.removeItem(STORAGE_KEYS.ACTIVE_RUN_ID)
+              localStorage.removeItem(STORAGE_KEYS.ACTIVE_RUN_DATA)
+              setProcessing(prev => ({ ...prev, [runId]: false }))
+              return
+            }
           }
         }
       } catch (e) {
@@ -649,8 +965,15 @@ export default function AgentPipelinePage() {
       }
       attempts++
     }
-    // Timeout
+    // Timeout - clear localStorage
+    localStorage.removeItem(STORAGE_KEYS.ACTIVE_RUN_ID)
+    localStorage.removeItem(STORAGE_KEYS.ACTIVE_RUN_DATA)
     setProcessing(prev => ({ ...prev, [runId]: false }))
+  }
+
+  // Legacy poll function (without localStorage) - kept for compatibility
+  const pollPipelineRun = async (runId) => {
+    return pollPipelineRunWithStorage(runId)
   }
 
   // Stats - DocGen batches
@@ -683,7 +1006,7 @@ export default function AgentPipelinePage() {
               Pipeline: {pipelineStatus || 'checking...'}
             </span>
             <span className={`px-2 py-1 rounded ${serviceStatus === 'connected' ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'}`}>
-              DocGen: {serviceStatus || 'checking...'}
+              Doc Processing: {serviceStatus || 'checking...'}
             </span>
           </div>
           <button
@@ -831,7 +1154,7 @@ export default function AgentPipelinePage() {
           </div>
         ) : (
           <div className="space-y-4">
-            {pipelineRuns.map(run => (
+            {pipelineRuns.map((run, index) => (
               <PipelineRunCard
                 key={run.run_id}
                 run={run}
@@ -839,6 +1162,7 @@ export default function AgentPipelinePage() {
                 onProcessSilver={handleProcessSilver}
                 onProcessGold={handleProcessGold}
                 isProcessing={processing[run.run_id]}
+                isFirst={index === 0}
               />
             ))}
           </div>
@@ -850,7 +1174,7 @@ export default function AgentPipelinePage() {
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-3">
             <FileText className="h-5 w-5 text-gray-600" />
-            <h3 className="text-lg font-semibold text-gray-900">Document Batches (DocGen)</h3>
+            <h3 className="text-lg font-semibold text-gray-900">Document Batches (Doc Processing)</h3>
           </div>
           <span className="text-sm text-gray-500">{batches.length} total</span>
         </div>

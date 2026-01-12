@@ -12,8 +12,8 @@ import { ChatProvider } from '@/components/ChatProvider';
 const inter = Inter({ subsets: ['latin'] });
 
 export const metadata: Metadata = {
-  title: 'EIS Admin Portal',
-  description: 'Administration portal for EIS-Dynamics Pet Insurance Platform',
+  title: 'PetInsure360 Admin Portal',
+  description: 'Configuration & Monitoring Portal for PetInsure360 Platform',
 };
 
 export default function RootLayout({

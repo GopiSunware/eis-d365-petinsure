@@ -20,7 +20,7 @@ const navigation = [
   { name: "Customers", href: "/customers", icon: Users },
   { name: "Policies", href: "/policies", icon: FileText },
   { name: "Claims", href: "/claims", icon: AlertCircle },
-  { name: "DocGen", href: "/docgen", icon: Upload },
+  { name: "Doc Processing", href: "/docgen", icon: Upload },
   { name: "Pipeline", href: "/pipeline", icon: GitBranch },
   { name: "Quotes", href: "/quotes", icon: Calculator },
   { name: "Settings", href: "/settings", icon: Settings },

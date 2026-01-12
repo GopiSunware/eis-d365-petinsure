@@ -1,8 +1,11 @@
 import { useState, useEffect } from 'react'
-import { Settings, Cpu, Zap, CheckCircle, XCircle, Loader2, Sparkles, Bot, Brain } from 'lucide-react'
+import { Settings, Cpu, Zap, CheckCircle, XCircle, Loader2, Sparkles, Bot, Brain, Trash2, RefreshCw } from 'lucide-react'
+import api from '../services/api'
 
 // AI Claims API base URL (WS2) - Uses Claims Data API which has AI config endpoints
 const AI_API_BASE = import.meta.env.VITE_AI_API_URL || import.meta.env.VITE_CLAIMS_API_URL || 'http://localhost:8002'
+// Agent Pipeline URL - for testing the actual agent service
+const AGENT_PIPELINE_URL = (import.meta.env.VITE_PIPELINE_URL || 'http://localhost:8006').replace(/\/api$/, '')
 
 export default function SettingsPage() {
   const [selectedProvider, setSelectedProvider] = useState('')
@@ -86,17 +89,36 @@ export default function SettingsPage() {
   const handleTest = async () => {
     setTesting(true)
     setTestResult(null)
+    
+    // Test the SELECTED provider (what user chose in UI), not what backend has
+    const testProvider = selectedProvider
+    const testModel = selectedModel
+    
+    // Test Agent Pipeline with the selected provider/model
+    let pipelineResult = null
     try {
-      const response = await fetch(`${AI_API_BASE}/api/v1/claims/ai/test`, {
+      const pipelineRes = await fetch(`${AGENT_PIPELINE_URL}/ai/test?provider=${testProvider}&model=${testModel}`, {
         method: 'POST'
       })
-      const result = await response.json()
-      setTestResult(result)
+      pipelineResult = await pipelineRes.json()
     } catch (error) {
-      setTestResult({ status: 'error', error: error.message })
-    } finally {
-      setTesting(false)
+      pipelineResult = { status: 'error', message: `Agent Pipeline unreachable: ${error.message}` }
     }
+    
+    // Set result based on the test
+    const status = pipelineResult?.status || 'error'
+    
+    setTestResult({
+      status: status,
+      message: pipelineResult?.message || 'Connection test failed',
+      provider: testProvider,
+      model: testModel,
+      details: {
+        agent_pipeline: pipelineResult
+      }
+    })
+    
+    setTesting(false)
   }
 
   if (loading) {
@@ -309,24 +331,50 @@ export default function SettingsPage() {
               className={`mt-4 p-4 rounded-lg ${
                 testResult.status === 'success'
                   ? 'bg-green-50 border border-green-200'
+                  : testResult.status === 'warning'
+                  ? 'bg-yellow-50 border border-yellow-200'
                   : 'bg-red-50 border border-red-200'
               }`}
             >
               <div className="flex items-center">
                 {testResult.status === 'success' ? (
                   <CheckCircle className="h-5 w-5 text-green-500 mr-2" />
+                ) : testResult.status === 'warning' ? (
+                  <Zap className="h-5 w-5 text-yellow-500 mr-2" />
                 ) : (
                   <XCircle className="h-5 w-5 text-red-500 mr-2" />
                 )}
                 <span
                   className={`font-medium ${
-                    testResult.status === 'success' ? 'text-green-700' : 'text-red-700'
+                    testResult.status === 'success' ? 'text-green-700' 
+                    : testResult.status === 'warning' ? 'text-yellow-700'
+                    : 'text-red-700'
                   }`}
                 >
-                  {testResult.status === 'success' ? 'Connection Successful!' : 'Connection Failed'}
+                  {testResult.status === 'success' ? 'Connection Successful!' 
+                   : testResult.status === 'warning' ? 'Connection Warning'
+                   : 'Connection Failed'}
                 </span>
               </div>
-              {testResult.response && (
+              
+              {/* Provider/Model being tested */}
+              <p className="mt-2 text-xs text-gray-600">
+                Testing: <span className="font-medium capitalize">{testResult.provider}</span> ({testResult.model})
+              </p>
+              
+              {/* Main message */}
+              {testResult.message && (
+                <p className={`mt-2 text-sm ${
+                  testResult.status === 'success' ? 'text-green-600'
+                  : testResult.status === 'warning' ? 'text-yellow-600'
+                  : 'text-red-600'
+                }`}>
+                  {testResult.message}
+                </p>
+              )}
+              
+              {/* Legacy support */}
+              {testResult.response && !testResult.message && (
                 <p className="mt-2 text-sm text-green-600">{testResult.response}</p>
               )}
               {testResult.error && (
@@ -336,6 +384,9 @@ export default function SettingsPage() {
           )}
         </div>
       </div>
+
+      {/* Demo Data Management */}
+      <DemoDataManagement />
 
       {/* Info Card */}
       <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
@@ -351,6 +402,112 @@ export default function SettingsPage() {
             </p>
           </div>
         </div>
+      </div>
+    </div>
+  )
+}
+
+// Demo Data Management Component
+function DemoDataManagement() {
+  const [clearing, setClearing] = useState(false)
+  const [clearResult, setClearResult] = useState(null)
+
+  const handleClearAllPipelines = async () => {
+    if (!confirm('This will clear all claims from Rule Engine, Agent Pipeline, and DocGen. Continue?')) {
+      return
+    }
+
+    setClearing(true)
+    setClearResult(null)
+
+    try {
+      const response = await api.delete('/api/pipeline/clear?include_demo_data=true')
+      setClearResult({
+        success: true,
+        message: 'All pipelines cleared successfully!',
+        details: response.data
+      })
+    } catch (error) {
+      setClearResult({
+        success: false,
+        message: 'Failed to clear pipelines',
+        error: error.message
+      })
+    } finally {
+      setClearing(false)
+    }
+  }
+
+  return (
+    <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+      <div className="bg-gradient-to-r from-red-600 to-red-700 px-6 py-4">
+        <div className="flex items-center space-x-3">
+          <Trash2 className="h-6 w-6 text-white" />
+          <h2 className="text-lg font-semibold text-white">Demo Data Management</h2>
+        </div>
+        <p className="text-red-100 text-sm mt-1">
+          Clear all pipeline data for fresh testing
+        </p>
+      </div>
+
+      <div className="p-6 space-y-4">
+        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+          <p className="text-sm text-yellow-800">
+            <strong>Warning:</strong> This will clear all claims from:
+          </p>
+          <ul className="mt-2 text-sm text-yellow-700 list-disc list-inside">
+            <li>Rule Engine Pipeline (Bronze/Silver/Gold layers)</li>
+            <li>Agent Pipeline (LangGraph runs)</li>
+            <li>DocGen Service (document batches)</li>
+            <li>In-memory claims data</li>
+          </ul>
+        </div>
+
+        <div className="flex items-center gap-4">
+          <button
+            onClick={handleClearAllPipelines}
+            disabled={clearing}
+            className="flex items-center px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-lg hover:bg-red-700 disabled:opacity-50"
+          >
+            {clearing ? (
+              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+            ) : (
+              <Trash2 className="h-4 w-4 mr-2" />
+            )}
+            Clear All Pipelines
+          </button>
+
+          {clearResult && (
+            <div className={`flex items-center text-sm ${clearResult.success ? 'text-green-600' : 'text-red-600'}`}>
+              {clearResult.success ? (
+                <CheckCircle className="h-4 w-4 mr-1" />
+              ) : (
+                <XCircle className="h-4 w-4 mr-1" />
+              )}
+              {clearResult.message}
+            </div>
+          )}
+        </div>
+
+        {clearResult?.success && clearResult.details && (
+          <div className="bg-green-50 border border-green-200 rounded-lg p-4 text-sm">
+            <p className="font-medium text-green-800 mb-2">Cleared successfully:</p>
+            <div className="grid grid-cols-3 gap-4 text-green-700">
+              <div>
+                <span className="text-green-600">Rule Engine:</span>
+                <span className="ml-1 font-medium">{clearResult.details.rule_engine?.claims_cleared || 0} claims</span>
+              </div>
+              <div>
+                <span className="text-green-600">Agent Pipeline:</span>
+                <span className="ml-1 font-medium">{clearResult.details.agent_pipeline?.runs_cleared || 0} runs</span>
+              </div>
+              <div>
+                <span className="text-green-600">DocGen:</span>
+                <span className="ml-1 font-medium">{clearResult.details.docgen?.batches_cleared || 0} batches</span>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   )

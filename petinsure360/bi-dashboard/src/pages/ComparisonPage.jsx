@@ -1,23 +1,26 @@
 import { useState, useEffect } from 'react'
-import { GitCompare, Database, Bot, CheckCircle, XCircle, AlertTriangle, Clock, RefreshCw } from 'lucide-react'
+import { GitCompare, Database, Bot, CheckCircle, XCircle, AlertTriangle, Clock, RefreshCw, Brain, Zap } from 'lucide-react'
 import api from '../services/api'
 
-const DOCGEN_URL = import.meta.env.VITE_DOCGEN_URL || 'http://localhost:8007'
+// Agent Pipeline URL (LangGraph agents) - NOT DocGen
+const PIPELINE_URL = (import.meta.env.VITE_PIPELINE_URL || 'http://localhost:8006/api').replace(/\/api$/, '')
 
 export default function ComparisonPage() {
   const [loading, setLoading] = useState(true)
   const [rulesClaims, setRulesClaims] = useState([])
-  const [agentBatches, setAgentBatches] = useState([])
+  const [agentRuns, setAgentRuns] = useState([])
   const [comparisons, setComparisons] = useState([])
 
   useEffect(() => {
     fetchComparisonData()
+    // Poll for updates every 5 seconds
+    const interval = setInterval(fetchComparisonData, 5000)
+    return () => clearInterval(interval)
   }, [])
 
   const fetchComparisonData = async () => {
-    setLoading(true)
     try {
-      // Fetch rule-based pipeline claims
+      // Fetch rule-based pipeline claims (all layers)
       const pipelineRes = await api.get('/api/pipeline/pending')
       const allRulesClaims = [
         ...(pipelineRes.data.bronze || []),
@@ -26,17 +29,21 @@ export default function ComparisonPage() {
       ]
       setRulesClaims(allRulesClaims)
 
-      // Fetch agent pipeline batches from DocGen
-      let agentBatchesList = []
-      const agentRes = await fetch(`${DOCGEN_URL}/api/v1/docgen/batches?limit=50`)
-      if (agentRes.ok) {
-        const agentData = await agentRes.json()
-        agentBatchesList = agentData.batches || []
-        setAgentBatches(agentBatchesList)
+      // Fetch Agent Pipeline runs from LangGraph service (port 8006)
+      let agentRunsList = []
+      try {
+        const agentRes = await fetch(`${PIPELINE_URL}/api/v1/pipeline/recent?limit=50`)
+        if (agentRes.ok) {
+          const agentData = await agentRes.json()
+          agentRunsList = agentData.runs || []
+          setAgentRuns(agentRunsList)
+        }
+      } catch (err) {
+        console.error('Error fetching agent pipeline runs:', err)
       }
 
-      // Build comparison data by matching claim numbers
-      buildComparisons(allRulesClaims, agentBatchesList)
+      // Build comparison data by matching claim numbers/IDs
+      buildComparisons(allRulesClaims, agentRunsList)
     } catch (err) {
       console.error('Error fetching comparison data:', err)
     } finally {
@@ -67,29 +74,54 @@ export default function ComparisonPage() {
       })
     })
 
-    // Add agent batches
-    agents.forEach(batch => {
-      const key = batch.claim_number
+    // Add agent pipeline runs - match by claim_number from claim_data
+    agents.forEach(run => {
+      const claimData = run.claim_data || {}
+      const key = claimData.claim_number || run.claim_id
+
+      // Extract decision from gold_output or final_decision
+      const goldOutput = run.gold_output || {}
+      const finalDecision = run.final_decision || goldOutput.final_decision
+      const confidence = goldOutput.confidence
+      const approvedAmount = goldOutput.approved_amount
+
+      // Determine status
+      let status = run.status
+      if (run.status === 'completed') status = 'Completed'
+      else if (run.status === 'running') status = 'Processing'
+      else if (run.status === 'failed') status = 'Failed'
+      else status = 'Pending'
+
+      // Format decision for display
+      let displayDecision = finalDecision
+      if (finalDecision === 'auto_approve' || finalDecision === 'approve') displayDecision = 'Approved'
+      else if (finalDecision === 'deny' || finalDecision === 'reject') displayDecision = 'Denied'
+      else if (finalDecision === 'needs_review' || finalDecision === 'manual_review') displayDecision = 'Review'
+      else if (finalDecision === 'flag') displayDecision = 'Flagged'
+
+      const agentData = {
+        status: status,
+        decision: displayDecision,
+        confidence: confidence,
+        approved_amount: approvedAmount,
+        run_id: run.run_id,
+        current_stage: run.current_stage,
+        reasoning: goldOutput.reasoning,
+        fraud_score: run.fraud_score,
+        risk_level: run.risk_level
+      }
+
       if (comparisonMap.has(key)) {
-        comparisonMap.get(key).agent = {
-          status: batch.status,
-          decision: batch.ai_decision,
-          confidence: batch.ai_confidence,
-          reasoning: batch.ai_reasoning,
-          batch_id: batch.batch_id
-        }
+        comparisonMap.get(key).agent = agentData
       } else {
         comparisonMap.set(key, {
           claim_number: key,
-          claim_amount: batch.claim_amount,
+          claim_id: run.claim_id,
+          claim_amount: claimData.claim_amount,
+          claim_category: claimData.claim_category || claimData.claim_type,
+          customer_id: claimData.customer_id,
           rules: null,
-          agent: {
-            status: batch.status,
-            decision: batch.ai_decision,
-            confidence: batch.ai_confidence,
-            reasoning: batch.ai_reasoning,
-            batch_id: batch.batch_id
-          }
+          agent: agentData
         })
       }
     })
@@ -97,98 +129,22 @@ export default function ComparisonPage() {
     setComparisons(Array.from(comparisonMap.values()))
   }
 
-  // Re-fetch agent data properly
-  useEffect(() => {
-    const fetchAgentData = async () => {
-      try {
-        const agentRes = await fetch(`${DOCGEN_URL}/api/v1/docgen/batches?limit=50`)
-        if (agentRes.ok) {
-          const agentData = await agentRes.json()
-          setAgentBatches(agentData.batches || [])
-
-          // Rebuild comparisons
-          const pipelineRes = await api.get('/api/pipeline/pending')
-          const allRulesClaims = [
-            ...(pipelineRes.data.bronze || []),
-            ...(pipelineRes.data.silver || []),
-            ...(pipelineRes.data.gold || [])
-          ]
-
-          const comparisonMap = new Map()
-
-          allRulesClaims.forEach(claim => {
-            const key = claim.claim_number || claim.claim_id
-            comparisonMap.set(key, {
-              claim_number: key,
-              claim_id: claim.claim_id,
-              claim_amount: claim.claim_amount,
-              claim_category: claim.claim_category,
-              customer_id: claim.customer_id,
-              rules: {
-                status: claim.layer === 'gold' ? 'Completed' : claim.layer === 'silver' ? 'Validated' : 'Pending',
-                layer: claim.layer,
-                quality_score: claim.overall_quality_score,
-                reimbursement: claim.estimated_reimbursement,
-                decision: claim.layer === 'gold' ? 'Approved' : 'Processing'
-              },
-              agent: null
-            })
-          })
-
-          agentData.batches?.forEach(batch => {
-            const key = batch.claim_number
-            if (comparisonMap.has(key)) {
-              comparisonMap.get(key).agent = {
-                status: batch.status,
-                decision: batch.ai_decision,
-                confidence: batch.ai_confidence,
-                reasoning: batch.ai_reasoning,
-                batch_id: batch.batch_id
-              }
-            } else if (key) {
-              comparisonMap.set(key, {
-                claim_number: key,
-                claim_amount: batch.claim_amount,
-                rules: null,
-                agent: {
-                  status: batch.status,
-                  decision: batch.ai_decision,
-                  confidence: batch.ai_confidence,
-                  reasoning: batch.ai_reasoning,
-                  batch_id: batch.batch_id
-                }
-              })
-            }
-          })
-
-          setComparisons(Array.from(comparisonMap.values()))
-        }
-      } catch (err) {
-        console.error('Error fetching agent data:', err)
-      } finally {
-        setLoading(false)
-      }
-    }
-
-    fetchAgentData()
-  }, [])
-
   const getDecisionIcon = (decision) => {
     if (!decision) return <Clock className="h-5 w-5 text-gray-400" />
-    switch (decision.toLowerCase()) {
-      case 'approved':
-      case 'approve':
-        return <CheckCircle className="h-5 w-5 text-green-500" />
-      case 'denied':
-      case 'deny':
-      case 'flag':
-        return <XCircle className="h-5 w-5 text-red-500" />
-      case 'review':
-      case 'manual_review':
-        return <AlertTriangle className="h-5 w-5 text-yellow-500" />
-      default:
-        return <Clock className="h-5 w-5 text-gray-400" />
+    const d = decision.toLowerCase()
+    if (d === 'approved' || d === 'approve' || d === 'auto_approve') {
+      return <CheckCircle className="h-5 w-5 text-green-500" />
     }
+    if (d === 'denied' || d === 'deny' || d === 'reject' || d === 'flagged' || d === 'flag') {
+      return <XCircle className="h-5 w-5 text-red-500" />
+    }
+    if (d === 'review' || d === 'needs_review' || d === 'manual_review') {
+      return <AlertTriangle className="h-5 w-5 text-yellow-500" />
+    }
+    if (d === 'processing') {
+      return <Zap className="h-5 w-5 text-blue-500 animate-pulse" />
+    }
+    return <Clock className="h-5 w-5 text-gray-400" />
   }
 
   const getStatusBadge = (status) => {
@@ -206,6 +162,22 @@ export default function ComparisonPage() {
       </span>
     )
   }
+
+  // Count stats
+  const matchedCount = comparisons.filter(c => c.rules && c.agent).length
+  const conflictCount = comparisons.filter(c => {
+    if (!c.rules || !c.agent || !c.rules.decision || !c.agent.decision) return false
+    const rulesD = c.rules.decision.toLowerCase()
+    const agentD = c.agent.decision.toLowerCase()
+    // Normalize for comparison
+    const normalizeDecision = (d) => {
+      if (d === 'approved' || d === 'approve' || d === 'auto_approve') return 'approved'
+      if (d === 'denied' || d === 'deny' || d === 'reject') return 'denied'
+      if (d === 'review' || d === 'needs_review' || d === 'manual_review') return 'review'
+      return d
+    }
+    return normalizeDecision(rulesD) !== normalizeDecision(agentD)
+  }).length
 
   return (
     <div className="space-y-6 relative">
@@ -252,15 +224,15 @@ export default function ComparisonPage() {
             <Bot className="h-5 w-5" />
             <span className="text-sm font-medium">AI Agent</span>
           </div>
-          <p className="text-2xl font-bold">{agentBatches.length}</p>
-          <p className="text-xs text-gray-500">Batches processed</p>
+          <p className="text-2xl font-bold">{agentRuns.length}</p>
+          <p className="text-xs text-gray-500">Pipeline runs</p>
         </div>
         <div className="bg-white rounded-xl shadow p-4 border-l-4 border-green-500">
           <div className="flex items-center gap-2 text-green-600 mb-1">
             <CheckCircle className="h-5 w-5" />
             <span className="text-sm font-medium">Matched</span>
           </div>
-          <p className="text-2xl font-bold">{comparisons.filter(c => c.rules && c.agent).length}</p>
+          <p className="text-2xl font-bold">{matchedCount}</p>
           <p className="text-xs text-gray-500">Both pipelines</p>
         </div>
         <div className="bg-white rounded-xl shadow p-4 border-l-4 border-yellow-500">
@@ -268,9 +240,7 @@ export default function ComparisonPage() {
             <AlertTriangle className="h-5 w-5" />
             <span className="text-sm font-medium">Differences</span>
           </div>
-          <p className="text-2xl font-bold">
-            {comparisons.filter(c => c.rules && c.agent && c.rules.decision !== c.agent.decision).length}
-          </p>
+          <p className="text-2xl font-bold">{conflictCount}</p>
           <p className="text-xs text-gray-500">Decision conflicts</p>
         </div>
       </div>
@@ -317,8 +287,18 @@ export default function ComparisonPage() {
                 </tr>
               ) : (
                 comparisons.map((comp, idx) => {
-                  const decisionsMatch = !comp.rules || !comp.agent ||
-                    comp.rules.decision?.toLowerCase() === comp.agent.decision?.toLowerCase()
+                  // Check if decisions match (with normalization)
+                  const normalizeDecision = (d) => {
+                    if (!d) return null
+                    d = d.toLowerCase()
+                    if (d === 'approved' || d === 'approve' || d === 'auto_approve') return 'approved'
+                    if (d === 'denied' || d === 'deny' || d === 'reject') return 'denied'
+                    if (d === 'review' || d === 'needs_review' || d === 'manual_review') return 'review'
+                    return d
+                  }
+                  const rulesDecision = comp.rules?.decision ? normalizeDecision(comp.rules.decision) : null
+                  const agentDecision = comp.agent?.decision ? normalizeDecision(comp.agent.decision) : null
+                  const decisionsMatch = !comp.rules || !comp.agent || rulesDecision === agentDecision
 
                   return (
                     <tr key={idx} className={`hover:bg-gray-50 ${!decisionsMatch ? 'bg-yellow-50' : ''}`}>
@@ -345,7 +325,7 @@ export default function ComparisonPage() {
                             <span className="text-sm">{comp.rules.decision || 'Pending'}</span>
                           </div>
                         ) : (
-                          <span className="text-xs text-gray-400">Not processed</span>
+                          <span className="text-xs text-gray-400">Not in pipeline</span>
                         )}
                       </td>
 
@@ -359,15 +339,15 @@ export default function ComparisonPage() {
                         {comp.agent ? (
                           <div className="flex flex-col items-center">
                             <div className="flex items-center gap-1">
-                              {getDecisionIcon(comp.agent.decision)}
-                              <span className="text-sm">{comp.agent.decision || 'Pending'}</span>
+                              {getDecisionIcon(comp.agent.decision || comp.agent.status)}
+                              <span className="text-sm">{comp.agent.decision || comp.agent.current_stage || 'Processing'}</span>
                             </div>
                             {comp.agent.confidence && (
-                              <span className="text-xs text-gray-500">{(comp.agent.confidence * 100).toFixed(0)}% conf</span>
+                              <span className="text-xs text-gray-500">{Math.round(comp.agent.confidence * 100)}% conf</span>
                             )}
                           </div>
                         ) : (
-                          <span className="text-xs text-gray-400">Not processed</span>
+                          <span className="text-xs text-gray-400">Not in pipeline</span>
                         )}
                       </td>
 

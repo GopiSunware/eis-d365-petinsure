@@ -58,6 +58,10 @@ class Settings(BaseSettings):
     AGENT_MAX_ITERATIONS: int = 10
     AGENT_TEMPERATURE: float = 0.1
     AGENT_TIMEOUT_SECONDS: int = 120
+    
+    # LangGraph Recursion Limits (configurable via env vars)
+    AGENT_RECURSION_LIMIT: int = 11  # Max iterations for LangGraph agents
+    AGENT_FORCE_FINISH_AT: int = 9   # Force agent to finish at this iteration
 
     # Redis Configuration (for event streaming)
     REDIS_HOST: str = "localhost"

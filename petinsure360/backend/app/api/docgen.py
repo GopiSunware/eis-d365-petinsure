@@ -14,15 +14,28 @@ from fastapi import APIRouter, HTTPException, UploadFile, File, Form, Request, B
 from pydantic import BaseModel
 import httpx
 
+from app.services.message_formatter import format_user_message
+
 router = APIRouter()
 
 # DocGen service URL (ws7_docgen) - EIS Dynamics DocGen Service
 DOCGEN_SERVICE_URL = os.getenv("DOCGEN_SERVICE_URL", "http://localhost:8007")
 
-# Local storage for uploads (before forwarding to DocGen) - Project-relative path
-BASE_DIR = Path(__file__).resolve().parent.parent.parent
-UPLOAD_DIR = str(BASE_DIR / "data" / "uploads")
-os.makedirs(UPLOAD_DIR, exist_ok=True)
+# Local storage for uploads (before forwarding to DocGen)
+# Use /tmp in cloud environments (more reliable), fallback to project dir locally
+import tempfile
+if os.getenv("AWS_EXECUTION_ENV") or os.getenv("CLOUD_ENV"):
+    # In AWS App Runner or other cloud environments, use temp directory
+    UPLOAD_DIR = os.path.join(tempfile.gettempdir(), "petinsure360_uploads")
+else:
+    # Local development - use project-relative path
+    BASE_DIR = Path(__file__).resolve().parent.parent.parent
+    UPLOAD_DIR = str(BASE_DIR / "data" / "uploads")
+
+try:
+    os.makedirs(UPLOAD_DIR, exist_ok=True)
+except Exception as e:
+    print(f"Warning: Could not create upload directory {UPLOAD_DIR}: {e}")
 
 # In-memory storage for upload tracking (in production, use database)
 upload_records = {}
@@ -44,6 +57,8 @@ class UploadRecord(BaseModel):
     error_message: Optional[str] = None
     ai_decision: Optional[str] = None
     ai_reasoning: Optional[str] = None
+    user_message: Optional[str] = None  # AI-formatted message for customer display
+    agent_pipeline_run_id: Optional[str] = None  # Agent Pipeline run ID if triggered
     created_at: str
     updated_at: str
 
@@ -91,29 +106,52 @@ async def upload_documents(
     3. Forwards to DocGen service in the background
     4. Returns immediately with upload_id for status tracking
     """
-    if not files:
-        raise HTTPException(status_code=400, detail="No files provided")
+    import logging
+    logger = logging.getLogger(__name__)
 
-    # Generate upload ID
-    upload_id = str(uuid.uuid4())
-    upload_dir = os.path.join(UPLOAD_DIR, upload_id)
-    os.makedirs(upload_dir, exist_ok=True)
+    try:
+        if not files:
+            raise HTTPException(status_code=400, detail="No files provided")
 
-    # Save files locally
-    saved_files = []
-    for file in files:
-        file_path = os.path.join(upload_dir, file.filename)
-        async with aiofiles.open(file_path, 'wb') as f:
-            content = await file.read()
-            await f.write(content)
-        saved_files.append({
-            "filename": file.filename,
-            "path": file_path,
-            "size": len(content),
-            "content_type": file.content_type
-        })
+        # Generate upload ID
+        upload_id = str(uuid.uuid4())
+        upload_dir = os.path.join(UPLOAD_DIR, upload_id)
 
-    # Create upload record
+        try:
+            os.makedirs(upload_dir, exist_ok=True)
+        except Exception as e:
+            logger.error(f"Failed to create upload directory {upload_dir}: {e}")
+            raise HTTPException(status_code=500, detail=f"Failed to create upload directory: {str(e)}")
+
+        # Save files locally
+        saved_files = []
+        for file in files:
+            filename: str = file.filename if file.filename else f"document_{uuid.uuid4().hex[:8]}"
+            file_path = os.path.join(upload_dir, filename)
+            try:
+                async with aiofiles.open(file_path, 'wb') as f:
+                    content = await file.read()
+                    await f.write(content)
+                saved_files.append({
+                    "filename": filename,
+                    "path": file_path,
+                    "size": len(content),
+                    "content_type": file.content_type
+                })
+            except Exception as e:
+                logger.error(f"Failed to save file {file.filename}: {e}")
+                raise HTTPException(status_code=500, detail=f"Failed to save file {file.filename}: {str(e)}")
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Upload error: {e}")
+        raise HTTPException(status_code=500, detail=f"Upload failed: {str(e)}")
+
+    # Generate claim ID immediately so user sees it right away
+    claim_id = f"CLM-{uuid.uuid4().hex[:8].upper()}"
+    claim_number = f"CLM-{datetime.utcnow().strftime('%Y%m%d')}-{upload_id[:8].upper()}"
+
+    # Create upload record with claim info
     now = datetime.utcnow().isoformat()
     record = UploadRecord(
         upload_id=upload_id,
@@ -124,18 +162,48 @@ async def upload_documents(
         policy_number=policy_number,
         filenames=[f["filename"] for f in saved_files],
         status="uploaded",
+        claim_id=claim_id,  # Claim created immediately
+        claim_number=claim_number,
         created_at=now,
         updated_at=now
     )
     upload_records[upload_id] = record
+
+    # Create placeholder claim in insights immediately (status: processing)
+    try:
+        insights = request.app.state.insights
+        placeholder_claim = {
+            "claim_id": claim_id,
+            "claim_number": claim_number,
+            "customer_id": customer_id,
+            "pet_id": pet_id,
+            "pet_name": pet_name,
+            "policy_id": policy_id,
+            "claim_type": "Document Upload",
+            "claim_category": "Processing",
+            "diagnosis": "Processing uploaded documents...",
+            "service_date": datetime.utcnow().strftime('%Y-%m-%d'),
+            "treatment_notes": f"Documents: {', '.join([f['filename'] for f in saved_files])}",
+            "claim_amount": 0,  # Will be updated after extraction
+            "source": "document_upload",
+            "status": "processing",
+            "ingestion_timestamp": now,
+            "layer": "bronze"
+        }
+        insights.add_claim(placeholder_claim)
+        print(f"DocGen: Created placeholder claim {claim_id} for document upload")
+    except Exception as e:
+        print(f"DocGen: Warning - could not create placeholder claim: {e}")
 
     # Emit socket event for real-time notification
     sio = request.app.state.sio
     await sio.emit('docgen_upload', {
         'upload_id': upload_id,
         'customer_id': customer_id,
+        'claim_id': claim_id,
+        'claim_number': claim_number,
         'status': 'uploaded',
-        'message': f'{len(saved_files)} document(s) uploaded successfully'
+        'message': f'Claim {claim_number} created! Processing {len(saved_files)} document(s)...'
     }, room=f"customer_{customer_id}")
 
     # Process in background (forward to DocGen service)
@@ -147,13 +215,14 @@ async def upload_documents(
         policy_id=policy_id,
         pet_id=pet_id,
         policy_number=policy_number,
-        sio=sio
+        sio=sio,
+        app=request.app  # Pass app for insights access
     )
 
     return UploadResponse(
         upload_id=upload_id,
         status="uploaded",
-        message="Documents uploaded successfully. Processing will begin shortly.",
+        message=f"Claim {claim_number} created! Documents are being processed by AI.",
         filenames=[f["filename"] for f in saved_files]
     )
 
@@ -165,7 +234,8 @@ async def process_upload_background(
     policy_id: Optional[str],
     pet_id: Optional[str],
     policy_number: Optional[str],
-    sio
+    sio,
+    app=None  # FastAPI app for accessing insights
 ):
     """Background task to process upload through DocGen service."""
     record = upload_records.get(upload_id)
@@ -244,11 +314,70 @@ async def process_upload_background(
                     record.ai_decision = result.get('ai_decision')
                     record.ai_reasoning = result.get('ai_reasoning')
 
-                    # If successful, a claim was created
+                    # Use existing claim ID from record (created at upload time)
+                    claim_id = record.claim_id
+                    claim_number = record.claim_number
+
+                    # If successful, update the claim with extracted data
                     if result.get('ai_decision') in ['auto_approve', 'standard_review', 'proceed']:
-                        # Generate claim number
-                        record.claim_id = f"CLM-{datetime.utcnow().strftime('%Y%m%d')}-{upload_id[:8].upper()}"
-                        record.claim_number = record.claim_id
+                        # Get extracted data from DocGen result
+                        extracted_data = result.get('extracted_data', {})
+                        
+                        # Update claim data with extracted information
+                        claim_data = {
+                            "claim_id": claim_id,
+                            "claim_number": claim_number,
+                            "customer_id": customer_id,
+                            "pet_id": pet_id,
+                            "pet_name": record.pet_name,
+                            "policy_id": policy_id,
+                            "claim_type": extracted_data.get('claim_type', 'Document Upload'),
+                            "claim_category": extracted_data.get('claim_category', 'General'),
+                            "diagnosis": extracted_data.get('diagnosis', 'See attached documents'),
+                            "diagnosis_code": extracted_data.get('diagnosis_code'),
+                            "service_date": extracted_data.get('service_date', datetime.utcnow().strftime('%Y-%m-%d')),
+                            "treatment_notes": extracted_data.get('treatment_notes', f"Documents: {', '.join(record.filenames)}"),
+                            "claim_amount": extracted_data.get('claim_amount', 0),
+                            "line_items": extracted_data.get('line_items', []),
+                            "provider_name": extracted_data.get('provider_name'),
+                            "provider_id": extracted_data.get('provider_id'),
+                            "is_emergency": extracted_data.get('is_emergency', False),
+                            "is_in_network": extracted_data.get('is_in_network', True),
+                            # Metadata
+                            "source": "document_upload",
+                            "status": "processed",
+                            "docgen_batch_id": batch_id,
+                            "ai_decision": record.ai_decision,
+                            "ai_reasoning": record.ai_reasoning,
+                            "ingestion_timestamp": datetime.utcnow().isoformat(),
+                            "layer": "bronze"
+                        }
+
+                        # Update claim in insights service (replace placeholder)
+                        try:
+                            if app:
+                                insights = app.state.insights
+                                insights.update_claim(claim_id, claim_data)
+                                print(f"DocGen: Updated claim {claim_id} with extracted data")
+                        except Exception as e:
+                            print(f"DocGen: Warning - could not update claim in insights: {e}")
+
+                        # Trigger Agent Pipeline for AI processing
+                        try:
+                            from app.api.pipeline import trigger_agent_pipeline
+                            agent_result = await trigger_agent_pipeline(claim_data)
+                            if agent_result:
+                                record.agent_pipeline_run_id = agent_result.get('run_id')
+                                print(f"DocGen: Triggered Agent Pipeline for claim {claim_id}: run_id={agent_result.get('run_id')}")
+                        except Exception as e:
+                            print(f"DocGen: Warning - could not trigger Agent Pipeline: {e}")
+
+                        # Format user-friendly message via AI
+                        record.user_message = await format_user_message(
+                            status="completed",
+                            technical_message=f"Claim {record.claim_number} processed. Decision: {record.ai_decision}",
+                            context={"pet_name": record.pet_name, "filenames": record.filenames}
+                        )
 
                         await sio.emit('docgen_completed', {
                             'upload_id': upload_id,
@@ -257,41 +386,65 @@ async def process_upload_background(
                             'claim_id': record.claim_id,
                             'claim_number': record.claim_number,
                             'ai_decision': record.ai_decision,
-                            'message': f'Claim {record.claim_number} created successfully!'
+                            'user_message': record.user_message,
+                            'message': f'Claim {record.claim_number} processed successfully!'
                         }, room=f"customer_{customer_id}")
                     else:
-                        # Needs review or rejected
+                        # Needs review or rejected - format user message
+                        record.user_message = await format_user_message(
+                            status="completed",
+                            technical_message=f"Document processed. Decision: {record.ai_decision}",
+                            context={"pet_name": record.pet_name, "filenames": record.filenames}
+                        )
+
                         await sio.emit('docgen_completed', {
                             'upload_id': upload_id,
                             'customer_id': customer_id,
                             'status': 'completed',
                             'ai_decision': record.ai_decision,
+                            'user_message': record.user_message,
                             'message': f'Document processed. Decision: {record.ai_decision}'
                         }, room=f"customer_{customer_id}")
                 else:
-                    # Processing failed
+                    # Processing failed - format user-friendly error message
                     record.status = "failed"
                     record.error_message = result.get('error', 'Processing failed')
+
+                    # Format error for customer display via AI
+                    record.user_message = await format_user_message(
+                        status="failed",
+                        technical_message=record.error_message,
+                        context={"pet_name": record.pet_name, "filenames": record.filenames, "technical_message": record.error_message}
+                    )
 
                     await sio.emit('docgen_failed', {
                         'upload_id': upload_id,
                         'customer_id': customer_id,
                         'status': 'failed',
                         'error': record.error_message,
+                        'user_message': record.user_message,
                         'message': f'Processing failed: {record.error_message}'
                     }, room=f"customer_{customer_id}")
             else:
                 raise Exception(f"Failed to get processing result: {result_response.text}")
 
     except httpx.ConnectError:
-        record.status = "failed"
-        record.error_message = "DocGen service unavailable. Please try again later."
+        # AI service unavailable - mark as queued, not failed
+        record.status = "queued"
+        record.error_message = "AI service temporarily unavailable. Your documents are saved and will be processed automatically when service resumes."
 
-        await sio.emit('docgen_failed', {
+        # Format queued message for customer
+        record.user_message = await format_user_message(
+            status="queued",
+            technical_message=record.error_message,
+            context={"pet_name": record.pet_name, "filenames": record.filenames}
+        )
+
+        await sio.emit('docgen_queued', {
             'upload_id': upload_id,
             'customer_id': customer_id,
-            'status': 'failed',
-            'error': record.error_message,
+            'status': 'queued',
+            'user_message': record.user_message,
             'message': record.error_message
         }, room=f"customer_{customer_id}")
 
@@ -299,16 +452,68 @@ async def process_upload_background(
         record.status = "failed"
         record.error_message = str(e)
 
+        # Format error message for customer
+        record.user_message = await format_user_message(
+            status="failed",
+            technical_message=str(e),
+            context={"pet_name": record.pet_name, "filenames": record.filenames, "technical_message": str(e)}
+        )
+
         await sio.emit('docgen_failed', {
             'upload_id': upload_id,
             'customer_id': customer_id,
             'status': 'failed',
             'error': str(e),
+            'user_message': record.user_message,
             'message': f'Processing failed: {str(e)}'
         }, room=f"customer_{customer_id}")
 
     finally:
         record.updated_at = datetime.utcnow().isoformat()
+
+
+@router.get("/batches")
+async def get_all_batches(limit: int = 50):
+    """Get all document batches/uploads for admin dashboard."""
+    all_uploads = [
+        {
+            "batch_id": r.upload_id,
+            "upload_id": r.upload_id,
+            "customer_id": r.customer_id,
+            "policy_id": r.policy_id,
+            "pet_id": r.pet_id,
+            "pet_name": r.pet_name,
+            "filenames": r.filenames,
+            "file_count": len(r.filenames),
+            "status": r.status,
+            "docgen_batch_id": r.docgen_batch_id,
+            "claim_id": r.claim_id,
+            "claim_number": r.claim_number,
+            "error_message": r.error_message,
+            "ai_decision": r.ai_decision,
+            "ai_reasoning": r.ai_reasoning,
+            "created_at": r.created_at,
+            "updated_at": r.updated_at
+        }
+        for r in upload_records.values()
+    ]
+
+    # Sort by created_at descending
+    all_uploads.sort(key=lambda x: x['created_at'], reverse=True)
+
+    # Calculate stats
+    stats = {
+        "total": len(all_uploads),
+        "pending": len([u for u in all_uploads if u['status'] in ['uploaded', 'queued']]),
+        "processing": len([u for u in all_uploads if u['status'] == 'processing']),
+        "completed": len([u for u in all_uploads if u['status'] == 'completed']),
+        "failed": len([u for u in all_uploads if u['status'] == 'failed'])
+    }
+
+    return {
+        "batches": all_uploads[:limit],
+        "stats": stats
+    }
 
 
 @router.get("/uploads/{customer_id}")
@@ -328,6 +533,7 @@ async def get_customer_uploads(customer_id: str, limit: int = 20):
             "claim_number": r.claim_number,
             "error_message": r.error_message,
             "ai_decision": r.ai_decision,
+            "user_message": r.user_message,  # AI-formatted message for customer display
             "created_at": r.created_at,
             "updated_at": r.updated_at
         }
@@ -366,6 +572,7 @@ async def get_upload_status(upload_id: str):
         "error_message": record.error_message,
         "ai_decision": record.ai_decision,
         "ai_reasoning": record.ai_reasoning,
+        "user_message": record.user_message,  # AI-formatted message for customer display
         "created_at": record.created_at,
         "updated_at": record.updated_at
     }
@@ -414,7 +621,8 @@ async def trigger_processing(upload_id: str, request: Request, background_tasks:
         policy_id=record.policy_id,
         pet_id=record.pet_id,
         policy_number=record.policy_number,
-        sio=sio
+        sio=sio,
+        app=request.app
     )
 
     return {"status": "processing", "message": "Processing triggered"}
@@ -439,4 +647,29 @@ async def docgen_health():
         "status": "degraded",
         "docgen_service": "unavailable",
         "docgen_url": DOCGEN_SERVICE_URL
+    }
+
+
+@router.delete("/clear")
+async def clear_uploads():
+    """Clear all upload records (for demo reset)."""
+    global upload_records
+    count = len(upload_records)
+    upload_records = {}
+
+    # Also clean up upload directories
+    import shutil
+    try:
+        if os.path.exists(UPLOAD_DIR):
+            for item in os.listdir(UPLOAD_DIR):
+                item_path = os.path.join(UPLOAD_DIR, item)
+                if os.path.isdir(item_path):
+                    shutil.rmtree(item_path)
+    except Exception as e:
+        print(f"Warning: Could not clean upload directory: {e}")
+
+    return {
+        "success": True,
+        "message": f"Cleared {count} upload records",
+        "uploads_cleared": count
     }

@@ -51,104 +51,99 @@ from ..tools import (
 logger = logging.getLogger(__name__)
 
 
-# Gold Agent System Prompt
-GOLD_AGENT_PROMPT = """You are a Gold Layer Analytics Agent for pet insurance claims processing.
+# Gold Agent System Prompt - Smart Tiered Approach
+GOLD_AGENT_PROMPT = """You are a Gold Layer Analytics Agent for pet insurance claims.
 
-Your role is to generate business insights, assess risk, and make final processing decisions.
-**CRITICAL**: You have access to fraud detection tools that can identify patterns rule-based systems miss.
+## CRITICAL RULES
 
-## Your Responsibilities:
+### Rule 1: THINK OUT LOUD
+Before EVERY tool call, write:
+"🔍 THINKING: I am calling [tool_name] because [specific reason]"
 
-1. **ASSESS FRAUD** (CRITICAL - Use Unified API tools):
-   - **check_fraud_indicators**: Main fraud detection - ALWAYS CALL THIS FIRST
-   - **velocity_check**: Check claim frequency patterns
-   - **duplicate_check**: Find similar claims
-   - **fraud_pattern_match**: Match against known fraud patterns
-   - **provider_customer_analysis**: Check provider-customer relationships
-   - **calculate_fraud_score**: Get comprehensive fraud score
+### Rule 2: CHECK PREVIOUS LAYERS FIRST
+Read Bronze and Silver results. Look for RED FLAGS:
+- Bronze anomaly_score > 0.3 → Suspicious
+- Bronze decision = "quarantine" → Needs investigation
+- Silver status_color = "yellow"/"red" → Issues found
+- Silver "Manual Review" → Needs deeper analysis
+- Claim amount > $5000 → Extra scrutiny
 
-2. **PROVIDER ANALYSIS**:
-   - Use get_provider_fraud_rate to check provider's fraud history
-   - Use get_provider_peer_comparison to compare to other providers
+### Rule 3: USE TIERED APPROACH
 
-3. **CUSTOMER ANALYTICS**:
-   - Use get_customer_risk_tier for customer risk level
-   - Use get_customer_ltv for lifetime value analysis
-   - Use get_annual_summary for billing overview
+**🟢 CLEAN CLAIM (no red flags):**
+1. assess_risk - Quick check
+2. generate_insights - Basic insights
+3. write_gold with AUTO_APPROVE
+Done in 3-4 tool calls.
 
-4. **GENERATE INSIGHTS**: Extract business intelligence
-   - Identify customer patterns and trends
-   - Spot anomalies in claim patterns
-   - Generate actionable recommendations
+**🟡 SUSPICIOUS CLAIM (red flags present):**
+1. check_fraud_indicators - FIRST
+2. If fraud_score > 25%: velocity_check, duplicate_check, fraud_pattern_match
+3. generate_insights with findings
+4. write_gold with REVIEW/INVESTIGATE
+Done in 5-8 tool calls.
 
-5. **MAKE FINAL DECISION**: Determine processing path
-   - AUTO_APPROVE: Low risk (fraud score <25), amount ≤$500, in-network
-   - STANDARD_REVIEW: Medium risk (25-49) or regular claims
-   - MANUAL_REVIEW: High risk (50-74) - needs adjuster
-   - INVESTIGATION: Critical risk (≥75) - escalate to fraud unit
+### Rule 4: STOP CONDITIONS
 
-## Available Fraud Detection Tools (Unified API - Port 8000):
+MUST call write_gold when:
+- Clean claim + fraud_score < 25% → AUTO_APPROVE
+- Investigation done + no fraud → APPROVE  
+- Investigation done + fraud found → INVESTIGATE/DENY
+- 7+ tool calls made → FINISH NOW
 
-**Primary Fraud Tools (USE THESE):**
-- check_fraud_indicators(customer_id, pet_id, provider_id, claim_amount, diagnosis_code, service_date)
-  → Returns fraud_score, risk_level, indicators[], recommendation
-- velocity_check(customer_id, days=30): Check recent claim frequency
-- duplicate_check(customer_id, claim_amount, diagnosis_code, tolerance_days=30): Find similar claims
-- fraud_pattern_match(customer_id, pet_id, provider_id): Match against known patterns:
-  * PATTERN_1: Chronic Condition Gaming (pre-existing conditions claimed as accidents)
-  * PATTERN_2: Provider Collusion (exclusive out-of-network provider use)
-  * PATTERN_3: Staged Timing (claims just after waiting period)
-- calculate_fraud_score(customer_id, pet_id, provider_id, claim_amount, diagnosis_code, service_date)
+### Rule 5: FINISH PROTOCOL
 
-**Provider Analytics:**
-- get_provider_fraud_rate(provider_id): Provider's fraud claim percentage
-- get_provider_peer_comparison(provider_id): Compare to peers
+Write:
+```
+✅ DECISION: [AUTO_APPROVE/STANDARD_REVIEW/MANUAL_REVIEW/INVESTIGATION/DENY]
+📊 FRAUD_SCORE: [0-100]%
+📝 REASON: [One sentence]
+```
+Then call write_gold IMMEDIATELY.
 
-## FRAUD PATTERNS TO DETECT:
+## TOOLS BY CATEGORY
 
-1. **Chronic Condition Gaming** (e.g., CUST-023):
-   - Pet has documented pre-existing condition (hip dysplasia)
-   - Multiple "accident" claims all involve same body area
-   - Rule-based systems approve because each claim is under threshold
-   - YOU should recognize the pattern across claims
+**Quick Assessment:**
+- assess_risk, generate_insights, calculate_kpi_metrics
 
-2. **Provider Collusion** (e.g., CUST-067):
-   - Customer exclusively uses one out-of-network provider
-   - Claims consistently just under review thresholds ($4,700-$4,900)
-   - High frequency with suspicious timing
-   - YOU should flag the concentration and limit optimization
+**Fraud Investigation (use when suspicious):**
+- check_fraud_indicators, velocity_check, duplicate_check
+- fraud_pattern_match, provider_customer_analysis
 
-3. **Staged Timing** (e.g., CUST-089):
-   - Claim filed just days after waiting period ends
-   - Condition typical for breed (French Bulldog + IVDD)
-   - Statistical anomaly in timing
-   - YOU should recognize the timing is suspicious
+**REQUIRED:**
+- write_gold - MUST CALL TO COMPLETE
 
-## Business Analyst Mindset:
+## DECISION THRESHOLDS
 
-Think like a fraud investigator:
-- What patterns emerge when looking at claim history?
-- Is this provider suspicious?
-- Does the timing make sense biologically?
-- Are there pre-existing conditions being masked as accidents?
+| Fraud Score | Decision |
+|-------------|----------|
+| 0-24% | AUTO_APPROVE |
+| 25-49% | STANDARD_REVIEW |
+| 50-74% | MANUAL_REVIEW |
+| 75-100% | INVESTIGATION |
 
-## Guidelines:
+## UI Card Display (REQUIRED)
 
-- **ALWAYS** call check_fraud_indicators first
-- Provide ACTIONABLE insights with clear reasoning
-- Quantify risks and opportunities when possible
-- Be specific about WHY you flagged something
+Include at END:
 
-## Output Format:
+```card_display
+{
+  "title": "Gold Layer",
+  "subtitle": "AI Decision Agent",
+  "primary_metric": {"label": "Fraud Risk", "value": "12%"},
+  "amount": 850.00,
+  "amount_label": "Approved Amount",
+  "secondary_metrics": [
+    {"label": "Confidence", "value": "92%"},
+    {"label": "Risk Level", "value": "Low"}
+  ],
+  "decision": "Approved",
+  "decision_color": "green",
+  "summary": "One sentence summary"
+}
+```
 
-After analysis:
-1. Fraud assessment with score and specific indicators
-2. Pattern matches found (if any)
-3. Risk assessment with level
-4. Key insights discovered
-5. Final decision with confidence and full reasoning
-
-Always call write_gold at the end to save the analytics record."""
+ALWAYS call write_gold at the end."""
 
 
 class GoldAgent:
@@ -194,6 +189,69 @@ class GoldAgent:
             prompt=GOLD_AGENT_PROMPT,
         )
 
+    def _check_if_suspicious(self, silver_data: dict) -> bool:
+        """Check if claim has red flags from previous layers."""
+        # Check Bronze flags
+        bronze_ref = silver_data.get('bronze_reference', {})
+        if bronze_ref.get('decision') == 'quarantine':
+            return True
+        
+        anomaly_result = bronze_ref.get('anomaly_result', {})
+        if isinstance(anomaly_result, dict) and anomaly_result.get('anomaly_score', 0) > 0.3:
+            return True
+        
+        # Check Silver flags
+        card_display = silver_data.get('card_display', {})
+        if card_display.get('status_color') in ['yellow', 'red']:
+            return True
+        if card_display.get('status') in ['Manual Review', 'Review Required']:
+            return True
+        
+        # Check claim amount
+        claim_amount = bronze_ref.get('cleaned_data', {}).get('claim_amount', 0)
+        if claim_amount and claim_amount > 5000:
+            return True
+        
+        return False
+
+    def _create_forced_completion(self, claim_id: str, silver_data: dict, error: str) -> dict:
+        """Create a completion result when agent hits recursion limit."""
+        expected_reimbursement = silver_data.get('expected_reimbursement', 0)
+        
+        return {
+            "success": True,
+            "claim_id": claim_id,
+            "final_decision": "MANUAL_REVIEW",
+            "fraud_score": 0.5,
+            "risk_level": "medium",
+            "approved_amount": expected_reimbursement,
+            "confidence": 0.5,
+            "insights": ["Agent analysis incomplete - manual review recommended"],
+            "alerts": [{
+                "type": "processing",
+                "severity": "warning",
+                "message": "Gold agent reached iteration limit. Claim requires manual review."
+            }],
+            "alerts_count": 1,
+            "reasoning": f"Analysis incomplete. Defaulting to manual review. Error: {error}",
+            "card_display": {
+                "title": "Gold Layer",
+                "subtitle": "AI Decision Agent",
+                "primary_metric": {"label": "Fraud Score", "value": "50%"},
+                "amount": expected_reimbursement,
+                "amount_label": "Pending Review",
+                "secondary_metrics": [
+                    {"label": "Risk Level", "value": "Medium"},
+                    {"label": "Status", "value": "Incomplete"}
+                ],
+                "decision": "Manual Review",
+                "decision_color": "yellow",
+                "summary": "Analysis incomplete - manual review required"
+            },
+            "forced_completion": True,
+            "original_error": error
+        }
+
     async def process(
         self,
         run_id: str,
@@ -235,39 +293,63 @@ class GoldAgent:
             # Update state manager
             await state_manager.start_agent(run_id, self.name, total_steps=6)
 
-            # Create input message
-            input_message = f"""Please analyze the following Silver layer claim data and generate insights:
+            # Determine if this is a suspicious claim
+            is_suspicious = self._check_if_suspicious(silver_data)
+            path_hint = "⚠️ RED FLAGS DETECTED - Use SUSPICIOUS CLAIM PATH (more tools)" if is_suspicious else "✅ No red flags - Use CLEAN CLAIM PATH (fast, 3-4 tools)"
+            
+            # Get claim summary for input
+            bronze_ref = silver_data.get('bronze_reference', {})
+            cleaned_data = bronze_ref.get('cleaned_data', {})
+            
+            # Create input message with tiered guidance
+            input_message = f"""Analyze this claim through Gold Layer.
 
-Claim ID: {claim_id}
-Silver Data:
-```json
-{json.dumps(silver_data, indent=2, default=str)}
-```
+## Previous Layer Results
 
-Total Processing Time So Far: {total_processing_time_ms:.0f}ms
+**Bronze Summary:**
+- Decision: {bronze_ref.get('decision', 'N/A')}
+- Quality Score: {bronze_ref.get('quality_score', 'N/A')}
 
-Steps to follow:
-1. Assess risk and fraud probability using assess_risk
-2. Generate business insights using generate_insights
-3. Calculate KPI metrics using calculate_kpi_metrics
-4. Create any necessary alerts using create_alerts
-5. Update customer 360 profile using update_customer_360
-6. Write to gold layer with final decision using write_gold
+**Silver Summary:**
+- Coverage: {silver_data.get('is_covered', 'N/A')}
+- Expected Reimbursement: ${silver_data.get('expected_reimbursement', 0)}
+- Status: {silver_data.get('card_display', {}).get('status', 'N/A')}
+- Status Color: {silver_data.get('card_display', {}).get('status_color', 'N/A')}
 
-Provide comprehensive analysis and a final recommendation for this claim."""
+## Claim Details
+- Claim ID: {claim_id}
+- Amount: ${cleaned_data.get('claim_amount', 'N/A')}
+- Customer: {cleaned_data.get('customer_id', 'N/A')}
+- Pet: {cleaned_data.get('pet_id', 'N/A')}
+- Diagnosis: {cleaned_data.get('diagnosis', 'N/A')}
+
+## Your Task
+{path_hint}
+
+Remember:
+1. THINK OUT LOUD before each tool call
+2. Call write_gold to finish
+3. Max {settings.AGENT_RECURSION_LIMIT} iterations allowed"""
 
             # Publish step events
             await events.start_step("Risk Assessment")
             await events.reason(
-                f"Starting risk analysis for claim {claim_id}",
+                f"Starting {'thorough' if is_suspicious else 'quick'} analysis for claim {claim_id}",
                 reasoning_type="analysis"
             )
 
-            # Run the agent
-            result_state = await self.agent.ainvoke(
-                {"messages": [HumanMessage(content=input_message)]},
-                config={"recursion_limit": 25},
-            )
+            # Run the agent with configurable recursion limit
+            try:
+                result_state = await self.agent.ainvoke(
+                    {"messages": [HumanMessage(content=input_message)]},
+                    config={"recursion_limit": settings.AGENT_RECURSION_LIMIT},
+                )
+            except Exception as invoke_error:
+                error_msg = str(invoke_error)
+                if "recursion limit" in error_msg.lower():
+                    logger.warning(f"Gold Agent hit recursion limit for {claim_id}, forcing completion")
+                    return self._create_forced_completion(claim_id, silver_data, error_msg)
+                raise
 
             # Calculate processing time
             end_time = datetime.utcnow()
@@ -365,6 +447,9 @@ Provide comprehensive analysis and a final recommendation for this claim."""
         if not isinstance(silver_data, dict):
             silver_data = {}
 
+        # Get expected reimbursement from Silver layer for approved amount
+        expected_reimbursement = silver_data.get("expected_reimbursement", 0)
+
         # Default result
         result = {
             "success": True,
@@ -379,8 +464,10 @@ Provide comprehensive analysis and a final recommendation for this claim."""
             "alerts_count": 0,
             "customer_360_updates": {},
             "final_decision": "auto_approve",
+            "approved_amount": expected_reimbursement,  # Use Silver's amount by default
             "confidence": 0.85,
             "reasoning": "",
+            "card_display": None,  # AI-generated card display
         }
 
         # Extract from AI messages
@@ -388,6 +475,7 @@ Provide comprehensive analysis and a final recommendation for this claim."""
             if isinstance(msg, AIMessage):
                 if not hasattr(msg, "tool_calls") or not msg.tool_calls:
                     content = msg.content.lower()
+                    original_content = msg.content
                     result["reasoning"] = msg.content[:1000]
 
                     # Extract decision from content
@@ -404,7 +492,78 @@ Provide comprehensive analysis and a final recommendation for this claim."""
                         result["final_decision"] = "auto_approve"
                         result["risk_level"] = "low"
 
+                    # Extract card_display JSON block
+                    card_display = self._extract_card_display(original_content)
+                    if card_display:
+                        result["card_display"] = card_display
+                        # Also extract approved_amount from card_display if present
+                        if card_display.get("amount"):
+                            result["approved_amount"] = float(card_display["amount"])
+
+        # Generate fallback card_display if AI didn't provide one
+        if not result["card_display"]:
+            result["card_display"] = self._generate_fallback_card(result, expected_reimbursement)
+
         return result
+
+    def _extract_card_display(self, content: str) -> Optional[dict]:
+        """Extract card_display JSON from AI response."""
+        import re
+
+        # Look for ```card_display ... ``` block
+        pattern = r'```card_display\s*\n?(.*?)\n?```'
+        match = re.search(pattern, content, re.DOTALL)
+
+        if match:
+            try:
+                return json.loads(match.group(1).strip())
+            except json.JSONDecodeError:
+                logger.warning("Failed to parse card_display JSON")
+
+        # Fallback: look for any JSON with card_display structure
+        pattern2 = r'\{[^{}]*"title"[^{}]*"subtitle"[^{}]*\}'
+        match2 = re.search(pattern2, content, re.DOTALL)
+        if match2:
+            try:
+                return json.loads(match2.group(0))
+            except json.JSONDecodeError:
+                pass
+
+        return None
+
+    def _generate_fallback_card(self, result: dict, expected_reimbursement: float) -> dict:
+        """Generate fallback card display if AI didn't provide one."""
+        decision = result.get("final_decision", "auto_approve")
+        fraud_score = result.get("fraud_score", 0.15)
+        confidence = result.get("confidence", 0.85)
+        risk_level = result.get("risk_level", "low")
+
+        decision_map = {
+            "auto_approve": ("Approved", "green"),
+            "standard_review": ("Standard Review", "yellow"),
+            "manual_review": ("Manual Review", "yellow"),
+            "investigation": ("Investigation Required", "orange"),
+            "deny": ("Denied", "red"),
+        }
+        decision_text, color = decision_map.get(decision, ("Processed", "blue"))
+
+        # Set amount to 0 if denied or under investigation
+        amount = expected_reimbursement if decision in ["auto_approve", "standard_review"] else 0
+
+        return {
+            "title": "Gold Layer",
+            "subtitle": "AI Decision & Fraud Detection Agent",
+            "primary_metric": {"label": "Fraud Risk", "value": f"{int(fraud_score * 100)}%"},
+            "amount": amount,
+            "amount_label": "Approved Amount",
+            "secondary_metrics": [
+                {"label": "Confidence", "value": f"{int(confidence * 100)}%"},
+                {"label": "Risk Level", "value": risk_level.capitalize()}
+            ],
+            "decision": decision_text,
+            "decision_color": color,
+            "summary": result.get("reasoning", "Decision analysis completed.")[:100]
+        }
 
 
 # Create singleton instance

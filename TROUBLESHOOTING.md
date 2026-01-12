@@ -9,6 +9,7 @@ Common issues and solutions for the PetInsure360 and EIS Dynamics projects.
 | Document | Purpose |
 |----------|---------|
 | **[DEPLOYMENT_CHECKLIST.md](DEPLOYMENT_CHECKLIST.md)** | Pre-deployment validation & known issues |
+| **[SESSION_CHANGELOG.md](SESSION_CHANGELOG.md)** | Recent changes & session history |
 | [ARCHITECTURE.md](ARCHITECTURE.md) | System architecture reference |
 | [ENV_VARIABLES.md](ENV_VARIABLES.md) | Environment variable reference |
 | [PORT_CONFIG.md](PORT_CONFIG.md) | Service ports & URLs |
@@ -810,6 +811,67 @@ curl -s https://9wvcjmrknc.us-east-1.awsapprunner.com/api/chat/providers
 grep "REPLACE_WITH_ARN" deploy-aws.sh
 # Fix: Get ARNs from AWS and update deploy-aws.sh
 aws apprunner list-services --profile sunwaretech --query 'ServiceSummaryList[*].[ServiceName,ServiceArn]' --output table
+```
+
+---
+
+## Demo Data Issues
+
+### Issue: Demo Customers Not at Top of Customer 360
+```bash
+# Check: Demo customers appear first
+curl -s ".../api/insights/customers?limit=2" | jq '.customers[].customer_id'
+# Expected: "DEMO-001", "DEMO-002"
+
+# Fix: Update customer_since dates in insights.py
+# petinsure360/backend/app/api/insights.py - DEMO_CUSTOMERS_360
+# Use today's date: "customer_since": "2026-01-10"
+```
+
+### Issue: New Claims Not Showing in Claims Analytics
+```bash
+# Check: After document upload, claims should show
+curl -s ".../api/insights/claims?limit=5" | jq '.claims[] | select(.source=="document_upload")'
+# Fix: insights.py must import and include upload_records in claims endpoint
+```
+
+### Issue: DocGen Batches Not Showing in BI Dashboard
+```bash
+# Check: Batches endpoint works
+curl -s ".../api/docgen/batches"
+# Fix:
+# 1. Backend needs /api/docgen/batches endpoint (docgen.py)
+# 2. BI Dashboard must use VITE_API_URL, not VITE_DOCGEN_URL
+```
+
+### Issue: DocGen Service Connection Failed
+```bash
+# Check: DocGen URL is correct
+curl -s ".../api/docgen/health"
+# If docgen_url is wrong, update App Runner DOCGEN_SERVICE_URL env var
+# Correct URL: https://tbkh2svcwm.us-east-1.awsapprunner.com
+# IMPORTANT: Use port 8080 when updating petinsure360-backend
+```
+
+### Issue: Duplicate Claims in Recent Claims List
+```bash
+# Check: Same claim appearing twice
+curl -s ".../api/insights/claims?limit=5" | jq '.claims[].claim_id'
+# Each claim_id should appear only once
+
+# Root cause: add_claim() was called twice (Bronze + Gold processing)
+# Fix: insights.py now checks for existing claim_id before adding
+```
+
+### Issue: Pipeline Execution Mode Not Clear
+```bash
+# Check: What execution mode is pipeline using?
+curl -s ".../api/pipeline/status" | jq '.execution_info'
+# Expected: {"mode":"python_local","databricks_connected":false,...}
+
+# Note: Bronze→Silver→Gold processing is done in Python (in-memory)
+# No actual Databricks notebooks are executed unless configured
+# To enable Databricks: Set DATABRICKS_HOST and DATABRICKS_TOKEN env vars
 ```
 
 ---

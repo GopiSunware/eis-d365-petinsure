@@ -191,7 +191,7 @@ export default function DocGenPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">DocGen</h1>
+          <h1 className="text-2xl font-bold text-gray-900">Doc Processing</h1>
           <p className="text-gray-500 mt-1">
             Upload documents for AI-powered claim processing and export
           </p>

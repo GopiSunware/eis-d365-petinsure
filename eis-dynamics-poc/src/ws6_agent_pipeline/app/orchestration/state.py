@@ -432,6 +432,24 @@ class PipelineStateManager:
             if to_remove:
                 logger.info(f"Cleaned up {len(to_remove)} old pipeline runs")
 
+    async def clear_all_runs(self) -> int:
+        """Clear all pipeline runs (for demo reset)."""
+        async with self._lock:
+            count = len(self._states)
+            self._states.clear()
+
+            # Also clear Redis if enabled
+            if self._use_redis and self._redis:
+                try:
+                    keys = await self._redis.keys("pipeline:state:*")
+                    if keys:
+                        await self._redis.delete(*keys)
+                except Exception as e:
+                    logger.warning(f"Failed to clear Redis keys: {e}")
+
+            logger.info(f"Cleared all {count} pipeline runs")
+            return count
+
 
 # Global state manager instance
 state_manager = PipelineStateManager()

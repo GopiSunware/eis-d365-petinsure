@@ -166,7 +166,8 @@ async def submit_claim(claim: ClaimCreate, request: Request):
 
     # Trigger BOTH pipelines for comparison:
     # 1. EIS Dynamics Agent Pipeline (8006) - agent-driven medallion architecture
-    pipeline_result = await trigger_agent_pipeline(claim_data)
+    #    auto_process=True triggers full automatic processing (Router→Bronze→Silver→Gold)
+    pipeline_result = await trigger_agent_pipeline(claim_data, auto_process=True)
     if pipeline_result:
         claim_data["agent_pipeline_run_id"] = pipeline_result.get("run_id")
 

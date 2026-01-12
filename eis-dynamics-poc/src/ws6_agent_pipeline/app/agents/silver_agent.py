@@ -126,6 +126,36 @@ After using the tools to enrich and validate:
 4. Coverage calculation breakdown
 5. Quality scores and confidence
 
+## UI Card Display (REQUIRED):
+
+At the END of your response, you MUST include a JSON block for the UI card display.
+This will be shown to admins in the pipeline dashboard. Format it EXACTLY like this:
+
+```card_display
+{
+  "title": "Silver Layer",
+  "subtitle": "AI Enrichment & Validation Agent",
+  "primary_metric": {"label": "Coverage", "value": "Verified"},
+  "amount": 850.00,
+  "amount_label": "Expected Reimbursement",
+  "secondary_metrics": [
+    {"label": "Reimbursement Rate", "value": "80%"},
+    {"label": "Deductible Met", "value": "Yes"}
+  ],
+  "status": "Covered",
+  "status_color": "green",
+  "summary": "Brief 1-sentence summary of coverage and reimbursement"
+}
+```
+
+Rules for card_display:
+- amount: The expected reimbursement amount (numeric, e.g., 850.00)
+- amount_label: Always "Expected Reimbursement"
+- primary_metric: Coverage status (Verified/Not Covered/Partial)
+- status: Coverage decision (Covered/Not Covered/Partial Coverage)
+- status_color: green for covered, red for not covered, yellow for partial
+- summary: 1 sentence with key coverage finding and amount
+
 Always call write_silver at the end to save the enriched record."""
 
 
@@ -328,6 +358,7 @@ Provide detailed reasoning about the enrichment and any concerns found."""
             "coverage_percentage": 80.0,
             "quality_score": 0.85,
             "enrichment_notes": "",
+            "card_display": None,  # AI-generated card display
         }
 
         # Extract reasoning from AI messages
@@ -336,11 +367,69 @@ Provide detailed reasoning about the enrichment and any concerns found."""
                 if not hasattr(msg, "tool_calls") or not msg.tool_calls:
                     result["enrichment_notes"] = msg.content[:500]
 
-        # Calculate expected reimbursement
-        claim_amount = float(claim_data.get("claim_amount", 0))
-        result["expected_reimbursement"] = claim_amount * 0.8  # Default 80% reimbursement
+                    # Extract card_display JSON block
+                    card_display = self._extract_card_display(msg.content)
+                    if card_display:
+                        result["card_display"] = card_display
+                        # Also extract amount from card_display if present
+                        if card_display.get("amount"):
+                            result["expected_reimbursement"] = float(card_display["amount"])
+
+        # Calculate expected reimbursement if not set by AI
+        if result["expected_reimbursement"] == 0.0:
+            claim_amount = float(claim_data.get("claim_amount", 0))
+            result["expected_reimbursement"] = claim_amount * 0.8  # Default 80% reimbursement
+
+        # Generate fallback card_display if AI didn't provide one
+        if not result["card_display"]:
+            result["card_display"] = self._generate_fallback_card(result)
 
         return result
+
+    def _extract_card_display(self, content: str) -> Optional[dict]:
+        """Extract card_display JSON from AI response."""
+        import re
+
+        # Look for ```card_display ... ``` block
+        pattern = r'```card_display\s*\n?(.*?)\n?```'
+        match = re.search(pattern, content, re.DOTALL)
+
+        if match:
+            try:
+                return json.loads(match.group(1).strip())
+            except json.JSONDecodeError:
+                logger.warning("Failed to parse card_display JSON")
+
+        # Fallback: look for any JSON with card_display structure
+        pattern2 = r'\{[^{}]*"title"[^{}]*"subtitle"[^{}]*\}'
+        match2 = re.search(pattern2, content, re.DOTALL)
+        if match2:
+            try:
+                return json.loads(match2.group(0))
+            except json.JSONDecodeError:
+                pass
+
+        return None
+
+    def _generate_fallback_card(self, result: dict) -> dict:
+        """Generate fallback card display if AI didn't provide one."""
+        is_covered = result.get("is_covered", True)
+        expected = result.get("expected_reimbursement", 0)
+        coverage_pct = int(result.get("coverage_percentage", 80))
+
+        return {
+            "title": "Silver Layer",
+            "subtitle": "AI Enrichment & Validation Agent",
+            "primary_metric": {"label": "Coverage", "value": "Verified" if is_covered else "Not Covered"},
+            "amount": expected,
+            "amount_label": "Expected Reimbursement",
+            "secondary_metrics": [
+                {"label": "Reimbursement Rate", "value": f"{coverage_pct}%"}
+            ],
+            "status": "Covered" if is_covered else "Not Covered",
+            "status_color": "green" if is_covered else "red",
+            "summary": result.get("enrichment_notes", "Coverage verification completed.")[:100]
+        }
 
 
 # Create singleton instance

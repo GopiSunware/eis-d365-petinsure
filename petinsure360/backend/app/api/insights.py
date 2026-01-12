@@ -5,8 +5,59 @@ Endpoints for querying Gold layer analytics data
 
 from fastapi import APIRouter, Request, HTTPException, Query
 from typing import Optional
+from datetime import datetime
 
 router = APIRouter()
+
+# Demo customers to show at top of Customer 360 (recent dates so they sort first)
+DEMO_CUSTOMERS_360 = [
+    {
+        "customer_id": "DEMO-001",
+        "full_name": "Demo User",
+        "first_name": "Demo",
+        "last_name": "User",
+        "email": "demo@demologin.com",
+        "phone": "(555) 100-0001",
+        "city": "Austin",
+        "state": "TX",
+        "customer_since": "2026-01-10",
+        "total_pets": 2,
+        "total_policies": 2,
+        "active_policies": 2,
+        "total_annual_premium": 1631.76,
+        "total_claims": 0,
+        "total_claim_amount": 0,
+        "total_paid_amount": 0,
+        "loss_ratio": 0,
+        "customer_value_tier": "Gold",
+        "customer_risk_score": "Low",
+        "churn_risk": "Low",
+        "is_demo": True
+    },
+    {
+        "customer_id": "DEMO-002",
+        "full_name": "Demo One",
+        "first_name": "Demo",
+        "last_name": "One",
+        "email": "demo1@demologin.com",
+        "phone": "(555) 100-0002",
+        "city": "Dallas",
+        "state": "TX",
+        "customer_since": "2026-01-09",
+        "total_pets": 2,
+        "total_policies": 1,
+        "active_policies": 1,
+        "total_annual_premium": 959.88,
+        "total_claims": 0,
+        "total_claim_amount": 0,
+        "total_paid_amount": 0,
+        "loss_ratio": 0,
+        "customer_value_tier": "Silver",
+        "customer_risk_score": "Low",
+        "churn_risk": "Low",
+        "is_demo": True
+    },
+]
 
 
 def get_insights_service(request: Request):
@@ -45,20 +96,23 @@ async def get_customers(
     Get customer 360 views.
 
     Returns:
-        List of customers with unified profile data
+        List of customers with unified profile data (demo customers shown first)
     """
     insights_service = get_insights_service(request)
-    customers = insights_service.get_customer_360(limit=limit)
+    gold_customers = insights_service.get_customer_360(limit=limit)
+
+    # Combine demo customers + gold layer customers
+    all_customers = DEMO_CUSTOMERS_360 + gold_customers
 
     # Apply filters
     if tier:
-        customers = [c for c in customers if c.get('customer_value_tier') == tier]
+        all_customers = [c for c in all_customers if c.get('customer_value_tier') == tier]
     if risk:
-        customers = [c for c in customers if c.get('customer_risk_score') == risk]
+        all_customers = [c for c in all_customers if c.get('customer_risk_score') == risk]
 
     return {
-        "customers": customers,
-        "count": len(customers),
+        "customers": all_customers[:limit],
+        "count": len(all_customers[:limit]),
         "description": "Customer 360 unified profiles from the Gold layer"
     }
 
@@ -93,19 +147,57 @@ async def get_claims(
     Get claims analytics with optional filters.
 
     Returns:
-        List of claims with analytics dimensions
+        List of claims with analytics dimensions (new claims from uploads shown first)
     """
     insights_service = get_insights_service(request)
-    claims = insights_service.get_claims_analytics(
+    gold_claims = insights_service.get_claims_analytics(
         status=status,
         category=category,
         limit=limit,
         offset=offset
     )
 
+    # Get recent claims from document uploads
+    from app.api.docgen import upload_records
+    new_claims = []
+    for upload_id, record in upload_records.items():
+        if record.status in ['completed', 'failed', 'processing', 'queued']:
+            claim_status = 'In Review'
+            if record.status == 'completed' and record.ai_decision:
+                if record.ai_decision in ['auto_approve', 'proceed']:
+                    claim_status = 'Approved'
+                elif record.ai_decision == 'needs_review':
+                    claim_status = 'In Review'
+                elif record.ai_decision == 'reject':
+                    claim_status = 'Denied'
+
+            new_claims.append({
+                "claim_id": record.claim_id or f"CLM-{upload_id[:8].upper()}",
+                "customer_id": record.customer_id,
+                "policy_id": record.policy_id,
+                "pet_name": record.pet_name or "Unknown",
+                "claim_date": record.created_at[:10] if record.created_at else datetime.utcnow().strftime('%Y-%m-%d'),
+                "claim_amount": 0,  # TBD from document extraction
+                "claim_status": claim_status,
+                "claim_category": "Document Upload",
+                "diagnosis": "Pending extraction",
+                "treatment_type": "Document processing",
+                "ai_decision": record.ai_decision,
+                "is_new": True,
+                "source": "document_upload"
+            })
+
+    # Sort new claims by created_at desc and combine with gold claims
+    new_claims.sort(key=lambda x: x.get('claim_date', ''), reverse=True)
+    all_claims = new_claims + gold_claims
+
+    # Apply filters
+    if status:
+        all_claims = [c for c in all_claims if c.get('claim_status') == status]
+
     return {
-        "claims": claims,
-        "count": len(claims),
+        "claims": all_claims[:limit],
+        "count": len(all_claims[:limit]),
         "filters": {
             "status": status,
             "category": category

@@ -74,7 +74,7 @@ function NavLink({
 }) {
   const pathname = usePathname();
   const [isOpen, setIsOpen] = useState(
-    item.children?.some((child) => pathname === child.href) ?? false
+    item.label === 'Configuration' || item.children?.some((child) => pathname === child.href) || false
   );
 
   const isActive = pathname === item.href;
@@ -141,11 +141,11 @@ export function Sidebar() {
       <div className="flex items-center h-16 px-4 border-b border-slate-700">
         <div className="flex items-center">
           <div className="w-8 h-8 bg-primary-500 rounded-lg flex items-center justify-center">
-            <span className="text-white font-bold text-lg">E</span>
+            <span className="text-white font-bold text-lg">P</span>
           </div>
           <div className="ml-3">
-            <h1 className="text-white font-semibold text-lg">EIS Admin</h1>
-            <p className="text-slate-400 text-xs">Pet Insurance Platform</p>
+            <h1 className="text-white font-semibold text-lg">PetInsure360</h1>
+            <p className="text-slate-400 text-xs">Config & Monitoring</p>
           </div>
         </div>
       </div>

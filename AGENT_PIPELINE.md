@@ -13,6 +13,44 @@ Both follow the **Medallion Architecture** (Bronze → Silver → Gold), but wit
 
 ---
 
+## Storage Separation (IMPORTANT)
+
+**The two pipelines write to DIFFERENT storage backends:**
+
+| Pipeline | Storage | Account/Bucket | Paths |
+|----------|---------|----------------|-------|
+| **AI Agent Pipeline** | AWS S3 | `eis-dynamics-datalake-611670815873` | `bronze/`, `silver/`, `gold/` |
+| **Rule Engine Pipeline** | Azure ADLS Gen2 | `petinsud7i43` | `bronze/`, `silver/`, `gold/` |
+
+### Why Different Storage?
+
+1. **Agent Pipeline (EIS Dynamics)**: Runs on AWS App Runner, uses S3 for real-time per-claim outputs
+2. **Rule Engine (PetInsure360)**: Runs on Azure Databricks, uses ADLS for batch Delta Lake tables
+
+### Storage Code References
+
+**Agent Pipeline → S3:**
+```python
+# ws6_agent_pipeline/app/services/s3_service.py
+class S3DataLakeService:
+    def __init__(self):
+        self.bucket_name = os.getenv("S3_DATALAKE_BUCKET", "eis-dynamics-datalake-611670815873")
+
+    def write_bronze_output(self, claim_id: str, run_id: str, bronze_data: Dict):
+        key = f"bronze/{claim_id}/output.json"
+        self.s3_client.put_object(Bucket=self.bucket_name, Key=key, Body=json.dumps(bronze_data))
+```
+
+**Rule Engine → Azure ADLS:**
+```python
+# petinsure360/notebooks/01_bronze_ingestion.py
+storage_account = "petinsud7i43"
+bronze_path = f"abfss://bronze@{storage_account}.dfs.core.windows.net"
+df_customers_bronze.write.format("delta").mode("overwrite").saveAsTable("customers_raw")
+```
+
+---
+
 ## 1. AI Agent Pipeline (EIS Dynamics)
 
 ### Architecture
@@ -200,6 +238,326 @@ Frontend receives these via WebSocket for live pipeline visualization.
 
 ---
 
+## Agent Prompts (Complete Reference)
+
+### Router Agent (No LLM - Rule-Based)
+
+The Router Agent does **NOT** use an LLM. It uses rule-based logic:
+
+```python
+# router_agent.py - Rule-based complexity assessment
+class RouterAgent:
+    def __init__(self):
+        self.amount_thresholds = {"simple": 1000, "medium": 10000, "complex": float("inf")}
+        self.complex_claim_types = ["emergency", "surgery", "hospitalization"]
+        self.simple_claim_types = ["wellness", "routine", "vaccination"]
+
+    def _assess_complexity(self, claim_data: dict) -> str:
+        amount = claim_data.get("claim_amount", 0)
+        claim_type = claim_data.get("claim_type", "").lower()
+
+        # Amount-based assessment
+        if amount <= self.amount_thresholds["simple"]:
+            complexity = "low"
+        elif amount <= self.amount_thresholds["medium"]:
+            complexity = "medium"
+        else:
+            complexity = "high"
+
+        # Claim type adjustment
+        if claim_type in self.complex_claim_types:
+            complexity = "high" if complexity != "critical" else complexity
+        elif claim_type in self.simple_claim_types:
+            complexity = "low"
+
+        return complexity
+```
+
+### Bronze Agent Prompt
+
+```python
+BRONZE_AGENT_PROMPT = """You are a Bronze Layer Data Agent specializing in data validation and quality assurance.
+
+Your job is to validate and clean incoming pet insurance claim data.
+
+## YOUR TOOLS:
+- validate_schema: Check all required fields are present and correctly typed
+- detect_anomalies: Look for suspicious patterns in the data
+- clean_data: Normalize and fix data issues
+- get_policy: Fetch policy details from the unified API
+- verify_provider: Verify the veterinary provider is licensed
+- write_bronze: Write validated data to the Bronze layer
+- get_historical_claims: Get past claims for comparison
+
+## YOUR WORKFLOW:
+1. **VALIDATE**: Check all required fields are present and correctly typed
+2. **DETECT ANOMALIES**: Look for suspicious patterns:
+   - Duplicate claim submissions
+   - Unusual claim amounts (too high or too low)
+   - Mismatched dates (treatment before policy start)
+   - Invalid diagnosis codes
+3. **CLEAN**: Normalize and fix data issues:
+   - Standardize date formats
+   - Normalize provider names
+   - Fix common typos in diagnosis codes
+4. **ASSESS QUALITY**: Rate the overall data quality (0-100)
+5. **DECIDE**: Make a decision about this claim:
+   - ACCEPT: Data is valid and ready for Silver layer processing
+   - QUARANTINE: Data has issues that need human review
+   - REJECT: Data is invalid and cannot be processed
+
+Always explain your reasoning clearly.
+"""
+```
+
+### Silver Agent Prompt
+
+```python
+SILVER_AGENT_PROMPT = """You are a Silver Layer Enrichment Agent specializing in data enrichment and fraud detection.
+
+Your job is to enrich validated claim data with additional context and perform initial fraud screening.
+
+## YOUR TOOLS:
+- get_customer: Fetch customer profile and history
+- get_claim_history: Get the customer's past claims
+- get_pet_medical_history: Get the pet's full medical history
+- get_pet_pre_existing_conditions: Get known pre-existing conditions for the pet
+- check_coverage: Verify the treatment is covered by the policy
+- calculate_reimbursement: Calculate the expected reimbursement amount
+- write_silver: Write enriched data to the Silver layer
+
+## YOUR WORKFLOW:
+1. **ENRICH**: Add customer and policy context
+2. **VALIDATE COVERAGE**: Check if the treatment is covered
+3. **CHECK PRE-EXISTING CONDITIONS**:
+   - **IMPORTANT**: Check pre-existing conditions - customers may claim "accidents" for chronic issues
+   - Compare current diagnosis with pet's medical history
+   - Flag if diagnosis matches a known pre-existing condition
+4. **CALCULATE**: Determine reimbursement based on coverage
+5. **ASSESS RISK**: Provide preliminary risk assessment
+
+## FRAUD PATTERNS TO WATCH:
+- Claims for "accidents" that match chronic condition symptoms
+- Treatment dates that don't align with policy coverage
+- Claims exceeding typical costs for the diagnosis
+- Frequent claims for the same condition labeled differently
+
+Always provide detailed reasoning for risk assessments.
+"""
+```
+
+### Gold Agent Prompt (Primary Fraud Detection)
+
+```python
+GOLD_AGENT_PROMPT = """You are a Gold Layer Analytics Agent specializing in fraud detection and final claim adjudication.
+
+**CRITICAL**: You have access to fraud detection tools that can identify patterns rule-based systems miss.
+
+## YOUR TOOLS:
+- check_fraud_indicators: Analyze claim for known fraud patterns
+- velocity_check: Check claim frequency and timing patterns
+- duplicate_check: Look for duplicate or similar claims
+- fraud_pattern_match: Match against known fraud scenarios
+- calculate_fraud_score: Generate overall fraud risk score (0-100)
+- write_gold: Write final decision to Gold layer
+
+## FRAUD PATTERNS TO DETECT:
+
+### 1. Chronic Condition Gaming (e.g., CUST-023)
+- Customer claims accident/injury for what is actually a chronic condition
+- Signs: History of same symptoms, diagnosis progression, breed-specific conditions
+- Example: Labrador with "accidental ligament tear" but history shows hip dysplasia
+
+### 2. Provider Collusion (e.g., CUST-067)
+- Customer exclusively uses out-of-network providers with inflated costs
+- Signs: Always same provider, costs 40%+ above market, round-number billing
+- Example: All claims from "Premier Pet Care" at 2x normal prices
+
+### 3. Staged Timing (e.g., CUST-089)
+- Claims submitted strategically just after waiting periods end
+- Signs: Major claim within 30 days of waiting period, policy age correlations
+- Example: $15,000 surgery claim on day 31 of policy
+
+## YOUR WORKFLOW:
+1. **ANALYZE**: Run all fraud detection tools
+2. **CORRELATE**: Cross-reference findings from Bronze and Silver layers
+3. **SCORE**: Calculate final fraud score (0-100)
+4. **DECIDE**: Make final decision based on score:
+   - AUTO_APPROVE: Low risk (score <25), claim amount ≤$500
+   - STANDARD_REVIEW: Medium risk (score 25-49)
+   - MANUAL_REVIEW: High risk (score 50-74)
+   - INVESTIGATION: Critical risk (score ≥75) - escalate to fraud unit
+
+## MAKE FINAL DECISION:
+Always provide:
+- Final decision (approve/deny/review/investigate)
+- Fraud score with breakdown
+- Key risk factors identified
+- Recommended payout amount (if approved)
+- Detailed reasoning for the decision
+"""
+```
+
+---
+
+## Issue Detection: Which Layer Detects What
+
+| Layer | Issues Detected | How |
+|-------|-----------------|-----|
+| **Router** | Claim complexity | Rule-based amount/type thresholds |
+| **Bronze** | Data quality issues | Schema validation, anomaly detection |
+| **Bronze** | Missing/invalid fields | `validate_schema` tool |
+| **Bronze** | Duplicate submissions | `detect_anomalies` tool |
+| **Bronze** | Invalid provider | `verify_provider` tool |
+| **Silver** | Coverage issues | `check_coverage` tool |
+| **Silver** | Pre-existing conditions | `get_pet_pre_existing_conditions` tool |
+| **Silver** | Cost anomalies | Reimbursement calculation vs claim |
+| **Gold** | **Fraud patterns** | `check_fraud_indicators`, `fraud_pattern_match` |
+| **Gold** | Velocity abuse | `velocity_check` tool |
+| **Gold** | Duplicate claims | `duplicate_check` tool |
+
+### Bronze Layer Detection
+
+```python
+# Example: Anomaly Detection
+anomalies = [
+    {"type": "duplicate_claim", "severity": "high", "details": "Claim ID matches previous submission"},
+    {"type": "amount_outlier", "severity": "medium", "details": "Claim amount 3x typical for diagnosis"},
+    {"type": "date_mismatch", "severity": "high", "details": "Treatment date before policy start"},
+]
+```
+
+### Silver Layer Detection
+
+```python
+# Example: Pre-existing Condition Check
+pre_existing_check = {
+    "has_pre_existing": True,
+    "condition": "Hip Dysplasia",
+    "first_diagnosed": "2024-03-15",
+    "current_claim_diagnosis": "Accidental Ligament Injury",
+    "risk_flag": "POSSIBLE_CHRONIC_GAMING",
+    "similarity_score": 0.85
+}
+```
+
+### Gold Layer Detection (Main Fraud Detection)
+
+```python
+# Example: Fraud Pattern Match
+fraud_analysis = {
+    "fraud_score": 78,
+    "risk_level": "high",
+    "patterns_detected": [
+        {
+            "pattern": "CHRONIC_GAMING",
+            "confidence": 0.85,
+            "evidence": ["History of hip issues", "Same symptoms as pre-existing"]
+        },
+        {
+            "pattern": "STAGED_TIMING",
+            "confidence": 0.72,
+            "evidence": ["Claim on day 32 of policy", "High-value procedure"]
+        }
+    ],
+    "recommendation": "INVESTIGATION",
+    "reasoning": "Multiple fraud indicators present with high confidence"
+}
+```
+
+---
+
+## Rule vs Agent Comparison Tab
+
+The **Comparison** feature in the Agent Portal runs **BOTH** processing methods on the same claim and compares results.
+
+### How It Works
+
+```python
+# comparison.py - /api/v1/comparison/run endpoint
+@router.post("/run")
+async def run_comparison(claim_data: dict[str, Any]):
+    # Run BOTH processors in parallel
+    code_task = asyncio.create_task(code_processor.process_claim(claim_data))
+    agent_task = asyncio.create_task(medallion_pipeline.process_claim(claim_data))
+
+    code_result, agent_result = await asyncio.gather(code_task, agent_task)
+
+    return {
+        "code_driven": {
+            "decision": code_result["decision"],
+            "processing_time_ms": code_result["processing_time"],
+            "risk_level": code_result["risk_level"],
+            # No reasoning - just deterministic rules
+        },
+        "agent_driven": {
+            "decision": agent_result["final_decision"],
+            "processing_time_ms": agent_result["processing_time"],
+            "risk_level": agent_result["risk_level"],
+            "reasoning_log": agent_result["reasoning"],  # AI explains why
+            "insights": agent_result["insights"],         # AI-generated insights
+        },
+        "comparison_metrics": {
+            "decision_match": code_result["decision"] == agent_result["decision"],
+            "time_difference_ms": agent_time - code_time,
+            "agent_advantages": [
+                "Provides reasoning for decisions",
+                "Generates actionable insights",
+                "Adapts to edge cases and novel scenarios",
+                "Detects complex fraud patterns"
+            ],
+            "code_advantages": [
+                "Faster processing (~100ms vs ~3-5s)",
+                "Deterministic and reproducible",
+                "No API costs",
+                "Easier to audit and debug"
+            ]
+        }
+    }
+```
+
+### Use Case: Why Compare?
+
+| Scenario | Best Choice |
+|----------|-------------|
+| High-volume, low-risk claims | Code-driven (speed, cost) |
+| Complex fraud detection | Agent-driven (pattern recognition) |
+| Audit/compliance needs | Code-driven (deterministic) |
+| Customer disputes | Agent-driven (reasoning/explanation) |
+| Edge cases | Agent-driven (adaptability) |
+
+### Example Comparison Output
+
+```json
+{
+  "claim_id": "CLM-2024-001",
+  "code_driven": {
+    "decision": "APPROVE",
+    "processing_time_ms": 145,
+    "risk_level": "low",
+    "payout": 450.00
+  },
+  "agent_driven": {
+    "decision": "MANUAL_REVIEW",
+    "processing_time_ms": 3200,
+    "risk_level": "medium",
+    "payout": 450.00,
+    "reasoning": "While the claim amount is low and data is valid, I detected a pattern: this customer has submitted 3 similar 'accident' claims in 6 months for the same body area. This warrants human review.",
+    "insights": [
+      "Customer claim frequency above average",
+      "Same diagnosis category as previous claims",
+      "Consider fraud investigation if pattern continues"
+    ]
+  },
+  "comparison_metrics": {
+    "decision_match": false,
+    "code_missed_pattern": true
+  }
+}
+```
+
+---
+
 ## 2. Rule Engine Pipeline (PetInsure360)
 
 ### Architecture
@@ -358,14 +716,16 @@ class AzureDataService:
 
 | Aspect | AI Agent Pipeline | Rule Engine Pipeline |
 |--------|-------------------|---------------------|
-| **Technology** | LangGraph + LLM | Databricks + PySpark |
+| **Technology** | LangGraph + LLM (Claude/GPT) | Databricks + PySpark |
 | **Processing** | Real-time, per-claim | Batch ETL |
 | **Decision Making** | AI reasoning with tools | SQL transformations |
 | **Explainability** | Natural language reasoning | Query-based rules |
-| **Flexibility** | Handles edge cases | Fixed business rules |
-| **Cost** | LLM API costs | Databricks compute |
+| **Flexibility** | Handles edge cases, detects novel fraud | Fixed business rules |
+| **Fraud Detection** | AI pattern matching (3 patterns) | Rule-based thresholds |
+| **Cost** | LLM API costs (~$0.01-0.05/claim) | Databricks compute |
 | **Speed** | ~2-5 sec per claim | Minutes for batch |
-| **Storage** | AWS S3 | Azure ADLS Gen2 |
+| **Storage** | **AWS S3** (`eis-dynamics-datalake-*`) | **Azure ADLS Gen2** (`petinsud7i43`) |
+| **Data Format** | JSON files | Delta Lake tables |
 
 ---
 
@@ -461,3 +821,160 @@ curl https://fucf3fwwwv.us-east-1.awsapprunner.com/api/pipeline/pending
      │ Decision     │           │ Analytics    │
      └──────────────┘           └──────────────┘
 ```
+
+
+  1. Storage Separation Section (NEW)
+
+  - Agent Pipeline → AWS S3 (eis-dynamics-datalake-611670815873)
+  - Rule Engine → Azure ADLS Gen2 (petinsud7i43)
+  - Includes code references showing where each writes
+
+  2. Complete Agent Prompts (NEW)
+
+  - Router Agent: No LLM - rule-based complexity assessment (amount thresholds, claim types)
+  - Bronze Agent Prompt: Schema validation, anomaly detection, data cleaning
+  - Silver Agent Prompt: Enrichment, coverage validation, pre-existing condition checks
+  - Gold Agent Prompt: Full fraud detection with 3 patterns (chronic gaming, provider collusion, staged timing)
+
+  3. Issue Detection Table (NEW)
+
+  Shows which layer detects what:
+  ┌────────┬───────────────────────────────────────────────────────┐
+  │ Layer  │                        Detects                        │
+  ├────────┼───────────────────────────────────────────────────────┤
+  │ Bronze │ Data quality, schema issues, duplicates               │
+  ├────────┼───────────────────────────────────────────────────────┤
+  │ Silver │ Coverage issues, pre-existing conditions              │
+  ├────────┼───────────────────────────────────────────────────────┤
+  │ Gold   │ Main fraud detection (patterns, velocity, duplicates) │
+  └────────┴───────────────────────────────────────────────────────┘
+  4. Rule vs Agent Comparison Tab (NEW)
+
+  - Runs BOTH code-driven and agent-driven processing in parallel
+  - Compares: decisions, times, risk levels
+  - Agent provides reasoning/insights, code is faster/deterministic
+  - Use case table showing when to use each
+
+  Key Answers to Your Questions:
+
+  1. Storage: YES, different - Agent→S3, Rule Engine→Azure ADLS
+  2. Issue Detection: Gold layer is the primary fraud detector with 3 specific patterns
+  3. Prompts: All now documented with full text
+  4. Rule vs Agent tab: Parallel comparison showing tradeoffs
+
+
+  
+
+● The Rule vs Agent Comparison Tab in the Agent Portal lets you run the same claim through both processing methods simultaneously and compare results.
+
+  How It Works
+
+  ┌─────────────────────────────────────────────────────────────────┐
+  │                     CLAIM SUBMISSION                             │
+  │                          │                                       │
+  │          ┌───────────────┴───────────────┐                      │
+  │          ▼                               ▼                      │
+  │   ┌──────────────┐               ┌──────────────┐               │
+  │   │ CODE-DRIVEN  │               │ AGENT-DRIVEN │               │
+  │   │ (Deterministic)              │ (AI/LLM)     │               │
+  │   └──────┬───────┘               └──────┬───────┘               │
+  │          │                               │                      │
+  │          │ ~100-200ms                    │ ~2-5 seconds         │
+  │          ▼                               ▼                      │
+  │   ┌──────────────┐               ┌──────────────┐               │
+  │   │ Decision:    │               │ Decision:    │               │
+  │   │ APPROVE      │               │ MANUAL_REVIEW│               │
+  │   │ Risk: LOW    │               │ Risk: MEDIUM │               │
+  │   │ (no reasoning)│              │ + Reasoning  │               │
+  │   └──────────────┘               │ + Insights   │               │
+  │                                  └──────────────┘               │
+  │                          │                                       │
+  │                          ▼                                       │
+  │                   ┌──────────────┐                              │
+  │                   │  COMPARISON  │                              │
+  │                   │  METRICS     │                              │
+  │                   └──────────────┘                              │
+  └─────────────────────────────────────────────────────────────────┘
+
+  Backend Implementation
+
+  # ws6_agent_pipeline/app/routers/comparison.py
+
+  @router.post("/run")
+  async def run_comparison(claim_data: dict):
+      # Run BOTH in parallel (not sequential)
+      code_task = asyncio.create_task(code_processor.process_claim(claim_data))
+      agent_task = asyncio.create_task(medallion_pipeline.process_claim(claim_data))
+
+      code_result, agent_result = await asyncio.gather(code_task, agent_task)
+
+      return {
+          "code_driven": {
+              "decision": "APPROVE",
+              "processing_time_ms": 145,
+              "risk_level": "low",
+              "payout": 450.00
+              # NO reasoning - just rules
+          },
+          "agent_driven": {
+              "decision": "MANUAL_REVIEW",
+              "processing_time_ms": 3200,
+              "risk_level": "medium",
+              "reasoning": "Customer has 3 similar claims in 6 months...",
+              "insights": ["Claim frequency above average", "Same diagnosis pattern"]
+          }
+      }
+
+  Code-Driven vs Agent-Driven
+  ┌─────────────────┬─────────────────────┬──────────────────────────┐
+  │     Aspect      │     Code-Driven     │       Agent-Driven       │
+  ├─────────────────┼─────────────────────┼──────────────────────────┤
+  │ Speed           │ ~100-200ms          │ ~2-5 seconds             │
+  ├─────────────────┼─────────────────────┼──────────────────────────┤
+  │ Logic           │ Fixed IF/ELSE rules │ LLM reasoning with tools │
+  ├─────────────────┼─────────────────────┼──────────────────────────┤
+  │ Reasoning       │ None (black box)    │ Full explanation         │
+  ├─────────────────┼─────────────────────┼──────────────────────────┤
+  │ Fraud Detection │ Threshold-based     │ Pattern matching         │
+  ├─────────────────┼─────────────────────┼──────────────────────────┤
+  │ Cost            │ Free                │ ~$0.01-0.05/claim        │
+  ├─────────────────┼─────────────────────┼──────────────────────────┤
+  │ Edge Cases      │ May miss            │ Adapts to novel patterns │
+  └─────────────────┴─────────────────────┴──────────────────────────┘
+  Example: Where They Differ
+
+  Claim: $450 routine checkup, but customer has submitted 3 similar claims in 6 months
+
+  Code-Driven Result:
+  {
+    "decision": "APPROVE",
+    "reason": "Amount < $500 threshold, valid policy"
+  }
+  Code sees: Low amount ✓, valid data ✓ → Auto-approve
+
+  Agent-Driven Result:
+  {
+    "decision": "MANUAL_REVIEW",
+    "reasoning": "While amount is low, I detected a velocity pattern: 3 similar claims in 6 months for the same body area. This warrants human review.",
+    "fraud_indicators": ["velocity_check: HIGH"]
+  }
+  Agent sees: Pattern across time → Flag for review
+
+  When to Use Each
+  ┌─────────────────────────────┬───────────────────────────┐
+  │          Use Case           │      Recommendation       │
+  ├─────────────────────────────┼───────────────────────────┤
+  │ High-volume wellness claims │ Code (speed, cost)        │
+  ├─────────────────────────────┼───────────────────────────┤
+  │ Complex/high-value claims   │ Agent (reasoning)         │
+  ├─────────────────────────────┼───────────────────────────┤
+  │ Fraud investigation         │ Agent (pattern detection) │
+  ├─────────────────────────────┼───────────────────────────┤
+  │ Audit trail needed          │ Agent (explainability)    │
+  ├─────────────────────────────┼───────────────────────────┤
+  │ Cost-sensitive operations   │ Code (no API costs)       │
+  └─────────────────────────────┴───────────────────────────┘
+  The comparison tab helps you decide which approach to use for different claim types in production.
+
+
+  

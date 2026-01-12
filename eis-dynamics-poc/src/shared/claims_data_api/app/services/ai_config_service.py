@@ -303,41 +303,172 @@ async def get_models(provider: Optional[str] = None):
 
 @router.post("/test")
 async def test_ai_connection():
-    """Test current AI configuration (simulated for demo)."""
+    """Test current AI configuration by making a real API call."""
+    import httpx
+    
     config = get_ai_config()
-
-    # For demo purposes, return success if provider is configured
     anthropic_key = os.environ.get("ANTHROPIC_API_KEY", "")
     openai_key = os.environ.get("OPENAI_API_KEY", "")
     azure_openai_key = os.environ.get("AZURE_OPENAI_API_KEY", "")
 
+    # Test message - simple and cheap
+    test_message = "Say 'Hello' in one word."
+
     if config.provider == "claude":
-        if anthropic_key:
+        if not anthropic_key:
             return {
-                "status": "success",
+                "status": "error",
                 "provider": config.provider,
                 "model": config.model_id,
-                "response": "AI connection successful - Claude is ready",
+                "response": "Claude API key not configured (ANTHROPIC_API_KEY environment variable missing)",
             }
-        else:
+        
+        # Actually test Claude API
+        try:
+            async with httpx.AsyncClient(timeout=30.0) as client:
+                response = await client.post(
+                    "https://api.anthropic.com/v1/messages",
+                    headers={
+                        "x-api-key": anthropic_key,
+                        "anthropic-version": "2023-06-01",
+                        "content-type": "application/json",
+                    },
+                    json={
+                        "model": config.model_id,
+                        "max_tokens": 10,
+                        "messages": [{"role": "user", "content": test_message}]
+                    }
+                )
+                
+                if response.status_code == 200:
+                    result = response.json()
+                    ai_response = result.get("content", [{}])[0].get("text", "")
+                    return {
+                        "status": "success",
+                        "provider": config.provider,
+                        "model": config.model_id,
+                        "response": f"Claude connection successful! Response: '{ai_response}'",
+                    }
+                elif response.status_code == 401:
+                    return {
+                        "status": "error",
+                        "provider": config.provider,
+                        "model": config.model_id,
+                        "response": "Invalid API key - authentication failed",
+                    }
+                elif response.status_code == 402 or "credit" in response.text.lower() or "billing" in response.text.lower():
+                    return {
+                        "status": "error",
+                        "provider": config.provider,
+                        "model": config.model_id,
+                        "response": "API credits exhausted - please add credits to your Anthropic account",
+                    }
+                elif response.status_code == 429:
+                    return {
+                        "status": "warning",
+                        "provider": config.provider,
+                        "model": config.model_id,
+                        "response": "Rate limited - too many requests, but API key is valid",
+                    }
+                else:
+                    error_detail = response.json().get("error", {}).get("message", response.text[:200])
+                    return {
+                        "status": "error",
+                        "provider": config.provider,
+                        "model": config.model_id,
+                        "response": f"API error ({response.status_code}): {error_detail}",
+                    }
+        except httpx.TimeoutException:
             return {
-                "status": "warning",
+                "status": "error",
                 "provider": config.provider,
                 "model": config.model_id,
-                "response": "Claude API key not configured, but service is running in demo mode",
+                "response": "Connection timeout - API server did not respond in time",
             }
+        except Exception as e:
+            return {
+                "status": "error",
+                "provider": config.provider,
+                "model": config.model_id,
+                "response": f"Connection error: {str(e)}",
+            }
+    
     else:  # openai
-        if openai_key or azure_openai_key:
+        api_key = openai_key or azure_openai_key
+        if not api_key:
             return {
-                "status": "success",
+                "status": "error",
                 "provider": config.provider,
                 "model": config.model_id,
-                "response": "AI connection successful - OpenAI is ready",
+                "response": "OpenAI API key not configured (OPENAI_API_KEY environment variable missing)",
             }
-        else:
+        
+        # Actually test OpenAI API
+        try:
+            async with httpx.AsyncClient(timeout=30.0) as client:
+                response = await client.post(
+                    "https://api.openai.com/v1/chat/completions",
+                    headers={
+                        "Authorization": f"Bearer {api_key}",
+                        "Content-Type": "application/json",
+                    },
+                    json={
+                        "model": config.model_id,
+                        "max_tokens": 10,
+                        "messages": [{"role": "user", "content": test_message}]
+                    }
+                )
+                
+                if response.status_code == 200:
+                    result = response.json()
+                    ai_response = result.get("choices", [{}])[0].get("message", {}).get("content", "")
+                    return {
+                        "status": "success",
+                        "provider": config.provider,
+                        "model": config.model_id,
+                        "response": f"OpenAI connection successful! Response: '{ai_response}'",
+                    }
+                elif response.status_code == 401:
+                    return {
+                        "status": "error",
+                        "provider": config.provider,
+                        "model": config.model_id,
+                        "response": "Invalid API key - authentication failed",
+                    }
+                elif response.status_code == 402 or response.status_code == 429:
+                    error_msg = response.json().get("error", {}).get("message", "")
+                    if "quota" in error_msg.lower() or "billing" in error_msg.lower():
+                        return {
+                            "status": "error",
+                            "provider": config.provider,
+                            "model": config.model_id,
+                            "response": "API quota exceeded - please check your OpenAI billing",
+                        }
+                    return {
+                        "status": "warning",
+                        "provider": config.provider,
+                        "model": config.model_id,
+                        "response": "Rate limited - too many requests",
+                    }
+                else:
+                    error_detail = response.json().get("error", {}).get("message", response.text[:200])
+                    return {
+                        "status": "error",
+                        "provider": config.provider,
+                        "model": config.model_id,
+                        "response": f"API error ({response.status_code}): {error_detail}",
+                    }
+        except httpx.TimeoutException:
             return {
-                "status": "warning",
+                "status": "error",
                 "provider": config.provider,
                 "model": config.model_id,
-                "response": "OpenAI API key not configured, but service is running in demo mode",
+                "response": "Connection timeout - API server did not respond in time",
+            }
+        except Exception as e:
+            return {
+                "status": "error",
+                "provider": config.provider,
+                "model": config.model_id,
+                "response": f"Connection error: {str(e)}",
             }

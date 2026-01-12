@@ -5,6 +5,7 @@
   "scripts": {
     "dev": "next dev -p ${PORT:-8081}",
     "build": "next build",
+    "build:prod": "mv .env.local .env.local.bak 2>/dev/null || true; STATIC_EXPORT=true next build; mv .env.local.bak .env.local 2>/dev/null || true",
     "start": "next start -p ${PORT:-8081}",
     "lint": "next lint"
   },

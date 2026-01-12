@@ -128,3 +128,229 @@ async def get_config():
         "delta_silver_path": settings.DELTA_SILVER_PATH,
         "delta_gold_path": settings.DELTA_GOLD_PATH,
     }
+
+
+@router.delete("/clear")
+async def clear_all_runs():
+    """
+    Clear all pipeline runs (for demo reset).
+    """
+    count = await state_manager.clear_all_runs()
+    return {
+        "success": True,
+        "message": f"Cleared {count} pipeline runs",
+        "runs_cleared": count,
+        "timestamp": datetime.utcnow().isoformat(),
+    }
+
+
+@router.post("/ai/test")
+async def test_ai_connection(provider: str = None, model: str = None):
+    """
+    Test AI provider connection by making a real API call.
+    This validates that API key is valid and has credits.
+    
+    Args:
+        provider: Optional provider override ('claude' or 'openai'). Defaults to configured provider.
+        model: Optional model override. Defaults to configured model for the provider.
+    """
+    import httpx
+    
+    # Use provided values or fall back to settings
+    provider = provider or settings.AI_PROVIDER
+    
+    # Default models by provider
+    default_models = {
+        "claude": "claude-sonnet-4-20250514",
+        "openai": "gpt-4o"
+    }
+    model = model or (settings.ai_model if provider == settings.AI_PROVIDER else default_models.get(provider, "gpt-4o"))
+    
+    # Test message - simple and cheap
+    test_message = "Say 'Hello' in one word."
+    
+    if provider == "claude":
+        api_key = settings.ANTHROPIC_API_KEY
+        if not api_key:
+            return {
+                "status": "error",
+                "provider": provider,
+                "model": model,
+                "message": "Claude API key not configured (ANTHROPIC_API_KEY)",
+                "timestamp": datetime.utcnow().isoformat(),
+            }
+        
+        try:
+            async with httpx.AsyncClient(timeout=30.0) as client:
+                response = await client.post(
+                    "https://api.anthropic.com/v1/messages",
+                    headers={
+                        "x-api-key": api_key,
+                        "anthropic-version": "2023-06-01",
+                        "content-type": "application/json",
+                    },
+                    json={
+                        "model": model,
+                        "max_tokens": 10,
+                        "messages": [{"role": "user", "content": test_message}]
+                    }
+                )
+                
+                if response.status_code == 200:
+                    result = response.json()
+                    ai_response = result.get("content", [{}])[0].get("text", "")
+                    return {
+                        "status": "success",
+                        "provider": provider,
+                        "model": model,
+                        "message": f"Connection successful! AI says: '{ai_response}'",
+                        "timestamp": datetime.utcnow().isoformat(),
+                    }
+                elif response.status_code == 401:
+                    return {
+                        "status": "error",
+                        "provider": provider,
+                        "model": model,
+                        "message": "Invalid API key - authentication failed",
+                        "timestamp": datetime.utcnow().isoformat(),
+                    }
+                elif response.status_code == 400:
+                    error_data = response.json()
+                    error_type = error_data.get("error", {}).get("type", "")
+                    error_msg = error_data.get("error", {}).get("message", "")
+                    if "credit" in error_msg.lower() or "billing" in error_msg.lower():
+                        return {
+                            "status": "error",
+                            "provider": provider,
+                            "model": model,
+                            "message": "API credits exhausted - please add credits to your Anthropic account",
+                            "error_detail": error_msg,
+                            "timestamp": datetime.utcnow().isoformat(),
+                        }
+                    return {
+                        "status": "error",
+                        "provider": provider,
+                        "model": model,
+                        "message": f"API error: {error_msg}",
+                        "timestamp": datetime.utcnow().isoformat(),
+                    }
+                elif response.status_code == 429:
+                    return {
+                        "status": "warning",
+                        "provider": provider,
+                        "model": model,
+                        "message": "Rate limited - API key is valid but too many requests",
+                        "timestamp": datetime.utcnow().isoformat(),
+                    }
+                else:
+                    error_detail = response.text[:500]
+                    return {
+                        "status": "error",
+                        "provider": provider,
+                        "model": model,
+                        "message": f"API error ({response.status_code}): {error_detail}",
+                        "timestamp": datetime.utcnow().isoformat(),
+                    }
+        except httpx.TimeoutException:
+            return {
+                "status": "error",
+                "provider": provider,
+                "model": model,
+                "message": "Connection timeout - API server did not respond",
+                "timestamp": datetime.utcnow().isoformat(),
+            }
+        except Exception as e:
+            return {
+                "status": "error",
+                "provider": provider,
+                "model": model,
+                "message": f"Connection error: {str(e)}",
+                "timestamp": datetime.utcnow().isoformat(),
+            }
+    
+    else:  # openai
+        api_key = settings.OPENAI_API_KEY
+        if not api_key:
+            return {
+                "status": "error",
+                "provider": provider,
+                "model": model,
+                "message": "OpenAI API key not configured (OPENAI_API_KEY)",
+                "timestamp": datetime.utcnow().isoformat(),
+            }
+        
+        try:
+            async with httpx.AsyncClient(timeout=30.0) as client:
+                response = await client.post(
+                    "https://api.openai.com/v1/chat/completions",
+                    headers={
+                        "Authorization": f"Bearer {api_key}",
+                        "Content-Type": "application/json",
+                    },
+                    json={
+                        "model": model,
+                        "max_tokens": 10,
+                        "messages": [{"role": "user", "content": test_message}]
+                    }
+                )
+                
+                if response.status_code == 200:
+                    result = response.json()
+                    ai_response = result.get("choices", [{}])[0].get("message", {}).get("content", "")
+                    return {
+                        "status": "success",
+                        "provider": provider,
+                        "model": model,
+                        "message": f"Connection successful! AI says: '{ai_response}'",
+                        "timestamp": datetime.utcnow().isoformat(),
+                    }
+                elif response.status_code == 401:
+                    return {
+                        "status": "error",
+                        "provider": provider,
+                        "model": model,
+                        "message": "Invalid API key - authentication failed",
+                        "timestamp": datetime.utcnow().isoformat(),
+                    }
+                elif response.status_code == 429:
+                    error_msg = response.json().get("error", {}).get("message", "")
+                    if "quota" in error_msg.lower() or "billing" in error_msg.lower():
+                        return {
+                            "status": "error",
+                            "provider": provider,
+                            "model": model,
+                            "message": "API quota exceeded - check OpenAI billing",
+                            "timestamp": datetime.utcnow().isoformat(),
+                        }
+                    return {
+                        "status": "warning",
+                        "provider": provider,
+                        "model": model,
+                        "message": "Rate limited - too many requests",
+                        "timestamp": datetime.utcnow().isoformat(),
+                    }
+                else:
+                    error_detail = response.text[:500]
+                    return {
+                        "status": "error",
+                        "provider": provider,
+                        "model": model,
+                        "message": f"API error ({response.status_code}): {error_detail}",
+                        "timestamp": datetime.utcnow().isoformat(),
+                    }
+        except httpx.TimeoutException:
+            return {
+                "status": "error",
+                "provider": provider,
+                "model": model,
+                "message": "Connection timeout - API server did not respond",
+                "timestamp": datetime.utcnow().isoformat(),
+            }
+        except Exception as e:
+            return {
+                "status": "error",
+                "provider": provider,
+                "model": model,
+                "message": f"Connection error: {str(e)}",
+                "timestamp": datetime.utcnow().isoformat(),
+            }

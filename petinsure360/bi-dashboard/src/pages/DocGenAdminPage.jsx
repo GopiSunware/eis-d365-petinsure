@@ -8,8 +8,8 @@ export default function DocGenAdminPage() {
   const [selectedBatch, setSelectedBatch] = useState(null)
   const [exporting, setExporting] = useState({})
 
-  // DocGen service URL (EIS Dynamics DocGen Service)
-  const DOCGEN_URL = import.meta.env.VITE_DOCGEN_URL || 'http://localhost:8007'
+  // Backend API URL (PetInsure360 Backend with DocGen endpoints)
+  const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3002'
 
   useEffect(() => {
     checkServiceHealth()
@@ -18,7 +18,7 @@ export default function DocGenAdminPage() {
 
   const checkServiceHealth = async () => {
     try {
-      const response = await fetch(`${DOCGEN_URL}/health`)
+      const response = await fetch(`${API_URL}/api/docgen/health`)
       if (response.ok) {
         const data = await response.json()
         setServiceStatus(data)
@@ -33,7 +33,7 @@ export default function DocGenAdminPage() {
   const loadBatches = async () => {
     try {
       setLoading(true)
-      const response = await fetch(`${DOCGEN_URL}/api/v1/docgen/batches?limit=50`)
+      const response = await fetch(`${API_URL}/api/docgen/batches?limit=50`)
       if (response.ok) {
         const data = await response.json()
         setBatches(data.batches || [])
@@ -49,7 +49,7 @@ export default function DocGenAdminPage() {
     if (!confirm('Delete this batch? This cannot be undone.')) return
 
     try {
-      await fetch(`${DOCGEN_URL}/api/v1/docgen/batch/${batchId}`, { method: 'DELETE' })
+      await fetch(`${API_URL}/api/docgen/upload/${batchId}`, { method: 'DELETE' })
       loadBatches()
     } catch (err) {
       console.error('Error deleting batch:', err)
@@ -58,7 +58,7 @@ export default function DocGenAdminPage() {
 
   const handleProcessBatch = async (batchId) => {
     try {
-      await fetch(`${DOCGEN_URL}/api/v1/docgen/process/${batchId}`, { method: 'POST' })
+      await fetch(`${API_URL}/api/docgen/process/${batchId}`, { method: 'POST' })
       setTimeout(loadBatches, 1000)
     } catch (err) {
       console.error('Error processing batch:', err)
@@ -66,31 +66,13 @@ export default function DocGenAdminPage() {
   }
 
   const handleExport = async (batchId, format) => {
-    setExporting(prev => ({ ...prev, [`${batchId}-${format}`]: true }))
-    try {
-      const response = await fetch(`${DOCGEN_URL}/api/v1/docgen/export`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ batch_id: batchId, formats: [format] })
-      })
-
-      if (response.ok) {
-        const data = await response.json()
-        const downloadUrl = data.download_urls?.[format]
-        if (downloadUrl) {
-          window.open(downloadUrl, '_blank')
-        }
-      }
-    } catch (err) {
-      console.error('Error exporting:', err)
-    } finally {
-      setExporting(prev => ({ ...prev, [`${batchId}-${format}`]: false }))
-    }
+    // Export not currently supported in petinsure360-backend
+    console.log('Export not yet implemented')
   }
 
   const handleViewBatch = async (batchId) => {
     try {
-      const response = await fetch(`${DOCGEN_URL}/api/v1/docgen/batch/${batchId}`)
+      const response = await fetch(`${API_URL}/api/docgen/upload/${batchId}`)
       if (response.ok) {
         const data = await response.json()
         setSelectedBatch(data)
@@ -152,8 +134,8 @@ export default function DocGenAdminPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">DocGen Admin</h1>
-          <p className="text-gray-500">Manage document uploads and AI processing</p>
+          <h1 className="text-2xl font-bold text-gray-900">Doc Processing</h1>
+          <p className="text-gray-500">AI-powered document analysis and claim extraction</p>
         </div>
         <div className="flex items-center gap-4">
           {/* Service Status */}
@@ -235,10 +217,20 @@ export default function DocGenAdminPage() {
                       )}
                     </td>
                     <td className="px-4 py-3">
-                      <span className="text-sm">{batch.documents_count || 0} file(s)</span>
+                      <span className="text-sm">{batch.file_count || batch.documents_count || 0} file(s)</span>
+                      {batch.filenames?.length > 0 && (
+                        <p className="text-xs text-gray-400 truncate max-w-[150px]" title={batch.filenames.join(', ')}>
+                          {batch.filenames[0]}
+                        </p>
+                      )}
                     </td>
                     <td className="px-4 py-3">
                       {getStatusBadge(batch.status)}
+                      {batch.status === 'failed' && batch.error_message && (
+                        <p className="text-xs text-red-600 mt-1 max-w-[200px] truncate" title={batch.error_message}>
+                          {batch.error_message.slice(0, 50)}...
+                        </p>
+                      )}
                     </td>
                     <td className="px-4 py-3">
                       {batch.ai_decision ? (
@@ -343,11 +335,58 @@ export default function DocGenAdminPage() {
                 )}
               </div>
 
+              {/* Error Message for Failed Batches */}
+              {selectedBatch.status === 'failed' && selectedBatch.error_message && (
+                <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
+                  <div className="flex items-start gap-3">
+                    <XCircle className="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" />
+                    <div>
+                      <p className="font-medium text-red-800">Processing Failed</p>
+                      <p className="text-sm text-red-700 mt-1">{selectedBatch.error_message}</p>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Customer & Policy Info */}
+              {(selectedBatch.customer_id || selectedBatch.pet_name) && (
+                <div className="grid grid-cols-2 gap-4 p-4 bg-gray-50 rounded-lg">
+                  {selectedBatch.customer_id && (
+                    <div>
+                      <p className="text-xs text-gray-500">Customer ID</p>
+                      <p className="font-medium">{selectedBatch.customer_id}</p>
+                    </div>
+                  )}
+                  {selectedBatch.pet_name && (
+                    <div>
+                      <p className="text-xs text-gray-500">Pet</p>
+                      <p className="font-medium">{selectedBatch.pet_name}</p>
+                    </div>
+                  )}
+                  {selectedBatch.policy_id && (
+                    <div>
+                      <p className="text-xs text-gray-500">Policy ID</p>
+                      <p className="font-medium">{selectedBatch.policy_id}</p>
+                    </div>
+                  )}
+                </div>
+              )}
+
               {/* Documents */}
               <div>
-                <h4 className="font-medium mb-3">Documents ({selectedBatch.documents?.length || 0})</h4>
+                <h4 className="font-medium mb-3">Documents ({selectedBatch.filenames?.length || selectedBatch.documents?.length || 0})</h4>
                 <div className="space-y-2">
-                  {selectedBatch.documents?.map((doc, idx) => (
+                  {/* Show filenames from petinsure360 backend */}
+                  {selectedBatch.filenames?.map((filename, idx) => (
+                    <div key={idx} className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
+                      {getFileIcon(filename)}
+                      <div className="flex-1">
+                        <p className="font-medium">{filename}</p>
+                      </div>
+                    </div>
+                  ))}
+                  {/* Fallback to documents array from EIS DocGen */}
+                  {!selectedBatch.filenames && selectedBatch.documents?.map((doc, idx) => (
                     <div key={idx} className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
                       {getFileIcon(doc.original_filename)}
                       <div className="flex-1">
@@ -358,6 +397,10 @@ export default function DocGenAdminPage() {
                       </div>
                     </div>
                   ))}
+                  {/* No documents message */}
+                  {!selectedBatch.filenames?.length && !selectedBatch.documents?.length && (
+                    <p className="text-gray-400 text-sm">No documents available</p>
+                  )}
                 </div>
               </div>
 

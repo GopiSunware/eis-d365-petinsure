@@ -86,11 +86,14 @@ complexity levels (simple, medium, complex).
 )
 
 # Configure CORS - use config or allow all if not configured
+# Note: allow_credentials=True is incompatible with allow_origins=["*"]
+# When using wildcard, credentials must be False
 cors_origins = settings.CORS_ORIGINS if settings.CORS_ORIGINS else ["*"]
+allow_credentials = cors_origins != ["*"]  # Only allow credentials with specific origins
 app.add_middleware(
     CORSMiddleware,
     allow_origins=cors_origins,
-    allow_credentials=True,
+    allow_credentials=allow_credentials,
     allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
     allow_headers=["*"],
     expose_headers=["*"],

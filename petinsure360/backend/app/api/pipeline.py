@@ -18,10 +18,29 @@ import httpx
 logger = logging.getLogger(__name__)
 router = APIRouter()
 
+# Import Databricks service
+from app.services.databricks import (
+    is_databricks_configured as databricks_is_configured,
+    run_bronze_silver as databricks_run_bronze_silver,
+    run_gold as databricks_run_gold,
+    get_run_status as databricks_get_run_status,
+    get_recent_runs as databricks_get_recent_runs,
+    get_databricks_job_url
+)
+
 # Agent Pipeline URL (EIS Dynamics Agent Pipeline - WS6)
 AGENT_PIPELINE_URL = os.getenv("AGENT_PIPELINE_URL", "http://localhost:8006")
 # DocGen Service URL (EIS Dynamics DocGen - WS7)
 DOCGEN_SERVICE_URL = os.getenv("DOCGEN_SERVICE_URL", "http://localhost:8007")
+
+# Azure Databricks Configuration
+DATABRICKS_HOST = os.getenv("DATABRICKS_HOST", "")
+DATABRICKS_TOKEN = os.getenv("DATABRICKS_TOKEN", "")
+DATABRICKS_WORKSPACE_URL = "https://adb-7405619408519767.7.azuredatabricks.net"
+
+def is_databricks_configured() -> bool:
+    """Check if Databricks credentials are configured."""
+    return bool(DATABRICKS_HOST and DATABRICKS_TOKEN)
 
 # Pipeline state persistence file - Project-relative path
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
@@ -208,6 +227,27 @@ async def get_pipeline_status(request: Request):
         "silver": pipeline_state["last_silver_process"],
         "gold": pipeline_state["last_gold_process"]
     }
+
+    # Execution mode based on Databricks configuration
+    databricks_configured = is_databricks_configured()
+    if databricks_configured:
+        base_status["execution_info"] = {
+            "mode": "databricks",
+            "engine": "Azure Databricks",
+            "databricks_connected": True,
+            "databricks_workspace": DATABRICKS_WORKSPACE_URL,
+            "description": "Medallion architecture processing via Azure Databricks notebooks.",
+            "note": "Connected to Azure Databricks workspace for Delta Lake ETL processing."
+        }
+    else:
+        base_status["execution_info"] = {
+            "mode": "python_local",
+            "engine": "PetInsure360 Backend (Python/FastAPI)",
+            "databricks_connected": False,
+            "databricks_workspace": DATABRICKS_WORKSPACE_URL,
+            "description": "Medallion architecture processing simulated in Python. Configure Databricks for production.",
+            "note": "To enable Azure Databricks, configure DATABRICKS_HOST and DATABRICKS_TOKEN environment variables."
+        }
 
     return base_status
 
@@ -533,7 +573,7 @@ async def process_bronze_to_silver(request: Request):
     # Persist state to disk
     _save_pipeline_state()
 
-    # Emit WebSocket event
+    # Emit WebSocket event for local processing
     sio = request.app.state.sio
     await sio.emit('silver_processed', {
         'count': len(processed_claims),
@@ -542,18 +582,64 @@ async def process_bronze_to_silver(request: Request):
         'timestamp': datetime.utcnow().isoformat()
     })
 
+    # ==========================================================================
+    # DATABRICKS INTEGRATION: Trigger Bronze + Silver notebooks if configured
+    # ==========================================================================
+    databricks_result = None
+    if databricks_is_configured():
+        try:
+            databricks_result = await databricks_run_bronze_silver()
+            if databricks_result.get("success"):
+                # Emit WebSocket event for Databricks job start
+                await sio.emit('databricks_job_started', {
+                    'run_id': databricks_result.get("run_id"),
+                    'job_url': databricks_result.get("job_url"),
+                    'layer': 'bronze_silver',
+                    'tasks': databricks_result.get("tasks_triggered"),
+                    'timestamp': datetime.utcnow().isoformat()
+                })
+                logger.info(f"Databricks Bronze+Silver job triggered: run_id={databricks_result.get('run_id')}")
+        except Exception as e:
+            logger.error(f"Failed to trigger Databricks job: {e}")
+            databricks_result = {"success": False, "error": str(e)}
+
+    # Build response with execution info
+    execution_mode = "databricks" if (databricks_result and databricks_result.get("success")) else "python_local"
+    execution_engine = "Azure Databricks" if execution_mode == "databricks" else "PetInsure360 Backend (Python/FastAPI)"
+
     return {
         "success": True,
         "processed": len(processed_claims),
         "errors": errors,
-        "transformations": [
-            "Data type standardization",
-            "Line items validation",
-            "Completeness scoring",
-            "Validity scoring",
-            "Deduplication check"
+        "execution_mode": execution_mode,
+        "execution_engine": execution_engine,
+        "notebook_executed": databricks_result.get("success") if databricks_result else False,
+        "databricks": {
+            "triggered": databricks_result.get("success") if databricks_result else False,
+            "run_id": databricks_result.get("run_id") if databricks_result else None,
+            "job_url": databricks_result.get("job_url") if databricks_result else None,
+            "tasks": databricks_result.get("tasks_triggered") if databricks_result else None,
+            "error": databricks_result.get("error") if (databricks_result and not databricks_result.get("success")) else None
+        } if databricks_is_configured() else None,
+        "transformations_applied": [
+            "Data type standardization (claim_amount → decimal)",
+            "Line items validation (sum check)",
+            "Completeness scoring (required fields check)",
+            "Validity scoring (business rules)",
+            "Deduplication check (claim_id uniqueness)"
         ],
-        "message": f"Processed {len(processed_claims)} claims from Bronze to Silver layer"
+        "processing_proof": [
+            {
+                "claim_id": c["claim_id"],
+                "completeness_score": c["completeness_score"],
+                "validity_score": c["validity_score"],
+                "overall_quality_score": c["overall_quality_score"],
+                "amount_validated": c["amount_validated"],
+                "processed_at": c["silver_processed_at"]
+            }
+            for c in processed_claims
+        ],
+        "message": f"Processed {len(processed_claims)} claims from Bronze to Silver layer ({execution_engine})"
     }
 
 
@@ -740,18 +826,67 @@ async def process_silver_to_gold(request: Request):
         import traceback
         traceback.print_exc()
 
+    # ==========================================================================
+    # DATABRICKS INTEGRATION: Trigger Gold notebook if configured
+    # ==========================================================================
+    databricks_result = None
+    if databricks_is_configured():
+        try:
+            databricks_result = await databricks_run_gold()
+            if databricks_result.get("success"):
+                # Emit WebSocket event for Databricks job start
+                await sio.emit('databricks_job_started', {
+                    'run_id': databricks_result.get("run_id"),
+                    'job_url': databricks_result.get("job_url"),
+                    'layer': 'gold',
+                    'tasks': databricks_result.get("tasks_triggered"),
+                    'timestamp': datetime.utcnow().isoformat()
+                })
+                logger.info(f"Databricks Gold job triggered: run_id={databricks_result.get('run_id')}")
+        except Exception as e:
+            logger.error(f"Failed to trigger Databricks Gold job: {e}")
+            databricks_result = {"success": False, "error": str(e)}
+
+    # Build response with execution info
+    execution_mode = "databricks" if (databricks_result and databricks_result.get("success")) else "python_local"
+    execution_engine = "Azure Databricks" if execution_mode == "databricks" else "PetInsure360 Backend (Python/FastAPI)"
+
     return {
         "success": True,
         "processed": len(processed_claims),
-        "claims": [{"claim_id": c["claim_id"], "amount": c["claim_amount"], "customer": c["customer_name"], "reimbursement": c["estimated_reimbursement"]} for c in processed_claims],
-        "transformations": [
-            "Customer dimension join",
-            "Policy dimension join",
-            "Reimbursement calculation",
-            "Priority assignment",
-            "KPI aggregation prep"
+        "execution_mode": execution_mode,
+        "execution_engine": execution_engine,
+        "notebook_executed": databricks_result.get("success") if databricks_result else False,
+        "databricks": {
+            "triggered": databricks_result.get("success") if databricks_result else False,
+            "run_id": databricks_result.get("run_id") if databricks_result else None,
+            "job_url": databricks_result.get("job_url") if databricks_result else None,
+            "tasks": databricks_result.get("tasks_triggered") if databricks_result else None,
+            "error": databricks_result.get("error") if (databricks_result and not databricks_result.get("success")) else None
+        } if databricks_is_configured() else None,
+        "transformations_applied": [
+            "Customer dimension join (customer_id → customer_name, tier, risk)",
+            "Policy dimension join (policy_id → coverage details)",
+            "Reimbursement calculation (deductible: $250, rate: 80%)",
+            "Network adjustment (in-network: 100%, out-of-network: 80%)",
+            "Priority assignment (emergency → High, normal → Normal)",
+            "KPI aggregation prep (include_in_kpi flag)"
         ],
-        "message": f"Aggregated {len(processed_claims)} claims to Gold layer. Now visible in dashboard.",
+        "processing_proof": [
+            {
+                "claim_id": c["claim_id"],
+                "claim_number": c["claim_number"],
+                "claim_amount": c["claim_amount"],
+                "estimated_reimbursement": c["estimated_reimbursement"],
+                "customer_name": c["customer_name"],
+                "customer_tier": c["customer_tier"],
+                "network_adjustment": c["network_adjustment"],
+                "processing_priority": c["processing_priority"],
+                "processed_at": c["gold_processed_at"]
+            }
+            for c in processed_claims
+        ],
+        "message": f"Aggregated {len(processed_claims)} claims to Gold layer. Now visible in dashboard. ({execution_engine})",
         "persisted": persisted
     }
 
@@ -764,9 +899,49 @@ async def refresh_pipeline(request: Request):
     return {"success": True, "message": "Pipeline data refreshed"}
 
 
+# =============================================================================
+# DATABRICKS JOB MONITORING ENDPOINTS
+# =============================================================================
+
+@router.get("/databricks/run/{run_id}")
+async def get_databricks_run_status(run_id: int):
+    """
+    Get the status of a Databricks job run.
+    Used by UI to poll for job completion.
+    """
+    if not databricks_is_configured():
+        raise HTTPException(status_code=503, detail="Databricks not configured")
+
+    status = await databricks_get_run_status(run_id)
+    if "error" in status:
+        raise HTTPException(status_code=500, detail=status["error"])
+
+    return status
+
+
+@router.get("/databricks/runs")
+async def get_databricks_recent_runs(limit: int = 10):
+    """
+    Get recent Databricks job runs for the PetInsure360 ETL job.
+    """
+    if not databricks_is_configured():
+        return {"configured": False, "runs": [], "message": "Databricks not configured"}
+
+    result = await databricks_get_recent_runs(limit)
+    return {"configured": True, **result}
+
+
 @router.delete("/clear")
 async def clear_pipeline(request: Request, include_demo_data: bool = True):
-    """Clear all pending claims and optionally demo data (for demo reset)."""
+    """Clear all pending claims, uploads, and optionally demo data (for demo reset).
+    
+    This clears ALL systems for consistent state:
+    1. Rule Engine Pipeline (pipeline_state.json)
+    2. Agent Pipeline (WS6 in-memory state)
+    3. DocGen Service (WS7 batches)
+    4. Insights Service (in-memory claims)
+    5. ADLS demo data (if configured)
+    """
     pipeline_state["pending_claims"] = []
     pipeline_state["silver_claims"] = []
     pipeline_state["gold_claims"] = []
@@ -775,6 +950,55 @@ async def clear_pipeline(request: Request, include_demo_data: bool = True):
 
     demo_cleared = False
     claims_cleared = 0
+    uploads_cleared = 0
+    agent_runs_cleared = 0
+    docgen_batches_cleared = 0
+
+    # Clear docgen uploads
+    from app.api.docgen import upload_records, UPLOAD_DIR
+    import shutil
+    uploads_cleared = len(upload_records)
+    upload_records.clear()
+    try:
+        if os.path.exists(UPLOAD_DIR):
+            for item in os.listdir(UPLOAD_DIR):
+                item_path = os.path.join(UPLOAD_DIR, item)
+                if os.path.isdir(item_path):
+                    shutil.rmtree(item_path)
+        print(f"Cleared {uploads_cleared} upload records and files")
+    except Exception as e:
+        print(f"Warning: Could not clean upload directory: {e}")
+
+    # =========================================================================
+    # CLEAR AGENT PIPELINE (WS6) - Clear all pipeline runs
+    # =========================================================================
+    try:
+        async with httpx.AsyncClient(timeout=10.0) as client:
+            response = await client.delete(f"{AGENT_PIPELINE_URL}/clear")
+            if response.status_code == 200:
+                result = response.json()
+                agent_runs_cleared = result.get("runs_cleared", 0)
+                logger.info(f"Cleared {agent_runs_cleared} agent pipeline runs")
+    except httpx.ConnectError:
+        logger.warning(f"Agent Pipeline unavailable at {AGENT_PIPELINE_URL} - skipping clear")
+    except Exception as e:
+        logger.warning(f"Failed to clear agent pipeline: {e}")
+
+    # =========================================================================
+    # CLEAR DOCGEN SERVICE (WS7) - Clear all batches
+    # =========================================================================
+    try:
+        async with httpx.AsyncClient(timeout=10.0) as client:
+            response = await client.delete(f"{DOCGEN_SERVICE_URL}/api/v1/docgen/batches/clear")
+            if response.status_code == 200:
+                result = response.json()
+                docgen_batches_cleared = result.get("batches_cleared", 0)
+                logger.info(f"Cleared {docgen_batches_cleared} docgen batches")
+    except httpx.ConnectError:
+        logger.warning(f"DocGen service unavailable at {DOCGEN_SERVICE_URL} - skipping clear")
+    except Exception as e:
+        logger.warning(f"Failed to clear docgen batches: {e}")
+
     if include_demo_data:
         try:
             storage = request.app.state.storage
@@ -811,8 +1035,17 @@ async def clear_pipeline(request: Request, include_demo_data: bool = True):
 
     return {
         "success": True,
-        "message": f"Pipeline cleared{' and demo data removed' if demo_cleared else ''}",
-        "claims_cleared": claims_cleared
+        "message": f"All pipelines cleared{' and demo data removed' if demo_cleared else ''}",
+        "rule_engine": {
+            "claims_cleared": claims_cleared,
+            "uploads_cleared": uploads_cleared
+        },
+        "agent_pipeline": {
+            "runs_cleared": agent_runs_cleared
+        },
+        "docgen": {
+            "batches_cleared": docgen_batches_cleared
+        }
     }
 
 

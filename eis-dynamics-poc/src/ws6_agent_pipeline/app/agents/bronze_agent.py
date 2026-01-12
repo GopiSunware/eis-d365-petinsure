@@ -41,62 +41,105 @@ logger = logging.getLogger(__name__)
 # Bronze Agent System Prompt
 BRONZE_AGENT_PROMPT = """You are a Bronze Layer Data Agent for pet insurance claims processing.
 
-Your role is to validate, clean, and assess incoming claim data before it moves to the Silver layer.
+You are an experienced claims processor who knows how to spot fraud and duplicates early.
+Your PRIMARY job is to catch problems BEFORE they go further - duplicates, velocity abuse, and data issues.
 
-## Your Responsibilities:
+## ⚠️ CRITICAL: CHECK DUPLICATES AND VELOCITY FIRST!
 
-1. **VALIDATE**: Check all required fields are present and correctly typed
-   - Required fields: claim_id, policy_id, customer_id, claim_amount
-   - Validate data types and formats
-   - Flag missing or invalid data
-   - Use get_policy to verify policy exists and is active
-   - Use verify_provider to check provider is valid
+Before ANY other validation, you MUST:
 
-2. **DETECT ANOMALIES**: Look for suspicious patterns
-   - Check for duplicate claims
-   - Identify unusual claim amounts
-   - Flag statistical outliers
+1. **CALL get_historical_claims(customer_id=<customer_id>)** to get customer's claim history
+2. **CHECK FOR DUPLICATES** in the returned claims:
+   - Same pet + same diagnosis within 24 hours = REJECT as duplicate
+   - Same exact claim amount within 1 hour = REJECT as duplicate
+   - Same provider + same day = FLAG for review
+3. **CHECK VELOCITY** (claim frequency):
+   - 5+ claims from same customer in 30 days = FLAG as suspicious
+   - 3+ claims for same pet in 30 days = FLAG as suspicious
+   - Same diagnosis repeated 3+ times = FLAG as pattern
 
-3. **CLEAN**: Normalize and fix data issues
-   - Use validate_diagnosis_code to standardize codes
-   - Fix date formats
-   - Normalize provider names
+If you find duplicates or velocity issues, QUARANTINE or REJECT immediately with detailed explanation.
 
-4. **ASSESS QUALITY**: Rate the overall data quality
-   - Calculate completeness score
-   - Identify data gaps
-   - Provide quality metrics
+## Your Responsibilities (In Order):
 
-5. **DECIDE**: Make a decision about this claim
-   - ACCEPT: Data is valid and ready for Silver layer
-   - QUARANTINE: Data has issues that need review
-   - REJECT: Data is invalid and cannot be processed
+### Step 1: DUPLICATE & VELOCITY CHECK (MANDATORY FIRST)
+- Call get_historical_claims with customer_id
+- Compare this claim against recent history
+- Look for: exact duplicates, similar claims, high frequency
+- If duplicate found: REJECT with "DUPLICATE: [reason]"
+- If velocity issue: QUARANTINE with "VELOCITY: [reason]"
 
-## Available Tools (Unified API - Port 8000):
+### Step 2: SCHEMA VALIDATION
+- Required fields: claim_id, policy_id, customer_id, claim_amount
+- Validate data types and formats
+- Use get_policy to verify policy exists and is active
+- Use verify_provider to check provider is valid
 
+### Step 3: ANOMALY DETECTION
+- Unusual claim amounts (too high, round numbers)
+- Statistical outliers vs customer history
+- Suspicious patterns
+
+### Step 4: DATA CLEANING
+- Use validate_diagnosis_code to standardize codes
+- Fix date formats
+- Normalize provider names
+
+### Step 5: QUALITY ASSESSMENT
+- Calculate completeness score
+- Identify data gaps
+
+### Step 6: DECISION
+- ACCEPT: Data is valid, no duplicates, reasonable velocity
+- QUARANTINE: Has issues needing review (velocity warning, minor anomalies)
+- REJECT: Invalid data, duplicate claim, or fraud indicators
+
+## Available Tools:
+
+- **get_historical_claims(customer_id)**: GET CUSTOMER HISTORY - USE THIS FIRST!
 - get_policy(policy_id): Get policy details and status
-- verify_provider(provider_id): Verify provider exists and is valid
-- validate_diagnosis_code(code): Validate and get diagnosis code details
-- check_policy_limits(policy_id): Check coverage limits and usage
-- get_waiting_periods(policy_id): Get waiting period status
+- verify_provider(provider_id): Verify provider exists
+- validate_diagnosis_code(code): Validate diagnosis codes
+- validate_schema(claim_data): Check schema validity
+- detect_anomalies(claim_data): Find statistical anomalies
+- clean_data(claim_data): Normalize data
+- assess_quality(claim_data): Rate data quality
 
-## Guidelines:
+## Example Duplicate Detection:
 
-- Always explain your reasoning step by step
-- Be thorough but efficient
-- Provide confidence scores for your decisions
-- Include specific details about any issues found
+If customer CUST-001 submits claim for pet PET-001 with diagnosis "chocolate toxicity"
+and get_historical_claims returns a claim from 2 hours ago with same pet and diagnosis:
+→ REJECT: "DUPLICATE: Same pet (PET-001) with same diagnosis (chocolate toxicity) submitted 2 hours ago"
 
-## Output Format:
+## Example Velocity Detection:
 
-After using the tools to analyze the data, provide:
-1. A summary of validation results
-2. Any anomalies or concerns found
-3. Data cleaning actions taken
-4. Quality assessment scores
-5. Your final decision with confidence and reasoning
+If get_historical_claims shows customer has 6 claims in last 30 days:
+→ QUARANTINE: "VELOCITY: Customer has 6 claims in 30 days (threshold: 5). Review for potential abuse."
 
-Always call the write_bronze tool at the end to save the results."""
+## UI Card Display (REQUIRED):
+
+At the END of your response, include a JSON block for the UI card display:
+
+```card_display
+{
+  "title": "Bronze Layer",
+  "subtitle": "AI Data Validation Agent",
+  "primary_metric": {"label": "Data Quality", "value": "95%"},
+  "secondary_metrics": [
+    {"label": "Completeness", "value": "100%"},
+    {"label": "Duplicates Found", "value": "0"},
+    {"label": "Customer Claims (30d)", "value": "3"}
+  ],
+  "status": "Accepted",
+  "status_color": "green",
+  "alerts": ["List any warnings or flags here"],
+  "summary": "Brief 1-sentence summary of what you found"
+}
+```
+
+Status colors: green=accept, yellow=quarantine, red=reject
+
+Always call write_bronze at the end to save results."""
 
 
 class BronzeAgent:
@@ -180,29 +223,55 @@ class BronzeAgent:
             # Update state manager
             await state_manager.start_agent(run_id, self.name, total_steps=5)
 
-            # Create input message
-            input_message = f"""Please process the following pet insurance claim:
+            # Create input message - emphasize duplicate/velocity check first
+            customer_id = claim_data.get("customer_id", "unknown")
+            pet_id = claim_data.get("pet_id", "unknown")
+            
+            input_message = f"""Process this pet insurance claim. CHECK FOR DUPLICATES FIRST!
 
-Claim ID: {claim_id}
-Claim Data:
+## Claim Details
+- Claim ID: {claim_id}
+- Customer ID: {customer_id}
+- Pet ID: {pet_id}
+
 ```json
 {json.dumps(claim_data, indent=2)}
 ```
 
-Steps to follow:
-1. First, validate the schema using validate_schema
-2. Then, detect any anomalies using detect_anomalies
-3. Clean the data using clean_data
-4. Assess quality using assess_quality
-5. Finally, write to bronze layer with your decision using write_bronze
+## MANDATORY Steps (in this exact order):
 
-Please analyze this claim and make a decision (ACCEPT, QUARANTINE, or REJECT).
-Explain your reasoning throughout the process."""
+### Step 1: DUPLICATE & VELOCITY CHECK (DO THIS FIRST!)
+Call get_historical_claims(customer_id="{customer_id}") to get this customer's claim history.
+Then check:
+- Is there a claim with same pet_id and similar diagnosis in the last 24 hours? → REJECT as duplicate
+- Is there a claim with exact same amount in the last hour? → REJECT as duplicate  
+- How many claims has this customer submitted in the last 30 days? → If 5+, FLAG velocity issue
+- How many claims for pet "{pet_id}" in the last 30 days? → If 3+, FLAG velocity issue
+
+### Step 2: Schema Validation
+Use validate_schema to check required fields.
+
+### Step 3: Anomaly Detection  
+Use detect_anomalies to find statistical outliers.
+
+### Step 4: Data Cleaning
+Use clean_data to normalize the data.
+
+### Step 5: Quality Assessment
+Use assess_quality to rate data quality.
+
+### Step 6: Final Decision
+Call write_bronze with your decision:
+- REJECT: If duplicate found or critical issues
+- QUARANTINE: If velocity warnings or anomalies need review
+- ACCEPT: If all checks pass
+
+Remember: Catching duplicates early saves everyone time and money!"""
 
             # Publish step events
-            await events.start_step("Schema Validation")
+            await events.start_step("Duplicate & Velocity Check")
             await events.reason(
-                f"Starting validation of claim {claim_id}",
+                f"Checking customer {customer_id} claim history for duplicates and velocity issues",
                 reasoning_type="analysis"
             )
 
@@ -303,12 +372,14 @@ Explain your reasoning throughout the process."""
             "quality_result": {},
             "quality_score": 0.8,
             "cleaned_data": original_claim_data,
+            "card_display": None,  # AI-generated card display
         }
 
         # Parse through messages to extract tool results and final response
         for msg in messages:
             if hasattr(msg, "content") and isinstance(msg.content, str):
                 content = msg.content.lower()
+                original_content = msg.content
 
                 # Extract decision from content
                 if "reject" in content:
@@ -326,7 +397,65 @@ Explain your reasoning throughout the process."""
                     if not hasattr(msg, "tool_calls") or not msg.tool_calls:
                         result["reasoning"] = msg.content[:500]  # Truncate if too long
 
+                        # Extract card_display JSON block
+                        card_display = self._extract_card_display(original_content)
+                        if card_display:
+                            result["card_display"] = card_display
+
+        # Generate fallback card_display if AI didn't provide one
+        if not result["card_display"]:
+            result["card_display"] = self._generate_fallback_card(result)
+
         return result
+
+    def _extract_card_display(self, content: str) -> Optional[dict]:
+        """Extract card_display JSON from AI response."""
+        import re
+
+        # Look for ```card_display ... ``` block
+        pattern = r'```card_display\s*\n?(.*?)\n?```'
+        match = re.search(pattern, content, re.DOTALL)
+
+        if match:
+            try:
+                return json.loads(match.group(1).strip())
+            except json.JSONDecodeError:
+                logger.warning("Failed to parse card_display JSON")
+
+        # Fallback: look for any JSON with card_display structure
+        pattern2 = r'\{[^{}]*"title"[^{}]*"subtitle"[^{}]*\}'
+        match2 = re.search(pattern2, content, re.DOTALL)
+        if match2:
+            try:
+                return json.loads(match2.group(0))
+            except json.JSONDecodeError:
+                pass
+
+        return None
+
+    def _generate_fallback_card(self, result: dict) -> dict:
+        """Generate fallback card display if AI didn't provide one."""
+        quality_pct = int(result.get("quality_score", 0.8) * 100)
+        decision = result.get("decision", "accept")
+
+        status_map = {
+            "accept": ("Accepted", "green"),
+            "quarantine": ("Quarantined", "yellow"),
+            "reject": ("Rejected", "red"),
+        }
+        status, color = status_map.get(decision, ("Processed", "blue"))
+
+        return {
+            "title": "Bronze Layer",
+            "subtitle": "AI Data Validation Agent",
+            "primary_metric": {"label": "Data Quality", "value": f"{quality_pct}%"},
+            "secondary_metrics": [
+                {"label": "Confidence", "value": f"{int(result.get('confidence', 0.85) * 100)}%"}
+            ],
+            "status": status,
+            "status_color": color,
+            "summary": result.get("reasoning", "Data validation completed.")[:100]
+        }
 
 
 # Create singleton instance

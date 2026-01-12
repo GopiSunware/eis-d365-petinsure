@@ -43,7 +43,7 @@ function GuestHomePage() {
           </h1>
           <p className="text-xl text-primary-100 mb-8">
             Comprehensive pet insurance coverage for dogs and cats.
-            Because they're family too.
+            Because they're family.
           </p>
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
             <Link

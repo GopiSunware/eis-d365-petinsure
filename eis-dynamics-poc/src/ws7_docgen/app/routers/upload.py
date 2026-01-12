@@ -424,6 +424,23 @@ async def delete_batch(batch_id: str):
     return {"message": f"Batch {batch_id} deleted successfully"}
 
 
+@router.delete("/batches/clear")
+async def clear_batches():
+    """
+    Clear all batches (for demo reset).
+    
+    Called by PetInsure360 backend unified clear endpoint.
+    """
+    batch_count = clear_all_batches()
+    logger.info(f"Cleared {batch_count} batches")
+    
+    return {
+        "success": True,
+        "batches_cleared": batch_count,
+        "message": f"Cleared {batch_count} batches",
+    }
+
+
 @router.delete("/clear-all")
 async def clear_all_data():
     """

@@ -76,7 +76,7 @@ const getInitialMessage = (customerData, recentActivity, portalType = 'customer'
     content += `• 🎉 Multi-pet discount: Save 5% on additional pets\n`;
     content += `• 💰 Annual payment: Get 10% off\n\n`;
 
-    content += `How can I help you today? I can assist with quotes, claims, policy questions, or anything else!`;
+    content += `How can I help you today? I can assist with quotes, claims, policy questions, or share our coverage plans!`;
     return { role: 'assistant', content };
   }
 

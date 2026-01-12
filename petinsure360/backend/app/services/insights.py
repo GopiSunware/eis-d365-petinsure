@@ -736,6 +736,14 @@ class InsightsService:
         if self._customers is None:
             self._customers = pd.DataFrame()
 
+        # Check if customer already exists (prevent duplicates)
+        customer_id = str(customer_data.get('customer_id', ''))
+        if customer_id and len(self._customers) > 0:
+            existing = self._customers[self._customers['customer_id'].astype(str) == customer_id]
+            if not existing.empty:
+                print(f"Customer {customer_id} already exists - skipping duplicate add")
+                return  # Skip duplicate
+
         # Get customer_since from either field name
         customer_since = customer_data.get('customer_since') or customer_data.get('registration_date') or datetime.now().strftime('%Y-%m-%d')
 
@@ -761,6 +769,14 @@ class InsightsService:
         self._ensure_data()
         if self._pets is None:
             self._pets = pd.DataFrame()
+
+        # Check if pet already exists (prevent duplicates)
+        pet_id = str(pet_data.get('pet_id', ''))
+        if pet_id and len(self._pets) > 0:
+            existing = self._pets[self._pets['pet_id'].astype(str) == pet_id]
+            if not existing.empty:
+                print(f"Pet {pet_id} already exists - skipping duplicate add")
+                return  # Skip duplicate
 
         # Helper to safely get string value (handles None and enums)
         def safe_str(val):
@@ -795,6 +811,14 @@ class InsightsService:
         if self._policies is None:
             self._policies = pd.DataFrame()
 
+        # Check if policy already exists (prevent duplicates)
+        policy_id = str(policy_data.get('policy_id', ''))
+        if policy_id and len(self._policies) > 0:
+            existing = self._policies[self._policies['policy_id'].astype(str) == policy_id]
+            if not existing.empty:
+                print(f"Policy {policy_id} already exists - skipping duplicate add")
+                return  # Skip duplicate
+
         new_row = pd.DataFrame([{
             'policy_id': str(policy_data.get('policy_id', '')),
             'policy_number': str(policy_data.get('policy_number', policy_data.get('policy_id', ''))),
@@ -819,6 +843,14 @@ class InsightsService:
         self._ensure_data()
         if self._claims is None:
             self._claims = pd.DataFrame()
+
+        # Check if claim already exists (prevent duplicates)
+        claim_id = str(claim_data.get('claim_id', ''))
+        if claim_id and len(self._claims) > 0:
+            existing = self._claims[self._claims['claim_id'].astype(str) == claim_id]
+            if not existing.empty:
+                print(f"Claim {claim_id} already exists - skipping duplicate add")
+                return  # Skip duplicate
 
         customer_id = str(claim_data.get('customer_id', ''))
         pet_id = str(claim_data.get('pet_id', ''))
@@ -891,6 +923,33 @@ class InsightsService:
         }])
         self._claims = pd.concat([self._claims, new_row], ignore_index=True)
         print(f"Added claim {claim_data.get('claim_id')} for customer {customer_id} to in-memory data. Total claims: {len(self._claims)}")
+
+    def update_claim(self, claim_id: str, claim_data: Dict[str, Any]) -> bool:
+        """Update an existing claim in in-memory data."""
+        self._ensure_data()
+        if self._claims is None or len(self._claims) == 0:
+            print(f"No claims to update - claim {claim_id} not found")
+            return False
+
+        # Find the claim by claim_id
+        claim_id_str = str(claim_id)
+        mask = self._claims['claim_id'].astype(str) == claim_id_str
+
+        if not mask.any():
+            print(f"Claim {claim_id} not found for update")
+            return False
+
+        # Update all provided fields
+        for key, value in claim_data.items():
+            if key in self._claims.columns:
+                self._claims.loc[mask, key] = value
+            else:
+                # Add new column if it doesn't exist
+                self._claims[key] = None
+                self._claims.loc[mask, key] = value
+
+        print(f"Updated claim {claim_id} with {len(claim_data)} fields")
+        return True
 
     # Pipeline Status Methods (for Pipeline Visualization UI)
     def get_pipeline_status(self) -> Dict[str, Any]:
