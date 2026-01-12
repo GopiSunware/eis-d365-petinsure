@@ -48,187 +48,11 @@ const AgentStep = ({ step }) => {
   )
 }
 
-// Batch card component with expandable inline details
-const BatchCard = ({ batch, onProcess, onView, isProcessing }) => {
-  const [expanded, setExpanded] = useState(false)
-
-  const getStatusBadge = () => {
-    switch (batch.status) {
-      case 'completed':
-        return (
-          <span className="flex items-center gap-1 px-2 py-1 bg-green-100 text-green-700 text-xs font-medium rounded-full">
-            <CheckCircle className="w-3 h-3" />
-            Completed
-          </span>
-        )
-      case 'failed':
-        return (
-          <span className="flex items-center gap-1 px-2 py-1 bg-red-100 text-red-700 text-xs font-medium rounded-full">
-            <XCircle className="w-3 h-3" />
-            Failed
-          </span>
-        )
-      case 'processing':
-      case 'extracting':
-      case 'validating':
-        return (
-          <span className="flex items-center gap-1 px-2 py-1 bg-blue-100 text-blue-700 text-xs font-medium rounded-full">
-            <Loader2 className="w-3 h-3 animate-spin" />
-            Processing
-          </span>
-        )
-      default:
-        return (
-          <span className="flex items-center gap-1 px-2 py-1 bg-gray-100 text-gray-700 text-xs font-medium rounded-full">
-            <Clock className="w-3 h-3" />
-            Pending
-          </span>
-        )
-    }
-  }
-
-  const getDecisionBadge = () => {
-    if (!batch.ai_decision) return null
-    const colors = {
-      auto_approve: 'bg-green-100 text-green-700',
-      proceed: 'bg-green-100 text-green-700',
-      needs_review: 'bg-yellow-100 text-yellow-700',
-      deny: 'bg-red-100 text-red-700',
-      duplicate_rejected: 'bg-red-100 text-red-700',
-    }
-    return (
-      <span className={`px-2 py-1 text-xs font-medium rounded-full ${colors[batch.ai_decision] || 'bg-gray-100 text-gray-700'}`}>
-        {batch.ai_decision.replace(/_/g, ' ')}
-      </span>
-    )
-  }
-
-  return (
-    <div className={`bg-white rounded-lg border p-4 transition-shadow ${batch.status === 'failed' ? 'border-red-200' : ''}`}>
-      {/* Header Row - Always Visible */}
-      <div className="flex items-start justify-between">
-        <div className="flex-1">
-          <div className="flex items-center gap-2 mb-1">
-            <span className="font-medium text-gray-900">
-              {batch.claim_number || `Batch ${batch.batch_id?.slice(0, 8)}`}
-            </span>
-            {getStatusBadge()}
-            {getDecisionBadge()}
-          </div>
-          <p className="text-sm text-gray-500">
-            {batch.documents_count || 0} document(s) • {new Date(batch.created_at).toLocaleString()}
-            {batch.claim_amount && <span> • ${batch.claim_amount.toLocaleString()}</span>}
-            {batch.claim_type && <span> • {batch.claim_type}</span>}
-          </p>
-          {/* Error shown prominently when failed */}
-          {batch.error && (
-            <div className="mt-2 flex items-start gap-2 p-2 bg-red-50 rounded-lg border border-red-200">
-              <XCircle className="w-4 h-4 text-red-500 mt-0.5 flex-shrink-0" />
-              <div>
-                <p className="text-sm font-medium text-red-700">Error: {batch.error_stage || 'processing'}</p>
-                <p className="text-sm text-red-600">{batch.error}</p>
-              </div>
-            </div>
-          )}
-        </div>
-        <div className="flex items-center gap-2 ml-4">
-          {batch.status === 'pending' && (
-            <button
-              onClick={() => onProcess(batch.batch_id)}
-              disabled={isProcessing}
-              className="flex items-center gap-1 px-3 py-1.5 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {isProcessing ? (
-                <>
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                  Processing...
-                </>
-              ) : (
-                <>
-                  <Play className="w-4 h-4" />
-                  Process
-                </>
-              )}
-            </button>
-          )}
-          {batch.status === 'failed' && (
-            <button
-              onClick={() => onProcess(batch.batch_id)}
-              disabled={isProcessing}
-              className="flex items-center gap-1 px-3 py-1.5 bg-orange-600 text-white text-sm rounded-lg hover:bg-orange-700 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {isProcessing ? (
-                <>
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                  Retrying...
-                </>
-              ) : (
-                <>
-                  <RefreshCw className="w-4 h-4" />
-                  Retry
-                </>
-              )}
-            </button>
-          )}
-          <button
-            onClick={() => setExpanded(!expanded)}
-            className={`px-3 py-1.5 border text-sm rounded-lg transition-colors ${
-              expanded ? 'bg-gray-100 border-gray-400' : 'border-gray-300 hover:bg-gray-50'
-            }`}
-          >
-            {expanded ? '▲ Collapse' : '▼ Expand'}
-          </button>
-        </div>
-      </div>
-
-      {/* Expandable Section - Inline Details */}
-      {expanded && (
-        <div className="mt-4 pt-4 border-t space-y-4">
-          {/* Agent Steps */}
-          {batch.agent_steps?.length > 0 && (
-            <div>
-              <h4 className="text-sm font-medium text-gray-700 mb-2">Processing Steps</h4>
-              <div className="space-y-2">
-                {batch.agent_steps.map((step, idx) => (
-                  <AgentStep key={step.step_id || idx} step={step} />
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* AI Reasoning */}
-          {batch.ai_reasoning && (
-            <div className="p-3 bg-purple-50 rounded-lg">
-              <div className="flex items-center gap-2 mb-2">
-                <Brain className="w-4 h-4 text-purple-600" />
-                <span className="text-sm font-medium text-purple-900">AI Reasoning</span>
-              </div>
-              <div className="text-sm text-purple-800 space-y-1">
-                {batch.ai_reasoning.split(/\n/).map((line, idx) => (
-                  <p key={idx}>{line}</p>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* View Full Details Button */}
-          <div className="flex justify-end">
-            <button
-              onClick={() => onView(batch)}
-              className="text-sm text-blue-600 hover:text-blue-800 underline"
-            >
-              View Full Details →
-            </button>
-          </div>
-        </div>
-      )}
-    </div>
-  )
-}
-
 // AI-Driven Layer Card Component - Renders from card_display
 const LayerCard = ({ layer, icon: Icon, state, output, fallbackTitle, fallbackSubtitle, accentColor }) => {
   const isCompleted = state?.status === 'completed'
+  const isFailed = state?.status === 'failed'
+  const isRunning = state?.status === 'running'
   const cardDisplay = output?.card_display
 
   // Color mappings for each layer
@@ -397,8 +221,25 @@ const LayerCard = ({ layer, icon: Icon, state, output, fallbackTitle, fallbackSu
             </>
           )}
         </div>
+      ) : isFailed ? (
+        // Show error state
+        <div className="space-y-2">
+          <div className="flex items-center gap-2 text-red-600">
+            <XCircle className="w-4 h-4" />
+            <span className="text-sm font-medium">Processing Failed</span>
+          </div>
+          {state?.error && (
+            <p className="text-xs text-red-500 bg-red-50 p-2 rounded">{state.error.substring(0, 150)}{state.error.length > 150 ? '...' : ''}</p>
+          )}
+        </div>
+      ) : isRunning ? (
+        // Show running state
+        <div className="flex items-center gap-2">
+          <Loader2 className="w-4 h-4 animate-spin text-blue-500" />
+          <span className="text-sm text-blue-600">Processing...</span>
+        </div>
       ) : (
-        <p className="text-xs text-gray-500 italic">Awaiting AI processing</p>
+        <p className="text-xs text-gray-500 italic">Awaiting processing</p>
       )}
     </div>
   )
@@ -707,11 +548,9 @@ const PipelineRunCard = ({ run, onProcessBronze, onProcessSilver, onProcessGold,
 }
 
 export default function AgentPipelinePage() {
-  const [batches, setBatches] = useState([])
   const [pipelineRuns, setPipelineRuns] = useState([])
   const [loading, setLoading] = useState(true)
   const [processing, setProcessing] = useState({})
-  const [selectedBatch, setSelectedBatch] = useState(null)
   const [serviceStatus, setServiceStatus] = useState(null)
   const [pipelineStatus, setPipelineStatus] = useState(null)
   const [expandedRunId, setExpandedRunId] = useState(null) // Track which run is expanded
@@ -753,12 +592,10 @@ export default function AgentPipelinePage() {
 
   useEffect(() => {
     checkServiceHealth()
-    loadBatches()
     loadPipelineRuns()
 
     // Poll for updates
     const interval = setInterval(() => {
-      loadBatches()
       loadPipelineRuns()
     }, 5000)
     return () => clearInterval(interval)
@@ -789,21 +626,8 @@ export default function AgentPipelinePage() {
     }
   }
 
-  const loadBatches = async () => {
-    try {
-      const response = await fetch(`${DOCGEN_URL}/api/v1/docgen/batches?limit=50`)
-      if (response.ok) {
-        const data = await response.json()
-        setBatches(data.batches || [])
-      }
-    } catch (err) {
-      console.error('Error loading batches:', err)
-    } finally {
-      setLoading(false)
-    }
-  }
-
   const loadPipelineRuns = async () => {
+    setLoading(false) // Set loading false once we start loading runs
     try {
       const response = await fetch(`${PIPELINE_URL}/api/v1/pipeline/recent?limit=50`)
       if (response.ok) {
@@ -812,62 +636,6 @@ export default function AgentPipelinePage() {
       }
     } catch (err) {
       console.error('Error loading pipeline runs:', err)
-    }
-  }
-
-  const handleProcess = async (batchId) => {
-    // Immediately show processing state - don't clear until batch status changes
-    setProcessing(prev => ({ ...prev, [batchId]: true }))
-
-    try {
-      await fetch(`${DOCGEN_URL}/api/v1/docgen/process/${batchId}`, { method: 'POST' })
-
-      // Poll frequently until batch status changes from pending
-      const pollForCompletion = async () => {
-        let attempts = 0
-        const maxAttempts = 120 // 2 minutes max
-
-        while (attempts < maxAttempts) {
-          await new Promise(resolve => setTimeout(resolve, 1000)) // Poll every second
-          try {
-            const response = await fetch(`${DOCGEN_URL}/api/v1/docgen/batches?limit=50`)
-            if (response.ok) {
-              const data = await response.json()
-              setBatches(data.batches || [])
-
-              // Check if this batch is no longer pending
-              const batch = (data.batches || []).find(b => b.batch_id === batchId)
-              if (batch && batch.status !== 'pending' && !['extracting', 'validating', 'processing'].includes(batch.status)) {
-                // Processing finished (completed or failed)
-                setProcessing(prev => ({ ...prev, [batchId]: false }))
-                return
-              }
-            }
-          } catch (e) {
-            console.error('Poll error:', e)
-          }
-          attempts++
-        }
-        // Timeout - clear processing state
-        setProcessing(prev => ({ ...prev, [batchId]: false }))
-      }
-
-      pollForCompletion()
-    } catch (err) {
-      console.error('Error processing batch:', err)
-      setProcessing(prev => ({ ...prev, [batchId]: false }))
-    }
-  }
-
-  const handleViewBatch = async (batch) => {
-    try {
-      const response = await fetch(`${DOCGEN_URL}/api/v1/docgen/batch/${batch.batch_id}`)
-      if (response.ok) {
-        const fullBatch = await response.json()
-        setSelectedBatch(fullBatch)
-      }
-    } catch (err) {
-      console.error('Error loading batch details:', err)
     }
   }
 
@@ -976,20 +744,14 @@ export default function AgentPipelinePage() {
     return pollPipelineRunWithStorage(runId)
   }
 
-  // Stats - DocGen batches
-  const pendingCount = batches.filter(b => b.status === 'pending').length
-  const processingCount = batches.filter(b => ['processing', 'extracting', 'validating'].includes(b.status)).length
-  const completedCount = batches.filter(b => b.status === 'completed').length
-  const failedCount = batches.filter(b => b.status === 'failed').length
-
   // Stats - Pipeline runs (LangGraph)
-  const pipelinePending = pipelineRuns.filter(r => r.status === 'pending').length
-  const pipelineRunning = pipelineRuns.filter(r => r.status === 'running').length
-  const pipelineCompleted = pipelineRuns.filter(r => r.status === 'completed').length
-  const pipelineFailed = pipelineRuns.filter(r => r.status === 'failed' || r.has_errors).length
+  const pendingCount = pipelineRuns.filter(r => r.status === 'pending').length
+  const processingCount = pipelineRuns.filter(r => r.status === 'running' || r.status === 'started').length
+  const completedCount = pipelineRuns.filter(r => r.status === 'completed').length
+  const failedCount = pipelineRuns.filter(r => r.status === 'failed' || r.has_errors).length
 
-  // Check if any batch is being processed (local button click)
-  const isAnyProcessing = Object.values(processing).some(v => v) || pipelineRunning > 0
+  // Check if any run is being processed
+  const isAnyProcessing = Object.values(processing).some(v => v) || processingCount > 0
 
   return (
     <div className="space-y-6">
@@ -1010,7 +772,7 @@ export default function AgentPipelinePage() {
             </span>
           </div>
           <button
-            onClick={() => { loadBatches(); loadPipelineRuns(); checkServiceHealth(); }}
+            onClick={() => { loadPipelineRuns(); checkServiceHealth(); }}
             className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
           >
             <RefreshCw className="h-4 w-4" />
@@ -1035,7 +797,7 @@ export default function AgentPipelinePage() {
             />
           </div>
           <p className="text-xs text-blue-600 mt-2">
-            {processingCount > 0 ? `${processingCount} batch(es) being processed by AI agents` : 'Starting AI processing...'}
+            {processingCount > 0 ? `${processingCount} claim(s) being processed by AI agents` : 'Starting AI processing...'}
           </p>
         </div>
       )}
@@ -1169,138 +931,7 @@ export default function AgentPipelinePage() {
         )}
       </div>
 
-      {/* Document Batches (DocGen) - SECONDARY SECTION */}
-      <div className="bg-white rounded-xl border p-6">
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center gap-3">
-            <FileText className="h-5 w-5 text-gray-600" />
-            <h3 className="text-lg font-semibold text-gray-900">Document Batches (Doc Processing)</h3>
-          </div>
-          <span className="text-sm text-gray-500">{batches.length} total</span>
-        </div>
-
-        {loading ? (
-          <div className="flex items-center justify-center py-12">
-            <Loader2 className="h-8 w-8 animate-spin text-blue-500" />
-          </div>
-        ) : batches.length === 0 ? (
-          <div className="text-center py-8">
-            <FileText className="h-10 w-10 mx-auto text-gray-300 mb-3" />
-            <p className="text-gray-500 text-sm">No document batches</p>
-          </div>
-        ) : (
-          <div className="space-y-4">
-            {batches.map(batch => (
-              <BatchCard
-                key={batch.batch_id}
-                batch={batch}
-                onProcess={handleProcess}
-                onView={handleViewBatch}
-                isProcessing={processing[batch.batch_id]}
-              />
-            ))}
-          </div>
-        )}
-      </div>
-
-      {/* Batch Detail Modal */}
-      {selectedBatch && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
-            <div className="p-6 border-b sticky top-0 bg-white">
-              <div className="flex items-center justify-between">
-                <h3 className="text-lg font-semibold">
-                  Batch Details: {selectedBatch.claim_number || selectedBatch.batch_id?.slice(0, 8)}
-                </h3>
-                <button
-                  onClick={() => setSelectedBatch(null)}
-                  className="text-gray-400 hover:text-gray-600"
-                >
-                  ✕
-                </button>
-              </div>
-            </div>
-            <div className="p-6 space-y-6">
-              {/* Documents */}
-              <div>
-                <h4 className="font-medium mb-3">Documents</h4>
-                <div className="space-y-2">
-                  {selectedBatch.documents?.map((doc, idx) => (
-                    <div key={idx} className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
-                      <FileText className="h-5 w-5 text-gray-400" />
-                      <div>
-                        <p className="font-medium">{doc.original_filename}</p>
-                        <p className="text-xs text-gray-500">
-                          {doc.content_type} • {(doc.file_size / 1024).toFixed(1)} KB
-                        </p>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* Agent Steps */}
-              {selectedBatch.agent_steps?.length > 0 && (
-                <div>
-                  <h4 className="font-medium mb-3">Processing Steps</h4>
-                  <div className="space-y-2">
-                    {selectedBatch.agent_steps.map((step, idx) => (
-                      <AgentStep key={idx} step={step} />
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {/* Extracted Data */}
-              {selectedBatch.mapped_claim && (
-                <div>
-                  <h4 className="font-medium mb-3">Extracted Data</h4>
-                  <pre className="bg-gray-50 p-4 rounded-lg text-sm overflow-x-auto">
-                    {JSON.stringify(selectedBatch.mapped_claim, null, 2)}
-                  </pre>
-                </div>
-              )}
-
-              {/* Billing */}
-              {selectedBatch.billing && (
-                <div>
-                  <h4 className="font-medium mb-3">Billing Calculation</h4>
-                  <div className="bg-green-50 p-4 rounded-lg">
-                    <div className="grid grid-cols-3 gap-4 text-sm">
-                      <div>
-                        <p className="text-gray-500">Claim Amount</p>
-                        <p className="font-semibold">${selectedBatch.billing.claim_amount}</p>
-                      </div>
-                      <div>
-                        <p className="text-gray-500">Deductible</p>
-                        <p className="font-semibold">${selectedBatch.billing.deductible_applied}</p>
-                      </div>
-                      <div>
-                        <p className="text-gray-500">Final Payout</p>
-                        <p className="font-semibold text-green-600">${selectedBatch.billing.final_payout}</p>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {/* AI Reasoning */}
-              {selectedBatch.ai_reasoning && (
-                <div>
-                  <h4 className="font-medium mb-3">AI Reasoning</h4>
-                  <div className="bg-purple-50 p-4 rounded-lg">
-                    <div className="text-sm space-y-1">
-                      {selectedBatch.ai_reasoning.split(/\n/).map((line, idx) => (
-                        <p key={idx}>{line}</p>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
+      {/* Document Processing is available at /doc-processing page */}
     </div>
   )
 }

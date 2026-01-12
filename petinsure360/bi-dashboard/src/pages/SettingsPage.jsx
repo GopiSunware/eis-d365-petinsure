@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Settings, Cpu, Zap, CheckCircle, XCircle, Loader2, Sparkles, Bot, Brain, Trash2, RefreshCw } from 'lucide-react'
+import { Settings, Cpu, Zap, CheckCircle, XCircle, Loader2, Sparkles, Bot, Brain, Trash2, RefreshCw, AlertTriangle } from 'lucide-react'
 import api from '../services/api'
 
 // AI Claims API base URL (WS2) - Uses Claims Data API which has AI config endpoints
@@ -411,12 +411,19 @@ export default function SettingsPage() {
 function DemoDataManagement() {
   const [clearing, setClearing] = useState(false)
   const [clearResult, setClearResult] = useState(null)
+  const [showConfirm, setShowConfirm] = useState(false)
 
-  const handleClearAllPipelines = async () => {
-    if (!confirm('This will clear all claims from Rule Engine, Agent Pipeline, and DocGen. Continue?')) {
-      return
-    }
+  const handleClearClick = () => {
+    setClearResult(null)
+    setShowConfirm(true)
+  }
 
+  const handleCancel = () => {
+    setShowConfirm(false)
+  }
+
+  const handleConfirmClear = async () => {
+    setShowConfirm(false)
     setClearing(true)
     setClearResult(null)
 
@@ -440,73 +447,109 @@ function DemoDataManagement() {
 
   return (
     <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-      <div className="bg-gradient-to-r from-red-600 to-red-700 px-6 py-4">
+      <div className="bg-gradient-to-r from-gray-700 to-gray-800 px-6 py-4">
         <div className="flex items-center space-x-3">
-          <Trash2 className="h-6 w-6 text-white" />
-          <h2 className="text-lg font-semibold text-white">Demo Data Management</h2>
+          <RefreshCw className="h-6 w-6 text-white" />
+          <h2 className="text-lg font-semibold text-white">Pipeline Management</h2>
         </div>
-        <p className="text-red-100 text-sm mt-1">
-          Clear all pipeline data for fresh testing
+        <p className="text-gray-300 text-sm mt-1">
+          Reset pipeline data for fresh testing
         </p>
       </div>
 
       <div className="p-6 space-y-4">
-        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-          <p className="text-sm text-yellow-800">
-            <strong>Warning:</strong> This will clear all claims from:
-          </p>
-          <ul className="mt-2 text-sm text-yellow-700 list-disc list-inside">
-            <li>Rule Engine Pipeline (Bronze/Silver/Gold layers)</li>
-            <li>Agent Pipeline (LangGraph runs)</li>
-            <li>DocGen Service (document batches)</li>
-            <li>In-memory claims data</li>
-          </ul>
-        </div>
-
-        <div className="flex items-center gap-4">
-          <button
-            onClick={handleClearAllPipelines}
-            disabled={clearing}
-            className="flex items-center px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-lg hover:bg-red-700 disabled:opacity-50"
-          >
-            {clearing ? (
-              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-            ) : (
-              <Trash2 className="h-4 w-4 mr-2" />
-            )}
-            Clear All Pipelines
-          </button>
-
-          {clearResult && (
-            <div className={`flex items-center text-sm ${clearResult.success ? 'text-green-600' : 'text-red-600'}`}>
-              {clearResult.success ? (
-                <CheckCircle className="h-4 w-4 mr-1" />
-              ) : (
-                <XCircle className="h-4 w-4 mr-1" />
-              )}
-              {clearResult.message}
-            </div>
-          )}
-        </div>
-
-        {clearResult?.success && clearResult.details && (
-          <div className="bg-green-50 border border-green-200 rounded-lg p-4 text-sm">
-            <p className="font-medium text-green-800 mb-2">Cleared successfully:</p>
-            <div className="grid grid-cols-3 gap-4 text-green-700">
-              <div>
-                <span className="text-green-600">Rule Engine:</span>
-                <span className="ml-1 font-medium">{clearResult.details.rule_engine?.claims_cleared || 0} claims</span>
-              </div>
-              <div>
-                <span className="text-green-600">Agent Pipeline:</span>
-                <span className="ml-1 font-medium">{clearResult.details.agent_pipeline?.runs_cleared || 0} runs</span>
-              </div>
-              <div>
-                <span className="text-green-600">DocGen:</span>
-                <span className="ml-1 font-medium">{clearResult.details.docgen?.batches_cleared || 0} batches</span>
+        {/* Inline Confirmation */}
+        {showConfirm ? (
+          <div className="bg-amber-50 border border-amber-300 rounded-lg p-4">
+            <div className="flex items-start gap-3">
+              <AlertTriangle className="h-5 w-5 text-amber-600 mt-0.5 flex-shrink-0" />
+              <div className="flex-1">
+                <p className="text-sm font-medium text-amber-800">
+                  Are you sure you want to clear all pipelines?
+                </p>
+                <p className="text-sm text-amber-700 mt-1">
+                  This will remove all claims from Rule Engine, Agent Pipeline, and DocGen batches.
+                  Demo users, pets, and policies will be preserved.
+                </p>
+                <div className="flex gap-3 mt-4">
+                  <button
+                    onClick={handleConfirmClear}
+                    className="px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-lg hover:bg-red-700"
+                  >
+                    Yes, Clear All
+                  </button>
+                  <button
+                    onClick={handleCancel}
+                    className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50"
+                  >
+                    Cancel
+                  </button>
+                </div>
               </div>
             </div>
           </div>
+        ) : (
+          <>
+            {/* Normal State */}
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-gray-600">
+                  Clear all pipeline data including claims, runs, and document batches.
+                </p>
+                <p className="text-xs text-gray-500 mt-1">
+                  Demo users and policies will be preserved.
+                </p>
+              </div>
+              <button
+                onClick={handleClearClick}
+                disabled={clearing}
+                className="flex items-center px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50"
+              >
+                {clearing ? (
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                ) : (
+                  <Trash2 className="h-4 w-4 mr-2" />
+                )}
+                Clear All Pipelines
+              </button>
+            </div>
+
+            {/* Results */}
+            {clearResult && (
+              <div className={`rounded-lg p-4 text-sm ${
+                clearResult.success 
+                  ? 'bg-green-50 border border-green-200' 
+                  : 'bg-red-50 border border-red-200'
+              }`}>
+                <div className="flex items-center gap-2 mb-2">
+                  {clearResult.success ? (
+                    <CheckCircle className="h-4 w-4 text-green-600" />
+                  ) : (
+                    <XCircle className="h-4 w-4 text-red-600" />
+                  )}
+                  <span className={`font-medium ${clearResult.success ? 'text-green-800' : 'text-red-800'}`}>
+                    {clearResult.message}
+                  </span>
+                </div>
+                {clearResult.success && clearResult.details && (
+                  <div className="grid grid-cols-3 gap-4 text-green-700 mt-2 pt-2 border-t border-green-200">
+                    <div>
+                      <span className="text-green-600">Rule Engine:</span>
+                      <span className="ml-1 font-medium">{clearResult.details.rule_engine?.claims_cleared || 0} claims</span>
+                    </div>
+                    <div>
+                      <span className="text-green-600">Agent Pipeline:</span>
+                      <span className="ml-1 font-medium">{clearResult.details.agent_pipeline?.runs_cleared || 0} runs</span>
+                    </div>
+                    <div>
+                      <span className="text-green-600">DocGen:</span>
+                      <span className="ml-1 font-medium">{clearResult.details.docgen?.batches_cleared || 0} batches</span>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+          </>
         )}
       </div>
     </div>
